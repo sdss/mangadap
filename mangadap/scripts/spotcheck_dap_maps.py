@@ -1,5 +1,7 @@
 import time
 
+from IPython import embed
+
 import numpy
 
 from matplotlib import pyplot, rc, colors, colorbar, ticker, cm
@@ -8,7 +10,7 @@ from astropy.io import fits
 
 from mangadap import dapfits
 from mangadap.datacube import DataCube
-from mangadap.config.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.fileio import channel_dictionary
 from mangadap.proc.util import growth_lim
 from mangadap.util.mapping import map_extent, map_beam_patch
@@ -604,10 +606,10 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
                                        else args.plan_module[0])
         else:
             UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
-        #   - Check that the class is derived from AnalysisPlanSet
-        if not issubclass(UserPlan, AnalysisPlanSet):
+        #   - Check that the class is derived from AnalysisPlan
+        if not issubclass(UserPlan, AnalysisPlan):
             raise TypeError('Defined plan object must subclass from '
-                            'mangadap.config.analysisplan.AnalysisPlanSet')
+                            'mangadap.config.analysisplan.AnalysisPlan')
 
         #   - Instantiate using either the datacube file directly or a
         #     configuration file
@@ -616,12 +618,11 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
 
         # Read the analysis plan
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
-                    else UserPlan.from_par_file(args.plan, cube=cube,
-                                                analysis_path=args.output_path)
+                    else UserPlan.from_toml(args.plan, cube=cube, analysis_path=args.output_path)
 
         # Construct the plot for each analysis plan
-        for i in range(plan.nplans):
-            spotcheck_images(cube, plan[i], plan.method_path(plan_index=i),
+        for i, key in enumerate(plan.keys()):
+            spotcheck_images(cube, plan[key], plan.method_path(plan_index=i),
                              plan.method_path(plan_index=i, ref=True),
                              plan.method_path(plan_index=i, qa=True), fwhm=args.beam)
 

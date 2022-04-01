@@ -21,12 +21,10 @@ The MaNGA Data Analysis Pipeline
    :target: https://github.com/sdss/mangadap/blob/master/LICENSE.md
    :alt: License
 
-The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
-package that analyzes the data produced by the MaNGA data-reduction
-pipeline (MaNGA DRP) to produced physical properties derived from the
-MaNGA spectroscopy.
-
-These quantities currently include:
+The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software package
+that has analyzed all galaxy data produced by the MaNGA data-reduction pipeline
+(MaNGA DRP).  Its goal is to produce high-level, science-ready data products
+derived from MaNGA spectra.  The products currently provided are:
 
  * Spatially stacked spectra
  * Stellar kinematics
@@ -35,18 +33,23 @@ These quantities currently include:
  * Spectral indices: absorption-line (e.g., H-delta) and bandhead/color
    (e.g., TiO, D4000) measurements
 
-All survey-led properties are derived from the datacubes,
-specifically the LOGCUBE files. However, the core functions are
-developed to consider each spectrum largely independently. The DAP
-currently focuses on "model-independent" properties. Higher-level,
-model-dependent properties, such as stellar-population parameters,
+That is, the DAP currently focuses on "model-independent" properties.
+Higher-level, model-dependent properties, such as stellar-population parameters,
 are outside of the scope of the current pipeline.
 
-.. warning::
+.. note::
     
-    This documentation is for the most recent tag of the DAP.  If you're
-    looking for DR15 (DAP version 2.2.1) documentation, see the `DR15
-    MaNGA Overview <https://www.sdss.org/dr15/manga/>`_.
+    This documentation is for the most recent stable release of the DAP.  Use
+    the readthedocs selection menu at the lower-left of your web browser to
+    select previous version relevant to specific SDSS data releases:
+
+        * `SDSS-IV/MaNGA DR15 <https://www.sdss.org/dr15/manga/>`__ is based on
+          version 2.2.1
+
+        * `SDSS-IV/MaNGA DR17 <https://www.sdss.org/dr17/manga/>`__ is based on
+          version 3.1.2.  Note that the version of the code that produced the
+          DR17 was version 3.1.0; version 3.1.1 and 3.1.2 only include
+          documentation updates.
 
 .. _citation:
 
@@ -58,6 +61,11 @@ If you use the DAP software and/or its output products, please cite the followin
  - *Overview*: `Westfall et al. (2019, AJ, 158, 231)`_
  - *Emission-line Modeling*: `Belfiore et al. (2019, AJ, 158, 160)`_
 
+Additionally, if you use SDSS-IV/MaNGA data, please see:
+
+ * `How to Cite SDSS <https://www.sdss.org/collaboration/citing-sdss/>`__
+ * `SDSS Technical Publications <https://www.sdss.org/science/technical_publications/>`__
+
 ----
 
 .. toctree::
@@ -67,6 +75,10 @@ If you use the DAP software and/or its output products, please cite the followin
    whatsnew
    knownissues
 
+**New in version 4.x**: We have made the MaNGA DAP *much* easier to use with
+non-MaNGA datacubes.  These changes are reflected throughout our documentation,
+but specifically see :ref:`fitdatacube`.
+
 ----
 
 .. toctree::
@@ -75,6 +87,7 @@ If you use the DAP software and/or its output products, please cite the followin
 
    installation
    execution
+   plan
    development
 
 ----
@@ -121,13 +134,12 @@ generally, beyond its application to MaNGA.
    :caption: Utilities
    :maxdepth: 1
 
-   parameters
-   bitmasks
-   datacube
    covariance
    resampling
    resolution
    smoothing
+   bitmasks
+   parameters
 
 ----
 

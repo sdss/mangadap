@@ -1,8 +1,9 @@
+from IPython import embed
+
 import numpy
 
 from mangadap.util.resolution import match_spectral_resolution
 from mangadap.util.constants import DAPConstants
-
 
 def test_match_spec_res():
 
@@ -38,6 +39,24 @@ def test_match_spec_res():
     # Match the resolution
     new_flux, matched_sres, sigma_offset, new_mask, _ = \
         match_spectral_resolution(wave, flux, sres, wave, new_sres, min_sig_pix=0.0)
+
+#    from matplotlib import pyplot
+#    pyplot.plot(wave, flux, label='input')
+#    pyplot.plot(wave, new_flux, label='matched resolution')
+#    pyplot.plot(wave, expected_flux, label='theoretical result')
+#    pyplot.xlabel('Wavelength')
+#    pyplot.ylabel('Flux')
+#    pyplot.legend()
+#    pyplot.show()
+#
+#    pyplot.plot(wave, flux, label='input')
+#    pyplot.plot(wave, new_flux, label='matched resolution')
+#    pyplot.plot(wave, expected_flux, label='theoretical result')
+#    pyplot.xlim([6875., 6915.])
+#    pyplot.xlabel('Wavelength')
+#    pyplot.ylabel('Flux')
+#    pyplot.legend()
+#    pyplot.show()
 
     assert numpy.mean(new_flux[50:-50]-expected_flux[50:-50]) < 1e-9, 'Failed resolution match!'
 

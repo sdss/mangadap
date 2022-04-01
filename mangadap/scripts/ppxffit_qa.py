@@ -10,10 +10,11 @@ from matplotlib import pyplot, colors, rc, colorbar, ticker, cm
 from astropy.io import fits
 
 from mangadap.datacube import DataCube
-from mangadap.config.analysisplan import AnalysisPlanSet
-from mangadap.proc.templatelibrary import TemplateLibrary
-from mangadap.proc.reductionassessments import ReductionAssessment
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+from mangadap.config.analysisplan import AnalysisPlan
+from mangadap.proc.templatelibrary import TemplateLibraryDef
+from mangadap.proc.reductionassessments import ReductionAssessment, ReductionAssessmentDef
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectraDef
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelDef
 from mangadap.proc.util import growth_lim
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
@@ -130,7 +131,7 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
 # TODO:
 #   - Add a buffer keyword that increases the size of the image panels
 #   - Use astropy image plotting (with wcs) tools instead?
-def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an, dan,
+def stellar_continuum_maps(name, snr, r68, r99, rchi2, signal, a, da, an, dan,
                            gmr, t, dt, tn, dtn, svel, ssigo, ssigcor, ssigc, extent=None,
                            fwhm=2.5, ofile=None):
 
@@ -487,7 +488,7 @@ def gmr_data(cube, min_frac=0.8):
     """
     # First see if there are GIMG and RIMG extensions in the input datacube
     # (requires a MaNGA DRP-like datamodel)
-    with fits.open(str(cube.file_path())) as hdu:
+    with fits.open(str(cube.file_path)) as hdu:
         ext_list = [h.name for h in hdu]
         if 'GIMG' in ext_list and 'RIMG' in ext_list:
             return -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
@@ -543,11 +544,12 @@ def gmr_data(cube, min_frac=0.8):
                                                numpy.ma.MaskedArray(r, mask=r_mask)))
 
 
-def rdxqa_data(cube, rdxqa_key, output_path):
+def rdxqa_data(cube, rdxqa_method, output_path):
     # Get the surface brightness and S/N maps from the
     # ReductionAssessments object
 
-    directory, file = ReductionAssessment.default_paths(cube, rdxqa_key, output_path=output_path)
+    directory, file = ReductionAssessment.default_paths(cube, rdxqa_method['key'],
+                                                        output_path=output_path)
     rdxqa_file = directory / file
     if not rdxqa_file.exists():
         raise FileNotFoundError(f'{rdxqa_file} does not exist!')
@@ -562,11 +564,13 @@ def rdxqa_data(cube, rdxqa_key, output_path):
     return signal_map, snr_map
 
     
-def continuum_component_data(cube, plan, output_path, signal_map=None, tpl_flux_renorm=None):
+def continuum_component_data(cube, rdxqa_method, binning_method, continuum_method, output_path,
+                             signal_map=None, tpl_flux_renorm=None):
 
     # Get the coefficient data from the StellarContinuumModel object
-    directory, file = StellarContinuumModel.default_paths(cube, plan['continuum_key'],
-                                                          plan['drpqa_key'], plan['bin_key'],
+    directory, file = StellarContinuumModel.default_paths(cube, continuum_method['key'],
+                                                          rdxqa_method['key'],
+                                                          binning_method['key'],
                                                           output_path=output_path)
     sc_file = directory / file
     if not sc_file.exists():
@@ -679,11 +683,15 @@ def ppxffit_qa_plot(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None, tpl_flux
     gmr_map = gmr_data(cube)
 
     # Get the reduction assessment data
-    signal_map, snr_map = rdxqa_data(cube, plan['drpqa_key'], ref_dir)
+    rdxqa_method = ReductionAssessmentDef.from_dict(plan['rdxqa'])
+    signal_map, snr_map = rdxqa_data(cube, rdxqa_method, ref_dir)
 
     # Get the template weights and additive-polynomial coefficients
+    binning_method = SpatiallyBinnedSpectraDef.from_dict(plan['binning'])
+    continuum_method = StellarContinuumModelDef.from_dict(plan['continuum'])
     binid_map, t, dt, tn, dtn, a, da, an, dan \
-            = continuum_component_data(cube, plan, ref_dir, signal_map=signal_map,
+            = continuum_component_data(cube, rdxqa_method, binning_method, continuum_method,
+                                       ref_dir, signal_map=signal_map,
                                        tpl_flux_renorm=tpl_flux_renorm)
 
 #    print('t:', numpy.sum(t > 0), numpy.prod(t.shape))
@@ -728,7 +736,7 @@ def ppxffit_qa_plot(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None, tpl_flux
     r68_map, r99_map, rchi2_map, svel_map, ssigo_map, ssigcor_map, ssigc_map, extent \
             = maps_data(maps_file)
 
-    stellar_continuum_maps(cube.name, plan['key'], snr_map, r68_map, r99_map, rchi2_map, signal_map,
+    stellar_continuum_maps(cube.name, snr_map, r68_map, r99_map, rchi2_map, signal_map,
                            a_map, da_map, an_map, dan_map, gmr_map, t_map, dt_map, tn_map, dtn_map,
                            svel_map, ssigo_map, ssigcor_map, ssigc_map, fwhm=fwhm, extent=extent,
                            ofile=ofile)
@@ -806,10 +814,10 @@ class PpxfFitQA(scriptbase.ScriptBase):
                                        else args.plan_module[0])
         else:
             UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
-        #   - Check that the class is derived from AnalysisPlanSet
-        if not issubclass(UserPlan, AnalysisPlanSet):
+        #   - Check that the class is derived from AnalysisPlan
+        if not issubclass(UserPlan, AnalysisPlan):
             raise TypeError('Defined plan object must subclass from '
-                            'mangadap.config.analysisplan.AnalysisPlanSet')
+                            'mangadap.config.analysisplan.AnalysisPlan')
 
         #   - Instantiate using either the datacube file directly or a
         #     configuration file
@@ -818,19 +826,22 @@ class PpxfFitQA(scriptbase.ScriptBase):
 
         # Read the analysis plan
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
-                    else UserPlan.from_par_file(args.plan, cube=cube,
-                                                analysis_path=args.output_path)
+                    else UserPlan.from_toml(args.plan, cube=cube, analysis_path=args.output_path)
 
         # Construct the plot for each analysis plan
-        for i in range(plan.nplans):
+        for i, key in enumerate(plan.keys()):
 
             # Get the template library keyword
             if args.template_flux_file is None:
-                sc_method = StellarContinuumModel.define_method(plan[i]['continuum_key'])
-                tpl_key = sc_method['fitpar']['template_library_key']
-                library = TemplateLibrary.define_library(tpl_key)
-                library_root = library.get_file_list()[0].parent
+                sc_method = StellarContinuumModelDef.from_dict(plan[key]['continuum'])
+                tpl_key = sc_method['fitpar']['template_library']['key']
+                library_root = sc_method["fitpar"]["template_library"].get_file_list()[0].parent
                 tpl_renorm_file = library_root / f'{tpl_key.lower()}_fluxes.db'
+                #sc_method = StellarContinuumModel.define_method(plan[i]['continuum_key'])
+                #tpl_key = sc_method['fitpar']['template_library_key']
+                #library = TemplateLibrary.define_library(tpl_key)
+                #library_root = library.get_file_list()[0].parent
+                #tpl_renorm_file = library_root / f'{tpl_key.lower()}_fluxes.db'
             else:
                 tpl_renorm_file = Path(args.template_flux_file).resolve()
 
@@ -843,7 +854,7 @@ class PpxfFitQA(scriptbase.ScriptBase):
                                 else numpy.genfromtxt(tpl_renorm_file, dtype=float)[:,2]
 
             # Construct the plot
-            ppxffit_qa_plot(cube, plan[i], plan.method_path(plan_index=i),
+            ppxffit_qa_plot(cube, plan[key], plan.method_path(plan_index=i),
                             plan.method_path(plan_index=i, ref=True),
                             plan.method_path(plan_index=i, qa=True), fwhm=args.beam,
                             tpl_flux_renorm=tpl_flux_renorm)

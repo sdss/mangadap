@@ -15,163 +15,111 @@ Classes to handle MaNGA DAP analysis plans.
 """
 
 from pathlib import Path
-import warnings
+from copy import deepcopy
 
-from pydl.pydlutils.yanny import yanny
+from IPython import embed
 
-from ..par.parset import KeywordParSet, ParDatabase
+import tomli
+
+from ..par.util import recursive_dict_str_to_None
 from . import defaults
-from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from ..proc.stellarcontinuummodel import StellarContinuumModel
-from ..proc.emissionlinemodel import EmissionLineModel
 
-class AnalysisPlan(KeywordParSet):
-    """
-    Generic class to handle MaNGA DAP analysis plans.
+from mangadap.proc.reductionassessments import ReductionAssessmentDef
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectraDef
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModelDef
+from mangadap.proc.emissionlinemoments import EmissionLineMomentsDef
+from mangadap.proc.emissionlinemodel import EmissionLineModelDef
+from mangadap.proc.spectralindices import SpectralIndicesDef
 
-    The defined parameters are:
 
-    .. include:: ../tables/analysisplan.rst
-
-    """
-    def __init__(self, drpqa_key=None, drpqa_clobber=None, bin_key=None, bin_clobber=None,
-                 continuum_key=None, continuum_clobber=None, elmom_key=None, elmom_clobber=None,
-                 elfit_key=None, elfit_clobber=None, spindex_key=None, spindex_clobber=None):
-
-        # TODO: Include covariance keys that is applied to each/some analyses
-        _drpqa_key = None if drpqa_key == 'None' or drpqa_key is None else drpqa_key
-        _bin_key = None if bin_key == 'None' or bin_key is None else bin_key
-        _continuum_key = None if continuum_key == 'None' or continuum_key is None else continuum_key
-        _elmom_key = None if elmom_key == 'None' or elmom_key is None else elmom_key
-        _elfit_key = None if elfit_key == 'None' or elfit_key is None else elfit_key
-        _spindex_key = None if spindex_key == 'None' or spindex_key is None else spindex_key
-
-        key = AnalysisPlan.unique_plan_key(_bin_key, _continuum_key, _elfit_key)
-
-        pars =   ['key', 'drpqa_key', 'drpqa_clobber', 'bin_key', 'bin_clobber', 'continuum_key',
-                  'continuum_clobber', 'elmom_key', 'elmom_clobber', 'elfit_key', 'elfit_clobber',
-                  'spindex_key', 'spindex_clobber']
-        values = [key, _drpqa_key, drpqa_clobber, _bin_key, bin_clobber, _continuum_key,
-                  continuum_clobber, _elmom_key, elmom_clobber, _elfit_key, elfit_clobber,
-                  _spindex_key, spindex_clobber]
-        dtypes = [str, str, bool, str, bool, str, bool, str, bool, str, bool, str, bool]
-        defaults = [None, None, False, None, False, None, False, None, False, None, False, None,
-                    False]
-        descr = ['Unique key used to identify this plan',
-                 'Data reduction quality assessment method keyword',
-                 'Overwrite any existing data-quality assessment reference files',
-                 'Spatial binning method keyword',
-                 'Overwrite any existing spatial binning reference files',
-                 'Stellar-continuum fitting method keyword',
-                 'Overwrite any existing stellar-continuum fitting reference files',
-                 'Emission-line moments measurement method keyword',
-                 'Overwrite any existing emission-line moments reference files',
-                 'Emission-line modeling method keyword',
-                 'Overwrite any existing emission-line modeling reference files',
-                 'Spectral-index measurement method keyword',
-                 'Overwrite any existing spectral-index reference files']
-
-        super(AnalysisPlan, self).__init__(pars, values=values, defaults=defaults, dtypes=dtypes,
-                                           descr=descr)
-        self._check()
-
-    def _check(self):
-        """
-        Check that the plan makes sense:
-
-            - To bin, must first assess the DRP data
-            - To do anythin else, must bin.
-            - Emission-line moments and profile fits *should* subtract
-              the best-fitting stellar continuum to account for the
-              stellar-absorption below the lines, but it's not
-              explicitly necessary for the code to run.
-            - The spectral indices *should* subtract the best-fitting
-              emission-line model and use the best-fitting stellar
-              continuum to determine the velocity dispersion
-              corrections, but neither is explicitly necessary for the
-              code to run.
-
-        """
-        if self.data['bin_key'] is not None and self.data['drpqa_key'] is None:
-            raise ValueError('To bin, must provide key for reduction assessments.')
-        if self.data['continuum_key'] is not None and self.data['bin_key'] is None:
-            raise ValueError('To fit the stellar continuum, must provide a binning key.')
-        if self.data['elmom_key'] is not None and self.data['bin_key'] is None:
-            raise ValueError('To measure the emission-line moments, must provide a binning key.')
-        if self.data['elfit_key'] is not None and self.data['bin_key'] is None:
-            raise ValueError('To measure the emission-line moments, must provide a binning key.')
-        if self.data['spindex_key'] is not None and self.data['bin_key'] is None:
-            raise ValueError('To measure the spectral indices, must provide a binning key.')
-
-    @staticmethod
-    def unique_plan_key(bin_key, continuum_key, elfit_key):
-        if None in [bin_key, continuum_key, elfit_key]:
-            warnings.warn('Unable to define unique plan key.')
-            return None
-        bin_method = SpatiallyBinnedSpectra.define_method(bin_key)
-        sc_method = StellarContinuumModel.define_method(continuum_key)
-        el_method = EmissionLineModel.define_method(elfit_key)
-        eltpl = sc_method['fitpar']['template_library_key'] \
-                    if el_method['continuum_tpl_key'] is None else el_method['continuum_tpl_key']
-        return f'{bin_method["key"]}-{sc_method["fitpar"]["template_library_key"]}-{eltpl}'
-
-        
-class AnalysisPlanSet(ParDatabase):
+class AnalysisPlan:
     """
     Container class for a set of analysis plans.
     """
-    def __init__(self, planlist, cube=None, analysis_path=None):
-        _planlist = planlist if isinstance(planlist, list) else [planlist]
-        self.nplans = len(planlist)
-        for i in range(self.nplans):
-            if not isinstance(_planlist[i], AnalysisPlan):
-                raise TypeError('Input must be a single or list of AnalysisPlan objects.')
-        super().__init__(_planlist)
+    def __init__(self, plan, cube=None, analysis_path=None):
+        if not isinstance(plan, dict):
+            raise TypeError('Plan must be provided as a dictionary.')
+        # Copy the provided plan dictionary so that it can be changed/filled
+        # throughout the execution of the code.
+        self.plan = deepcopy(plan)
+        self.plan_keys = list(self.plan.keys())
+        self.nplans = len(self.plan_keys)
+        # Make sure that the plans have a key name.  If not, just use the
+        # dictionary key of the dictionary for each plan.
+        for key in self.plan_keys:
+            if 'key' not in self.plan[key]:
+                self.plan['key'] = key
         self.analysis_path = Path('.' if analysis_path is None else analysis_path).resolve()
         self.cube = cube
+        self._validate()
+        self.parse()
+
+    def _validate(self):
+        """
+        Validate the provided plans.
+        """
+        # For now, just make sure that all the plans have the base top-level keys
+        required_keys = ['rdxqa', 'binning', 'continuum', 'eline_moments', 'eline_fits', 'indices']
+        for key in self.plan_keys:
+            for method_key in required_keys:
+                if method_key not in self[key].keys():
+                    self.plan[key][method_key] = {}
+
+        # Recursively convert None strings into None types
+        self.plan = recursive_dict_str_to_None(self.plan)
+
+        # TODO: Cross validate parameter sets between plans!!
+
+    def __getitem__(self, key):
+        """
+        Return the value of the designated key.
+        """
+        return self.plan[key]
+
+    def keys(self):
+        return self.plan.keys()
 
     @classmethod
-    def from_par_file(cls, f, **kwargs):
+    def from_toml(cls, ifile, **kwargs):
         """
-        Instantiate the plan set from a par file
+        Instantiate the plan from a TOML file.
         """
+        _ifile = Path(ifile).resolve()
+        if not _ifile.exists():
+            raise FileNotFoundError(f'{_ifile} does not exist!')
 
-        # TODO: The approach here (read using yanny, set to par
-        # individually, then covert back to record array using
-        # ParDatabase) is stupid...
-        _f = Path(f).resolve()
-        if not _f.exists():
-            raise FileNotFoundError('No file {0}.'.format(f))
-    
-        par = yanny(filename=str(_f), raw=True)
-        if len(par['DAPPLAN']['drpqa_key']) == 0:
-            raise ValueError('Could not find DAPPLAN entries in {0}!'.format(f))
+        with open(_ifile, 'rb') as f:
+            plan = tomli.load(f)
 
-        # Setup the array of emission line database parameters
-        nplan = len(par['DAPPLAN']['drpqa_key'])
-        planlist = [AnalysisPlan(par['DAPPLAN']['drpqa_key'][i],
-                                 bool(par['DAPPLAN']['drpqa_clobber'][i]),
-                                 par['DAPPLAN']['bin_key'][i],
-                                 bool(par['DAPPLAN']['bin_clobber'][i]),
-                                 par['DAPPLAN']['continuum_key'][i],
-                                 bool(par['DAPPLAN']['continuum_clobber'][i]),
-                                 par['DAPPLAN']['elmom_key'][i],
-                                 bool(par['DAPPLAN']['elmom_clobber'][i]),
-                                 par['DAPPLAN']['elfit_key'][i],
-                                 bool(par['DAPPLAN']['elfit_clobber'][i]),
-                                 par['DAPPLAN']['spindex_key'][i],
-                                 bool(par['DAPPLAN']['spindex_clobber'][i]))
-                        for i in range(nplan)]
-        return cls(planlist, **kwargs)
+        return cls(plan, **kwargs)
 
     @classmethod
     def default(cls, **kwargs):
         """
         Return the default analysis plan set.
         """
-        return cls([AnalysisPlan(drpqa_key='SNRG', bin_key='HYB10', continuum_key='MILESHCMPL11',
-                                 elmom_key='EMOMMPL11', elfit_key='EFITMPL11HCDB',
-                                 spindex_key='INDXEN')], **kwargs)
+        f = defaults.dap_config_root() / 'default_plan.toml'
+        return cls.from_toml(f, **kwargs)
+
+    def parse(self):
+        self.rdxqa = {key: None if self[key]['rdxqa'] is None else
+                        ReductionAssessmentDef.from_dict(self[key]['rdxqa'])
+                        for key in self.plan.keys()}
+        self.binning = {key: None if self[key]['binning'] is None else
+                            SpatiallyBinnedSpectraDef.from_dict(self[key]['binning'])
+                            for key in self.plan.keys()}
+        self.continuum = {key: None if self[key]['continuum'] is None else
+                            StellarContinuumModelDef.from_dict(self[key]['continuum'])
+                            for key in self.plan.keys()}
+        self.elmom = {key: None if self[key]['eline_moments'] is None else
+                        EmissionLineMomentsDef.from_dict(self[key]['eline_moments']) 
+                        for key in self.plan.keys()}
+        self.elfit = {key: None if self[key]['eline_fits'] is None else
+                        EmissionLineModelDef.from_dict(self[key]['eline_fits'])
+                        for key in self.plan.keys()}
+        self.sindx = {key: None if self[key]['indices'] is None else
+                        SpectralIndicesDef.from_dict(self[key]['indices'])
+                        for key in self.plan.keys()}
 
     def common_path(self):
         """
@@ -216,7 +164,7 @@ class AnalysisPlanSet(ParDatabase):
             raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
         if qa and ref:
             raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
-        root = self.analysis_path / self['key'][plan_index]
+        root = self.analysis_path / self.plan[self.plan_keys[plan_index]]['key']
         if not qa and not ref:
             return root
         if qa:
@@ -256,7 +204,10 @@ class AnalysisPlanSet(ParDatabase):
         if plan_index is not None:
             if plan_index < 0 or plan_index >= self.nplans:
                 raise ValueError(f'Invalid index ({plan_index}): 0 <= index < {self.nplans}.')
-            root = f'{root}-{self["key"][plan_index]}'
+            plan_name = list(self.keys())[plan_index]
+            root = f'{root}-{self[plan_name]["key"]}'
         return root
+
+
 
 

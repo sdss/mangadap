@@ -1152,6 +1152,19 @@ class Covariance:
         if not is_correlation:
             self.revert_correlation()
 
+        # Check if any of the covariance matrices had all 0 values.  If so, add
+        # values just to maintain the shape of the result when reconstructed
+        # from this output.
+        missing_k = numpy.setdiff1d(numpy.arange(self.shape[-1]) 
+                                        if self.input_indx is None else self.input_indx,
+                                    numpy.unique(k))
+        if len(missing_k) > 0:
+            for _k in missing_k:
+                i = numpy.append(i, [0])
+                j = numpy.append(j, [0])
+                k = numpy.append(k, _k)
+                rhoij = numpy.append(rhoij, [0.])
+
         # Return the data
         if not reshape:
             # Returns five arrays

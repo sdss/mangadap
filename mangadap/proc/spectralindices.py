@@ -55,6 +55,7 @@ spectra:
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+import inspect
 from pathlib import Path
 import logging
 import warnings
@@ -68,7 +69,6 @@ from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
-from ..config import defaults
 from ..util.datatable import DataTable
 from ..util.resolution import match_spectral_resolution
 from ..util.fitsutil import DAPFitsUtil
@@ -77,7 +77,6 @@ from ..util.log import log_output
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
-from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
@@ -94,112 +93,96 @@ class SpectralIndicesDef(KeywordParSet):
 
     .. include:: ../tables/spectralindicesdef.rst
     """
-    def __init__(self, key=None, minimum_snr=None, fwhm=None, compute_corrections=None,
-                 artifacts=None, absindex=None, bandhead=None):
-        in_fl = [ int, float ]
+    def __init__(self, key='INDXEN', minimum_snr=0.0, pixelmask=None, fwhm=-1,
+                 compute_corrections=True, absindex='EXTINDX', bandhead='BHBASIC',
+                 overwrite=False):
 
-        pars =     [ 'key', 'minimum_snr', 'fwhm', 'compute_corrections', 'artifacts', 'absindex',
-                        'bandhead' ]
-        values =   [   key,   minimum_snr,   fwhm,   compute_corrections,   artifacts,   absindex,
-                          bandhead ]
-        dtypes =   [   str,         in_fl,  in_fl,                  bool,         str,        str,
-                               str ]
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
+        in_fl = [int, float]
+
+        values = [key, minimum_snr, pixelmask, fwhm, compute_corrections, absindex, bandhead,
+                  overwrite]
+        dtypes = [str, in_fl, SpectralPixelMask, in_fl, bool, str, str, bool]
         descr = ['Keyword used to distinguish between different spectral-index databases.',
                  'Minimum S/N of spectrum to fit',
-                 'Resolution FWHM in angstroms at which to make the measurements.',
-                 'Flag to compute dispersion corrections to indices.  Dispersion corrections ' \
-                    'are always calculated!',
-                 'String identifying the artifact database to use',
-                 'String identifying the absorption-index database to use',
-                 'String identifying the bandhead-index database to use']
+                 'Object used to mask spectral pixels',
+                 'Resolution FWHM in angstroms at which to make the measurements.  If -1, the ' \
+                    'measurements are taken at the native resolution of the observed spectra.  ' \
+                    'If >0, the resolution should be *larger* than the observed resolution, and ' \
+                    'the observed data are convolved with a wavelength dependent Gaussian to ' \
+                    'match it to the provided FWHM.',
+                 'Flag to compute velocity dispersion corrections to the measured indices, if ' \
+                    'possible.  This requires the stellar kinematics results from the stellar ' \
+                    'continuum fitting.',
+                 'Either a string identifying the absorption-line database to ' \
+                    'use, or the direct path to the parameter file defining the database',
+                 'Either a string identifying the bandhead/color database to ' \
+                    'use, or the direct path to the parameter file defining the database',
+                 'If the output file already exists, redo all the calculations and overwrite it.']
 
-        super(SpectralIndicesDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, dtypes=dtypes, descr=descr)
+        self.absdb = None
+        self.bhddb = None
+        self._validate()
 
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate from a dictionary.
+        """
+        # Copy over the primary keywords.
+        # TODO: Get these from inspection of the instatiation signature!
+        _d = {}
+        for key in ['key', 'minimum_snr', 'fwhm', 'compute_corrections', 'absindex', 'bandhead', 
+                    'overwrite']:
+            if key in d.keys():
+                _d[key] = d[key]
 
-def validate_spectral_indices_config(cnfg):
-    """ 
-    Validate :class:`~mangadap.util.parser.DefaultConfig` object with
-    spectral-index measurement parameters.
+        artifacts = None if 'artifact_mask' not in d.keys() or d['artifact_mask'] is None \
+                        else ArtifactDB.from_key(d['artifact_mask'])
+        waverange = None if 'waverange' not in d.keys() or d['waverange'] is None \
+                        else d['waverange']
 
-    Args:
-        cnfg (:class:`~mangadap.util.parser.DefaultConfig`):
-            Object with parameters to validate.
+        if not all([a is None for a in [artifacts, waverange]]):
+            _d['pixelmask'] = SpectralPixelMask(artdb=artifacts, waverange=waverange)
 
-    Raises:
-        KeyError: Raised if any required keywords do not exist.
-        ValueError: Raised if keys have unacceptable values.
-        FileNotFoundError: Raised if a file is specified but could not
-            be found.
-    """
-    # Check for required keywords
-    if not cnfg.keyword_specified('key'):
-        raise KeyError('Keyword \'key\' must be provided.')
+        # Return the instantiation
+        return super().from_dict(_d)
 
-    if not cnfg.keyword_specified('absorption_indices') \
-                and not cnfg.keyword_specified('bandhead_indices'):
-        raise ValueError('Must provide either an absorption-index database or a bandhead-index ' \
-                         'database, or both.')
+    def _validate(self):
+        """
+        Validate the object and instantiate the passband database to use for the
+        emission-line moments.
+        """
+        if self['absindex'] is None and self['bandhead'] is None:
+            raise ValueError('Must define either absindex or bandhead or both.')
 
+        if self['absindex'] is not None:
+            # Define the absorption-line database
+            parfile = Path(self['absindex']).resolve()
+            if parfile.exists():
+                # Use the existing file to set the database
+                self.absdb = AbsorptionIndexDB(str(parfile))
+            else:
+                # Otherwise, assume this is a keyword selecting a database distributed
+                # with the DAP has been chosen.
+                self.absdb = AbsorptionIndexDB.from_key(self['absindex'])
 
-def available_spectral_index_databases():
-    """
-    Return the list of available spectral index databases
-
-    Available database combinations:
-
-    .. todo::
-        Fill in
-
-    Returns:
-        list: A list of :func:`SpectralIndicesDef` objects, each
-        defining a spectral-index database to measure.
-
-    Raises:
-        IOError:
-            Raised if no spectral-index configuration files could be
-            found.
-        KeyError:
-            Raised if the spectral-index database keywords are not
-            all unique.
-
-    .. todo::
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-        
-    """
-    # Check the configuration files exist
-    search_dir = defaults.dap_config_root() / 'spectral_indices'
-    ini_files = sorted(list(search_dir.glob('*.ini')))
-    if len(ini_files) == 0:
-        raise IOError(f'Could not find any configuration files in {search_dir} !')
-
-    # Build the list of library definitions
-    index_set_list = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = DefaultConfig(f=f)
-        # Ensure it has the necessary elements to define the template
-        # library
-        validate_spectral_indices_config(cnfg)
-
-        index_set_list += [ SpectralIndicesDef(key=cnfg['key'],
-                                               minimum_snr=cnfg.getfloat('minimum_snr', default=0.), 
-                                               fwhm=cnfg.getfloat('resolution_fwhm', default=-1),
-                                    compute_corrections=cnfg.getbool('compute_sigma_correction',
-                                                                     default=False),
-                                               artifacts=cnfg['artifact_mask'],
-                                               absindex=cnfg['absorption_indices'],
-                                               bandhead=cnfg['bandhead_indices']) ]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique(numpy.array([index['key'] for index in index_set_list]))) \
-                != len(index_set_list):
-        raise KeyError('Spectral-index set keywords are not all unique!')
-
-    # Return the default list of assessment methods
-    return index_set_list
+        if self['bandhead'] is not None:
+            # Define the absorption-line database
+            parfile = Path(self['bandhead']).resolve()
+            if parfile.exists():
+                # Use the existing file to set the database
+                self.bhddb = BandheadIndexDB(str(parfile))
+            else:
+                # Otherwise, assume this is a keyword selecting a database distributed
+                # with the DAP has been chosen.
+                self.bhddb = BandheadIndexDB.from_key(self['bandhead'])
 
 
 class SpectralIndicesBitMask(DAPBitMask):
@@ -841,9 +824,8 @@ class SpectralIndices:
         **Detail what should be provided in terms of the redshift.**
 
     Args:
-        database_key (str): Keyword used to select the specfic list of
-            indices to measure and how they should be measured;  see
-            :class:`SpectralIndicesDef`.
+        database (:class:`~mangadap.spectralindices.SpectralIndicesDef`):
+            Object defining the parameters and databases for the measurements.
         binned_spectra
             (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
             The binned spectra for the measurements.
@@ -911,27 +893,31 @@ class SpectralIndices:
             output.  Default is False.
 
     """
-    def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
+    def __init__(self, database, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_path=None,
                  absorption_index_path=None, bandhead_index_path=None, output_path=None,
-                 output_file=None, hardcopy=True, tpl_hardcopy=False, overwrite=False,
+                 output_file=None, hardcopy=True, tpl_hardcopy=False, overwrite=None,
                  checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the database properties
-        self.database = None
-        self.artdb = None
-        self.pixelmask = None
-        self.absdb = None
-        self.bhddb = None
-        self._define_databases(database_key, database_list=database_list,
-                               artifact_path=artifact_path,
-                               absorption_index_path=absorption_index_path,
-                               bandhead_index_path=bandhead_index_path)
+#        self.database = None
+#        self.artdb = None
+#        self.pixelmask = None
+#        self.absdb = None
+#        self.bhddb = None
+        self.database = database
+        if not isinstance(self.database, SpectralIndicesDef):
+            raise TypeError('Method must have type SpectralIndicesDef.')
 
-        self.nabs, self.nbhd = self.count_indices(self.absdb, self.bhddb)
+#        self._define_databases(database_key, database_list=database_list,
+#                               artifact_path=artifact_path,
+#                               absorption_index_path=absorption_index_path,
+#                               bandhead_index_path=bandhead_index_path)
+
+        self.nabs, self.nbhd = self.count_indices(self.database.absdb, self.database.bhddb)
         self.nindx = self.nabs + self.nbhd
         self.compute_corrections = False
         self.correct_indices = False            # !! HARDCODED !!
@@ -970,32 +956,32 @@ class SpectralIndices:
     def __getitem__(self, key):
         return self.hdu[key]
 
-    def _define_databases(self, database_key, database_list=None, artifact_path=None,
-                          absorption_index_path=None, bandhead_index_path=None):
-        r"""
-
-        Select the database of indices
-
-        """
-        # Grab the specific database
-        self.database = util.select_proc_method(database_key, SpectralIndicesDef,
-                                                method_list=database_list,
-                                                available_func=available_spectral_index_databases)
-
-        # Instantiate the artifact, absorption-index, and bandhead-index
-        # databases
-        self.artdb = None if self.database['artifacts'] is None else \
-                ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
-        # TODO: Generalize the name of this object
-        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
-
-        self.absdb = None if self.database['absindex'] is None else \
-                AbsorptionIndexDB.from_key(self.database['absindex'],
-                                           directory_path=absorption_index_path)
-
-        self.bhddb = None if self.database['bandhead'] is None else \
-                BandheadIndexDB.from_key(self.database['bandhead'],
-                                         directory_path=bandhead_index_path)
+#    def _define_databases(self, database_key, database_list=None, artifact_path=None,
+#                          absorption_index_path=None, bandhead_index_path=None):
+#        r"""
+#
+#        Select the database of indices
+#
+#        """
+#        # Grab the specific database
+#        self.database = util.select_proc_method(database_key, SpectralIndicesDef,
+#                                                method_list=database_list,
+#                                                available_func=available_spectral_index_databases)
+#
+#        # Instantiate the artifact, absorption-index, and bandhead-index
+#        # databases
+#        self.artdb = None if self.database['artifacts'] is None else \
+#                ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
+#        # TODO: Generalize the name of this object
+#        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
+#
+#        self.absdb = None if self.database['absindex'] is None else \
+#                AbsorptionIndexDB.from_key(self.database['absindex'],
+#                                           directory_path=absorption_index_path)
+#
+#        self.bhddb = None if self.database['bandhead'] is None else \
+#                BandheadIndexDB.from_key(self.database['bandhead'],
+#                                         directory_path=bandhead_index_path)
 
     @staticmethod
     def default_paths(cube, method_key, rdxqa_method, binning_method, stelcont_method=None,
@@ -1074,7 +1060,7 @@ class SpectralIndices:
         hdr['SIKEY'] = (self.database['key'], 'Spectral-index database keyword')
         hdr['SIMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['SIFWHM'] = (self.database['fwhm'], 'FWHM of index system resolution (ang)')
-        hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
+#        hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
         hdr['ABSDB'] = (self.database['absindex'], 'Absorption-index database keyword')
         hdr['BHDDB'] = (self.database['bandhead'], 'Bandhead-index database keyword')
         if self.stellar_continuum is not None:
@@ -1109,12 +1095,12 @@ class SpectralIndices:
         Compile the database with the specifications of each index.
         """
         name_len = 0
-        if self.absdb is not None:
-            for n in self.absdb['name']:
+        if self.database.absdb is not None:
+            for n in self.database.absdb['name']:
                 if name_len < len(n):
                     name_len = len(n)
-        if self.bhddb is not None:
-            for n in self.bhddb['name']:
+        if self.database.bhddb is not None:
+            for n in self.database.bhddb['name']:
                 if name_len < len(n):
                     name_len = len(n)
 
@@ -1122,19 +1108,19 @@ class SpectralIndices:
         # of indices measured
         passband_database = init_record_array(self.nindx, self._index_database_dtype(name_len))
 
-        t = 0 if self.absdb is None else self.absdb.size
-        if self.absdb is not None:
+        t = 0 if self.database.absdb is None else self.database.absdb.size
+        if self.database.absdb is not None:
             passband_database['TYPE'][:t] = 'absorption'
             hk = [ 'ID', 'NAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT', 'COMPONENT' ]
             ak = [ 'index', 'name', 'primary', 'blueside', 'redside', 'units', 'component' ]
             for _hk, _ak in zip(hk,ak):
-                passband_database[_hk][:t] = self.absdb[_ak]
-        if self.bhddb is not None:
+                passband_database[_hk][:t] = self.database.absdb[_ak]
+        if self.database.bhddb is not None:
             passband_database['TYPE'][t:] = 'bandhead'
             hk = [ 'ID', 'NAME', 'BLUEBAND', 'REDBAND', 'INTEGRAND', 'ORDER' ]
             ak = [ 'index', 'name', 'blueside', 'redside', 'integrand', 'order' ]
             for _hk, _ak in zip(hk,ak):
-                passband_database[_hk][t:] = self.bhddb[_ak]
+                passband_database[_hk][t:] = self.database.bhddb[_ak]
         return passband_database
 
     def _assign_image_arrays(self):
@@ -1305,7 +1291,7 @@ class SpectralIndices:
         # Check that the spectrum selection and emission-line model are
         # consistent
         if measure_on_unbinned_spaxels and emission_line_model is not None \
-                and emission_line_model.method['deconstruct_bins'] == 'ignore':
+                and emission_line_model.method['fitpar']['deconstruct_bins'] == 'ignore':
             raise ValueError('Cannot use this emission-line model with unbinned spaxels.')
 
         # Get the main data arrays
@@ -2138,7 +2124,7 @@ class SpectralIndices:
 
     def measure(self, binned_spectra, redshift=None, stellar_continuum=None,
                 emission_line_model=None, output_path=None, output_file=None, hardcopy=True,
-                tpl_hardcopy=False, overwrite=False, loggers=None, quiet=False):
+                tpl_hardcopy=False, overwrite=None, loggers=None, quiet=False):
         """
         Measure the spectral indices using the binned spectra and the
         internal spectral index database, and construct the internal
@@ -2304,7 +2290,7 @@ class SpectralIndices:
         #  - The EmissionLineModel fits the binned spectra or unbinned
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
+                and self.emission_line_model.method['fitpar']['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.cube.nspec if measure_on_unbinned_spaxels \
@@ -2352,6 +2338,8 @@ class SpectralIndices:
                         output_path=output_path, output_file=output_file)
         self.tpl_hardcopy = tpl_hardcopy
 
+        _overwrite = self.database['overwrite'] if overwrite is None else overwrite
+
         #---------------------------------------------------------------
         # Check that the file path is defined
         ofile = self.file_path()
@@ -2365,7 +2353,7 @@ class SpectralIndices:
         
         #---------------------------------------------------------------
         # If the file already exists, and not overwriting, just read the file
-        if ofile.exists() and not overwrite:
+        if ofile.exists() and not _overwrite:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
@@ -2378,7 +2366,7 @@ class SpectralIndices:
         # Get the spectra to use for the measurements
         wave, flux, ivar = SpectralIndices.spectra_for_index_measurements(self.binned_spectra,
                                     measure_on_unbinned_spaxels=measure_on_unbinned_spaxels,
-                                    pixelmask=self.pixelmask, select=good_snr,
+                                    pixelmask=self.database['pixelmask'], select=good_snr,
                                     resolution_fwhm=self.database['fwhm'],
                                     emission_line_model=self.emission_line_model)
 
@@ -2387,7 +2375,7 @@ class SpectralIndices:
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Measuring spectral indices in observed spectra...')
-        measurements = self.measure_indices(self.absdb, self.bhddb, wave, flux, ivar=ivar,
+        measurements = self.measure_indices(self.database.absdb, self.database.bhddb, wave, flux, ivar=ivar,
                                             redshift=self.redshift[good_snr], bitmask=self.bitmask)
 
         #---------------------------------------------------------------
@@ -2440,7 +2428,7 @@ class SpectralIndices:
                 measurements['INDX_MOD'], measurements['INDX_CORR'], \
                 measurements['INDX_BF_MOD'], measurements['INDX_BF_CORR'], \
                 good_les, good_ang, good_mag, is_abs \
-                        = SpectralIndices.calculate_dispersion_corrections(self.absdb, self.bhddb,
+                        = SpectralIndices.calculate_dispersion_corrections(self.database.absdb, self.database.bhddb,
                                         wave, flux, continuum[good_snr,:],
                                         continuum_dcnvlv[good_snr,:],
                                         redshift=self.redshift[good_snr],
@@ -2653,7 +2641,7 @@ class SpectralIndices:
         if self.hardcopy:
             if not self.directory_path.exists():
                 self.directory_path.mkdir(parents=True)
-            self.write(overwrite=overwrite)
+            self.write(overwrite=_overwrite)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 

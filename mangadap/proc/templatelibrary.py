@@ -140,6 +140,7 @@ instantiation arguments for :class:`TemplateLibrary`.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+import inspect
 from pathlib import Path
 import warnings
 import logging
@@ -163,7 +164,7 @@ from ..util.fitsutil import DAPFitsUtil
 from ..util import sampling
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.parser import DefaultConfig
-from .util import select_proc_method, HDUList_mask_wavelengths
+from .util import HDUList_mask_wavelengths
 
 
 class TemplateLibraryDef(KeywordParSet):
@@ -175,30 +176,88 @@ class TemplateLibraryDef(KeywordParSet):
 
     .. include:: ../tables/templatelibrarydef.rst
     """
-    def __init__(self, key=None, file_search=None, fwhm=None, sres_ext=None, in_vacuum=False,
-                 wave_limit=None, lower_flux_limit=None, log10=False): 
-        # Perform some checks of the input
-        in_fl = [ int, float ]
+    def __init__(self, key='MILESHC', file_search='miles_cluster/*.fits', fwhm=2.50, sres_ext=None,
+                 in_vacuum=False, wave_limit=None, lower_flux_limit=None, log10=False): 
+
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
+        in_fl = [int, float]
+        arr_like = [numpy.ndarray, list]
         
-        pars =   [ 'key', 'file_search', 'fwhm', 'sres_ext', 'in_vacuum',  'wave_limit',
-                        'lower_flux_limit', 'log10' ]
-        values = [   key,   file_search,   fwhm,   sres_ext,   in_vacuum,    wave_limit,
-                          lower_flux_limit,   log10 ]
-        dtypes = [   str,           str,  in_fl,        str,        bool, numpy.ndarray,
-                                     in_fl,    bool ]
+        values = [key, file_search, fwhm, sres_ext, in_vacuum, wave_limit, lower_flux_limit, log10]
+        dtypes = [str, str, in_fl, str, bool, arr_like, in_fl, bool]
         descr = ['Keyword to distinguish the template library.',
-                 'Search string used by glob to find the 1D fits spectra to include in the ' \
-                    'template library.',
+                 'Search pattern used to find the 1D fits spectra to include in the ' \
+                    'template library.  The search string must either include the full path ' \
+                    'or be within the template directory of the DAP source distribution.',
                  'FWHM of the resolution element in angstroms.',
                  'Extension in the fits files with measurements of the spectral resolution as ' \
-                    'a function of wavelength.',
+                    'a function of wavelength.  If present, this supercedes any provided FWHM.',
                  'Flag that the wavelengths of the spectra are in vacuum, not air.',
                  'Two-element array with the starting and ending wavelengths for the valid ' \
                     'spectral range of the templates.',
                  'Minimum valid flux in the template spectra.',
                  'Flag that the template spectra have been binned logarithmically in wavelength.']
 
-        super(TemplateLibraryDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, dtypes=dtypes, descr=descr)
+        self._validate()
+
+    @classmethod
+    def from_key(cls, key):
+        """
+        Instantiate the template parameters using a keyword only.
+        """
+       # Check the configuration files exist
+        search_dir = defaults.dap_config_root() / 'spectral_templates'
+        ini_files = sorted(list(search_dir.glob('*.ini')))
+        if len(ini_files) == 0:
+            raise IOError(f'Could not find any configuration files in {search_dir} !') 
+        for i in range(len(ini_files)):
+            cnfg = DefaultConfig(f=ini_files[i], interpolate=True)
+            if key != cnfg['key']:
+                continue
+            wave_limit = None if cnfg['wave_limit'] is None \
+                            else numpy.array(cnfg.getlist('wave_limit', evaluate=True))
+            return cls(key=cnfg['key'], file_search=cnfg['file_search'],
+                       fwhm=cnfg.getfloat('fwhm'), sres_ext=cnfg['sres_ext'],
+                       in_vacuum=cnfg.getbool('in_vacuum'), wave_limit=wave_limit,
+                       lower_flux_limit=cnfg.getfloat('lower_flux_limit'),
+                       log10=cnfg.getbool('log10', default=False))
+
+        # If the code makes it here, the keyword did not select a known template library
+        raise ValueError(f'Unknown template library: {key}')
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate from a dictionary.
+
+        If the dictionary only contains the keyword for the template library,
+        the function assumes the user is trying to define the library based on
+        that keyword.  Otherwise, the function calls the base-class
+        ``from_dict`` method.
+        """
+        # First make sure that the dictionary defines the library keyword
+        if 'key' not in d.keys():
+            raise ValueError('Template library instantiation must include a keyword identifier.')
+        if list(d.keys()) == ['key']:
+            return cls.from_key(d['key'])
+        return super().from_dict(d)
+
+    def _validate(self):
+        """ 
+        Validate the template library parameters.
+        """
+        if self['key'] is None:
+            raise ValueError('Must define the template library keyword identifier.')
+        if self['file_search'] is None:
+            raise ValueError('Must define the search pattern for template library files.')
+        if self['fwhm'] is None and self['sres_ext'] is None:
+            raise ValueError('Template library must provide either \'fwhm\' or \'sres_ext\'.')
 
     def get_file_list(self):
         """
@@ -230,98 +289,6 @@ class TemplateLibraryDef(KeywordParSet):
             raise FileNotFoundError('Unable to find template library directory or any valid files '
                                     'as given or in the DAP source distribution.')
         return files
-
-
-def validate_spectral_template_config(cnfg):
-    """ 
-    Validate the :class:`mangadap.util.parser.DefaultConfig` object
-    with the template library parameters.
-
-    Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`):
-            Object with the template library parameters to validate.
-
-    Raises:
-        KeyError:
-            Raised if required keyword does not exist.
-        ValueError:
-            Raised if key has unacceptable value.
-    """
-    # Check for required keywords
-    required_keywords = ['key', 'file_search']
-    if not cnfg.all_required(required_keywords):
-        raise KeyError(f'Keywords {required_keywords} must all have valid values.')
-    if not cnfg.keyword_specified('fwhm') and not cnfg.keyword_specified('sres_ext'):
-        # TODO: Which takes precedence?
-        raise KeyError('Must provide either \'fwhm\' or \'sres_ext\'.')
-
-
-def available_template_libraries():
-    r"""
-    Return the list of available template libraries.
-
-    The available libraries are construced by looking for
-    configuration files in the relevant DAP configuration directory.
-
-    .. todo::
-
-        - Point to where the library format is described.
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-    
-    Returns:
-        :obj:`list`: A list of
-        :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`
-        objects, each defining a separate template library.
-
-    Raises:
-        IOError:
-            Raised if no template configuration files could be found.
-        KeyError:
-            Raised if the template-library keywords are not all
-            unique.
-        ValueError:
-            Raised if the configuration file provides an invalid set
-            of wavelength limits.
-    """
-    # Check the configuration files exist
-    search_dir = defaults.dap_config_root() / 'spectral_templates'
-    ini_files = sorted(list(search_dir.glob('*.ini')))
-    if len(ini_files) == 0:
-        raise IOError(f'Could not find any configuration files in {search_dir} !')
-
-    # Build the list of library definitions
-    template_libraries = []
-    for f in ini_files:
-        # Read and validate the config file
-        cnfg = DefaultConfig(f=f, interpolate=True)
-        validate_spectral_template_config(cnfg)
-
-        # Convert wave_limit and lower_flux_limit to types acceptable by
-        # TemplateLibraryDef
-        wave_limit = None if cnfg['wave_limit'] is None \
-                        else numpy.array(cnfg.getlist('wave_limit', evaluate=True))
-        if wave_limit is not None and len(wave_limit) != 2:
-            raise ValueError('Must specify two wavelength limits, can be \'None, None\'.')
-
-        # Append the definition of the template library 
-        template_libraries += \
-                [TemplateLibraryDef(key=cnfg['key'], file_search=cnfg['file_search'],
-                                    fwhm=cnfg.getfloat('fwhm'), sres_ext=cnfg['sres_ext'],
-                                    in_vacuum=cnfg.getbool('in_vacuum', default=False),
-                                    wave_limit=wave_limit,
-                                    lower_flux_limit=cnfg.getfloat('lower_flux_limit'),
-                                    log10=cnfg.getbool('log10', default=False))]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique(numpy.array([tpl['key'] for tpl in template_libraries]))) \
-            != len(template_libraries):
-        raise KeyError('Template-library keywords are not all unique!')
-
-    # Return the default list of template libraries
-    return template_libraries
 
 
 class TemplateLibraryBitMask(DAPBitMask):
@@ -387,13 +354,9 @@ class TemplateLibrary:
         Change `sres` to be a standard input object?
 
     Args:
-        library_key (:obj:`str`):
-            Keyword selecting the library to use.
-        tpllib_list (:obj:`list`, optional):
-            List of :class:`TemplateLibraryDef` objects that define the
-            parameters required to read and interpret a template
-            library.  The ``library_key`` must select one of the objects
-            in this list.
+        library (:obj:`str`, :class:`TemplateLibraryDef`):
+            A keyword selecting one of the template libraries distributed with
+            the DAP or the definition of a user-provided library.
         cube (:class:`mangadap.datacube.datacube.DataCube`, optional):
             The datacube to be analyzed using the template library.
         match_resolution (:obj:`bool`, optional):
@@ -519,16 +482,15 @@ class TemplateLibrary:
     """
     # Class attribute
     supported_libraries = ['BC03', 'BPASS', 'M11ELODIE', 'M11MARCS', 'M11MILES', 'M11STELIB',   
-                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MILES', 'MILESAVG',
-                           'MILESHC', 'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
+                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MASTARSSP', 'MILES',
+                           'MILESAVG', 'MILESHC', 'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
     """Provides the keywords of the supported libraries."""
 
-    def __init__(self, library_key, tpllib_list=None, cube=None, match_resolution=True,
-                 velscale_ratio=None, sres=None, velocity_offset=0.0, min_sig_pix=0.0,
-                 no_offset=True, spectral_step=None, log=True, wavelength_range=None,
-                 renormalize=True, output_path=None, output_file=None, read=True, process=True,
-                 hardcopy=True, symlink_dir=None, overwrite=False, checksum=False, loggers=None,
-                 quiet=False):
+    def __init__(self, library, cube=None, match_resolution=True, velscale_ratio=None, sres=None,
+                 velocity_offset=0.0, min_sig_pix=0.0, no_offset=True, spectral_step=None,
+                 log=True, wavelength_range=None, renormalize=True, output_path=None,
+                 output_file=None, read=True, process=True, hardcopy=False, symlink_dir=None,
+                 overwrite=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = loggers
         self.quiet = quiet
@@ -547,7 +509,8 @@ class TemplateLibrary:
         self.log10_sampling = None
 
         # Define the library
-        self.library = self.define_library(library_key, tpllib_list=tpllib_list)
+        self.library = library if isinstance(library, TemplateLibraryDef) \
+                            else TemplateLibraryDef.from_key(library)
         self.file_list = None
         self.ntpl = None
 
@@ -556,7 +519,7 @@ class TemplateLibrary:
         self.directory_path = None
         self.output_file = None
         self.processed = False
-        self.hardcopy = True
+        self.hardcopy = hardcopy
         self.symlink_dir = None
         self.hdu = None
         self.checksum = checksum
@@ -586,26 +549,6 @@ class TemplateLibrary:
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-    @staticmethod
-    def define_library(library_key, tpllib_list=None):
-        """
-        Select the library from the provided list.  Used to set
-        :attr:`library`; see
-        :func:`mangadap.proc.util.select_proc_method`.
-
-        Args:
-            library_key (:obj:`str`):
-                Keyword of the selected library.  Available libraries
-                are proved by :func:`available__template_libraries`
-            tpllib_list (:obj:`list`, optional):
-                List of :class:`TemplateLibraryDef` objects that define
-                the parameters required to read and interpret a template
-                library.
-        """
-        # Get the details of the selected template library
-        return select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
-                                  available_func=available_template_libraries)
 
     @staticmethod
     def default_paths(library_key, cube=None, output_path=None, output_file=None):
@@ -639,34 +582,6 @@ class TemplateLibrary:
         _output_file = f'{root}.fits.gz' if output_file is None else output_file
         return directory_path, _output_file
     
-#    def _get_file_list(self):
-#        """
-#        Use the search string to find the template library fits files.
-#
-#        The file list read by the search key is sorted for
-#        consistency.
-#
-#        Returns:
-#            :obj:`list`: The sorted list of files found with
-#            `glob.glob`_.
-#
-#        Raises:
-#            ValueError:
-#                Raised if no files are found.
-#        """
-#        # Try the DAP directory first
-#        root = defaults.dap_data_root() / 'spectral_templates' / self.library['file_search']
-#        if not root.parent.exists():
-#            # Then try the provided path directly
-#            root = Path(self.library['file_search']).resolve()
-#            if not root.parent.exists():
-#                raise FileNotFoundError('Unable to find template library directory as given or in '
-#                                        'the DAP source distribution.')
-#        files = sorted(list(root.parent.glob(root.name)))
-#        if len(files) == 0:
-#            raise ValueError('Library search string did not find any files!')
-#        return files
-
     def _get_nchannels(self):
         """
         Get the maximum number of wavelength channels needed to store
@@ -1188,32 +1103,28 @@ class TemplateLibrary:
             return None
         return self.directory_path / self.output_file
 
-    def read_raw_template_library(self, library_key=None, tpllib_list=None):
+    def read_raw_template_library(self, library=None):
         """
         Read the identified template library.  If all the arguments are
         the default, the preset attributes from the initialization of
         the object are used.
 
         Args:
-            library_key (:obj:`str`, optional):
-                Keyword selecting the library to use.
-            tpllib_list (:obj:`list`, optional):
-                List of :class:`TemplateLibraryDef` objects that
-                define the parameters required to read and interpret
-                a template library.
+            library (:obj:`str`, :class:`TemplateLibraryDef`, optional):
+                Keyword selecting the library to use or the full set of defining
+                parameters.
         """
-        if library_key is not None:
-            # Redefine the library
-            self.library = self.define_library(library_key, tpllib_list=tpllib_list)
+        if library is not None:
+            self.library = library if isinstance(library, TemplateLibraryDef) \
+                                else TemplateLibraryDef.from_key(library)
         self._read_raw()
 
-    def process_template_library(self, library_key=None, tpllib_list=None, cube=None,
-                                 match_resolution=True, velscale_ratio=None, sres=None,
-                                 velocity_offset=0.0, min_sig_pix=0.0, no_offset=True,
-                                 spectral_step=None, log=True, wavelength_range=None,
-                                 renormalize=True, output_path=None, output_file=None,
-                                 hardcopy=True, symlink_dir=None, overwrite=False, loggers=None,
-                                 quiet=False):
+    def process_template_library(self, library=None, cube=None, match_resolution=True,
+                                 velscale_ratio=None, sres=None, velocity_offset=0.0,
+                                 min_sig_pix=0.0, no_offset=True, spectral_step=None, log=True,
+                                 wavelength_range=None, renormalize=True, output_path=None,
+                                 output_file=None, hardcopy=False, symlink_dir=None,
+                                 overwrite=False, loggers=None, quiet=False):
         r"""
         Process the template library for use in analyzing spectra.
 
@@ -1261,13 +1172,9 @@ class TemplateLibrary:
             sres input. If unsure, use overwrite=True.
         
         Args:
-            library_key (:obj:`str`):
-                Keyword selecting the library to use.
-            tpllib_list (:obj:`list`, optional):
-                List of :class:`TemplateLibraryDef` objects that define the
-                parameters required to read and interpret a template
-                library.  The ``library_key`` must select one of the objects
-                in this list.
+            library (:obj:`str`, :class:`TemplateLibraryDef`, optional):
+                Keyword selecting the library to use or the full set of defining
+                parameters.
             cube (:class:`mangadap.datacube.datacube.DataCube`, optional):
                 The datacube to be analyzed using the template library.
             match_resolution (:obj:`bool`, optional):
@@ -1348,9 +1255,9 @@ class TemplateLibrary:
 
         # TODO: Not sure we should allow the library key to change in this
         # way...
-        if library_key is not None:
-            # Redefine the library
-            self.library = self.define_library(library_key, tpllib_list=tpllib_list)
+        if library is not None:
+            self.library = library if isinstance(library, TemplateLibraryDef) \
+                                else TemplateLibraryDef.from_key(library)
 
         # Ignore velscale_ratio if it is set to unity
         if velscale_ratio is not None and velscale_ratio == 1:

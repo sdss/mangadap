@@ -45,7 +45,7 @@ from ..config import defaults
 from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary, channel_units
 from ..util.fitsutil import DAPFitsUtil
 from ..util.log import init_DAP_logging, module_logging, log_output
-from ..config.analysisplan import AnalysisPlanSet
+from ..config.analysisplan import AnalysisPlan
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
 from ..par.emissionlinedb import EmissionLineDB
@@ -54,10 +54,10 @@ from ..proc.util import select_proc_method, sample_growth
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemoments import EmissionLineMomentsDef
-from ..proc.emissionlinemoments import available_emission_line_moment_databases
+#from ..proc.emissionlinemoments import available_emission_line_moment_databases
 from ..proc.emissionlinemodel import EmissionLineModel, EmissionLineModelDef
-from ..proc.emissionlinemodel import available_emission_line_modeling_methods
-from ..proc.spectralindices import SpectralIndicesDef, available_spectral_index_databases
+#from ..proc.emissionlinemodel import available_emission_line_modeling_methods
+from ..proc.spectralindices import SpectralIndicesDef #, available_spectral_index_databases
 
 from matplotlib import pyplot
 

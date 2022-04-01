@@ -50,6 +50,13 @@ Emission-Line Modeling paper, `Belfiore et al. (2019, AJ, 158,
     ``mangadap/contrib`` directory. If necessary, please include
     licenses relevant to your code in your PR.
 
+.. warning::
+
+    This page is specific to the MaNGA data releases.  However, if you've used
+    the DAP to analyze a non-MaNGA cube, all of this information is relevant
+    except for the directory structure and the types of analyses performed.
+    Please see :ref:`fitdatacube` and `Submit an issue`_ if you have problems.
+
 ----
 
 Directory structure
@@ -85,7 +92,7 @@ The ``DAPTYPEs`` in DR15 are:
    the ``VOR10`` approach); however, the emission-line measurements are
    performed on the individual spaxels.
 
-The ``DAPTYPEs`` in MPL-11 are:
+The ``DAPTYPEs`` in DR17 are:
 
  * ``SPX-MILESHC-MASTARSSP``: Analysis of each individual spaxel; spaxels
    must have a valid continuum fit for an emission-line model to be fit
@@ -109,7 +116,7 @@ application. In all cases, please consult `Westfall et al. (2019, AJ,
 158, 231)`_ and `Belfiore et al. (2019, AJ, 158, 160)`_ for usage
 guidelines and limitations of the data.
 
-SPX-MILESHC-MASTARSSP (MPL-11 only)
+SPX-MILESHC-MASTARSSP (DR17 only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are useful for most science applications that can push to very
@@ -124,7 +131,7 @@ Important considerations:
  * Beware of biases in the stellar velocity dispersion with :math:`{\rm
    S/N}_g < 10`; cf. `Westfall et al. (2019, AJ, 158, 231)`_
 
-VOR10-GAU-MILESHC (DR15), VOR10-MILESHC-MASTARSSP (MPL-11)
+VOR10-GAU-MILESHC (DR15), VOR10-MILESHC-MASTARSSP (DR17)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These data are geared toward stellar kinematics, where the data are
@@ -149,7 +156,7 @@ Important considerations:
    limits the emission-line science that can be done at low continuum
    S/N.
 
-HYB10-GAU-MILESHC (DR15), HYB10-MILESHC-MASTARSSP (MPL-11), HYB10-MILESHC-MASTARHC2 (MPL-11)
+HYB10-GAU-MILESHC (DR15), HYB10-MILESHC-MASTARSSP (DR17), HYB10-MILESHC-MASTARHC2 (DR17)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are the default files that most users will want to use. We
@@ -191,7 +198,7 @@ The primary output files are located at:
 +===============+
 |   `DR15 SAS`_ |
 +---------------+
-| `MPL-11 SAS`_ |
+|   `DR17 SAS`_ |
 +---------------+
 
 There are two main output files for each observation
@@ -243,7 +250,7 @@ System (WCS) and should exactly match that of the DRP output
 
 Many properties have multiple "species" or channels associated with
 them. The identifying name of each mapped property is provided in the
-header; e.g., the emission lines fit in MPL-11 are listed :ref:`here
+header; e.g., the emission lines fit in DR17 are listed :ref:`here
 <datamodel-emission-line-channels>` as they appear in the header of
 the relevant ``MAPS`` file extension (e.g., ``EMLINE_GFLUX``). In
 python, you can create a dictionary of items in each channel using
@@ -494,7 +501,7 @@ DAPall file
 for all analyses done for a given MPL/DR.
 
 The name of the file is ``dapall-$MANGADRP_VER-$MANGADAP_VER.fits``;
-for example, this is ``dapall-v3_1_1-3.1.0.fits`` in MPL-11.
+for example, this is ``dapall-v3_1_1-3.1.0.fits`` in DR17.
 
 This file is used primarily for sample selection, and it has many
 limitations (e.g., it provides star-formation rates calculated

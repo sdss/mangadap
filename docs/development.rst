@@ -14,7 +14,7 @@ parameters, see the description of its :ref:`execution`.
 We have also recently abstracted the input to the DAP to allow for
 custom :class:`~mangadap.datacube.datacube.DataCube` objects to be
 provided by the user, enabling the DAP to analyze non-MaNGA
-data; see :ref:`datacube`.
+data; see :ref:`fitdatacube`.
 
 Additionally, we have constructed the low-level, core algorithms in a
 way that is largely agnostic to the data being analyzed. This should
@@ -74,18 +74,15 @@ looks like this:
 
 .. code-block:: ini
 
-    [Path]
-    dapsrc           = ${MANGADAP_DIR}
-
     [default]
-    key              = MILESHC
-    file_search      = ${Path:dapsrc}/mangadap/data/spectral_templates/miles_cluster/*.fits
-    fwhm             = 2.50
-    sres_ext
-    in_vacuum        = False
-    wave_limit       = 3575, 7400
-    lower_flux_limit = 0.0
-    log10            = False
+     key              = MILESHC
+     file_search      = miles_cluster/*.fits
+     fwhm             = 2.50
+     sres_ext
+     in_vacuum        = False
+     wave_limit       = 3575, 7400
+     lower_flux_limit = 0.0
+     log10            = False
 
 This configuration (ini) file allows one to construct the ``MILESHC``
 library as follows:
@@ -98,52 +95,25 @@ library as follows:
                           log=True,             # Sample the templates logarithmically
                           hardcopy=False)       # Don't save a hardcopy of the library to disk
 
-This is possible because the DAP reads all the ini files in the
-``$MANGADAP_DIR/mangadap/config/spectral_templates`` directory
-and selects the file with ``key = MILESHC``.  If you have a template
-library that you want to use that's not provided by the DAP, you can
-write a configuration file and put it in the appropriate directory such
-that it can be selected by the key.
+This is possible because the DAP will use the keyword to identify the
+appropriate ini file in the ``$MANGADAP_DIR/mangadap/config/spectral_templates``
+directory.  If you have a template library that you want to use that's not
+provided by the DAP, you can use the :ref:`plan` to define a new one.
 
-The template library key for use with the stellar-continuum fitting
-is defined in a separate configuration file specific to the
-stellar-continuum fitting class; these are kept in
-``$MANGADAP_DIR/mangadap/config/stellar_continuum_modeling``. For
-example, the ``MILESHCMPL9`` configuration file looks like this:
+The template library key for use with the stellar-continuum fitting is one of
+the parameters in the
+:class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef` parameter
+set; see :ref:`plan`.
 
-.. code-block:: ini
-
-    [default]
-    key                    = MILESHCMPL9
-    fit_type               = stellar_kinematics
-    fit_method             = ppxf
-    fit_iter               = nonzero_templates
-    reject_boxcar          = 100
-    minimum_snr            = 1.0
-    waverange
-    artifact_mask          = BADSKY
-    emission_line_mask     = ELPMPL8
-    template_library       = MILESHC
-    match_resolution       = False
-    velscale_ratio         = 4
-    moments                = 2
-    degree                 = 8
-    mdegree                = -1
-    bias
-
-You can see that the file defines ``template_library = MILESHC``.  To
-execute the full DAP using a new template library is a matter of setting
-up these configuration files.
-
-However, you can also write scripts that incorporate the DAP
-functionality without the need to add configuration files. Assume you
-have a script that uses a
-:class:`~mangadap.proc.templatelibary.TemplateLibrary` object, you can
-define a new template library in the code itself using the
+However, you can also write scripts that incorporate the DAP functionality and
+circumvents the normal mangadap workflow and does not use a plan file.  Assuming
+you have a script that uses a
+:class:`~mangadap.proc.templatelibary.TemplateLibrary` object, you can define a
+new template library in the code itself using the
 :class:`~mangadap.proc.templatelibrary.TemplateLibraryDef` object. The
-:class:`~mangadap.proc.templatelibrary.TemplateLibraryDef` object is
-actually the product of the parsed configuration file within the main
-DAP code. For example:
+:class:`~mangadap.proc.templatelibrary.TemplateLibraryDef` object is actually
+the product of the parsed configuration file within the main DAP code. For
+example:
 
 .. code-block:: python
 
@@ -187,25 +157,28 @@ DAP code. For example:
 Adding new functionality
 ------------------------
 
-The pairing of the defining parameters of a specific analysis method
-and the instantiation of the method itself, like what is shown above,
-is ubiquitous in the DAP, following from one of the main design
-principles. Apart from allowing one to alter the details of how the
-DAP proceeds via changing or adding configuration files (instead of
-changing the code itself), this also facilitates incorporating new
-algorithms within the existing infrastructure.
+The pairing of the defining parameters of a specific analysis method and the
+instantiation of the method itself, like what is shown above, is ubiquitous in
+the DAP, following from one of the main design principles. Apart from allowing
+one to alter the details of how the DAP proceeds via changing the analysis plan
+file, this also facilitates incorporating new algorithms within the existing
+infrastructure.
 
 The implementation of hooks for including new algorithms into the DAP
-infrastructure exists; however, it is minimal in some respects and
-hasn't been well tested. That means that, for anyone that tries this,
-there are sure to be some growing pains in making sure it works
-properly. At the moment, a primary limitation to incorporating new
-algorithms is that the procedure is not as simple as adding a new
-file with code in the ``$MANGADAP_DIR/mangadap/contrib`` directory
-and a new configuration file. Instead, one has to alter a number of
-bits of code in the DAP. There are a few ways to do this, but testing
-of these methods has been limited. The following are two sketched out
-examples of including new functionality or algorithms.
+infrastructure exists; however, it is minimal in some respects and hasn't been
+well tested. That means that, for anyone that tries this, there are sure to be
+some growing pains in making sure it works properly. At the moment, a primary
+limitation to incorporating new algorithms is that one has to alter a number of
+bits of code in the DAP itself. There are a few ways to do this, but testing of
+these methods has been limited. The following are two sketched out examples of
+including new functionality or algorithms.
+
+.. warning::
+
+    The code examples below are from earlier versions of the DAP (version 3.1
+    and earlier).  They're still reasonably relevant to this discussion, but the
+    details will have changed.  Please `Submit an issue`_ if you're attempting
+    to do something similar to what's discussed below!
 
 1. Adding a new binning scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

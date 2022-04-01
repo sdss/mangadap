@@ -730,7 +730,7 @@ class ParSet:
     def _rst_class_name(p):
         return ':class:`' +  type(p).__module__ + '.' + type(p).__name__ + '`'
 
-    def to_rst_table(self, parsets_listed=[], header=True, class_link=True):
+    def to_rst_table(self, parsets_listed=[], header=True, class_link=True, nested=True):
         r"""
         Construct a reStructuredText table with the :class:`ParSet`
         data.
@@ -764,7 +764,7 @@ class ParSet:
         data_table[0,:] = ['Key', 'Type', 'Options', 'Default', 'Description']
         for i,k in enumerate(self.keys()):
             data_table[i+1,0] = ParSet._data_string(k, use_repr=False, verbatum=True)
-            if isinstance(self.data[k], ParSet):
+            if nested and isinstance(self.data[k], ParSet):
                 if type(self.data[k]).__name__ not in parsets_listed:
                     new_parsets += [k]
                 parsets_listed += [ type(self.data[k]).__name__ ]
@@ -955,6 +955,9 @@ class KeywordParSet(ParSet):
         """
         Construct the object using a dictionary.
         """
+        if 'key' in data.keys() and data['key'] is None:
+            return None
+
         k = numpy.array([*data.keys()])
         parkeys = [*inspect.signature(cls).parameters.keys()]
 
@@ -965,8 +968,11 @@ class KeywordParSet(ParSet):
                                  cls.__class__.__name__))
 
         kwargs = {}
-        for pk in parkeys:
-            kwargs[pk] = data[pk] if pk in k else None
+        if len(k) > 0:
+            for pk in parkeys:
+                if pk not in k:
+                    continue
+                kwargs[pk] = data[pk]
         return cls(**kwargs)
 
     def add(self, *args, **kwargs):

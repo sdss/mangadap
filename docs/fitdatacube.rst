@@ -17,6 +17,7 @@ Overview
 
 The critical components that the DAP needs to perform its analysis modules are:
 
+    #. wavelengths are in vacuum,
     #. spectra that are geometrically binned in wavelength,
     #. spectral errors, pixel masks, and an estimate of the spectral resolution,
     #. an estimate of the redshift that is accurate to within :math:`\pm 2000` km/s,
@@ -111,12 +112,13 @@ In terms of the requirements above:
     #. Geometrically binned spectra: The binning is not checked by the DAP
        immediately when the code executed (yet).  Instead, the code will start
        and likely crash as soon as it tries to construct the template library to
-       be fit.  See the KCWI example below for how to use DAP code to resample a
-       datacube.  **NOTE**: The DAP expects datacube arrays to be oriented with
-       the two spatial axes first and the spectral data along the last axis;
-       i.e., the flux array should be ordered :math:`(x,y,$\lambda$)`.  This can
-       be done internal to the instantiation by the base class; see the 
-       :class:`~mangadap.datacube.datacube.DataCube` ``axes`` argument.
+       be fit.  See :ref:`resampling` and the KCWI example below for how to use
+       DAP code to resample a datacube.  **NOTE**: The DAP expects datacube
+       arrays to be oriented with the two spatial axes first and the spectral
+       data along the last axis; i.e., the flux array should be ordered
+       :math:`(x,y,$\lambda$)`.  This can be done internal to the instantiation
+       by the base class; see the :class:`~mangadap.datacube.datacube.DataCube`
+       ``axes`` argument.
 
     #. Ancillary data: The script provides spectral errors in the ``ivar``
        array, a pixel mask in the ``mask`` array, and an estimate of the
@@ -141,6 +143,8 @@ In terms of the requirements above:
        strings is free form, but at least one of them must be defined.  The name
        of the output files is then ``{instrument}-{name}``, if both are defined,
        and just the ``instrument`` or ``name`` string if only one is defined.
+
+.. _fitdatacube-kcwi:
 
 Example: KCWI
 +++++++++++++
@@ -252,33 +256,36 @@ A few specifics of this implementation to note:
       though, this means the input and output WCS may be inconsistent for the
       wavelength axis (GitHub issue raised).
 
-Creating a new AnalysisPlanSet subclass
----------------------------------------
+Creating a new AnalysisPlan subclass
+------------------------------------
 
-The primary function of the
-:class:`~mangadap.config.analysisplan.AnalysisPlanSet` class is to set how the
-DAP analyzes the data.  However, much of how this is determined is by using
-abstracted methods and keywords, meaning that the implementation of the 
-:class:`~mangadap.config.analysisplan.AnalysisPlanSet` class is largely
-independent of the data being analyzed.  The only exception to this is the
-definition of the output paths.  Adopting a top-level output path referred to as
-the ``analysis_path``, the default DAP output paths are:
+For a detailed description of the components of the
+:class:`~mangadap.config.analysisplan.AnalysisPlan` and its associated `toml`_
+file, see :ref:`plan`.
+
+The primary function of the :class:`~mangadap.config.analysisplan.AnalysisPlan`
+class is to set how the DAP analyzes the data.  However, much of how this is
+determined is by using abstracted methods and keywords, meaning that the
+implementation of the :class:`~mangadap.config.analysisplan.AnalysisPlan` class
+is largely independent of the data being analyzed.  The only exception to this
+is the definition of the output paths.  Adopting a top-level output path
+referred to as the ``analysis_path``, the default DAP output paths are:
 
     - ``{analysis_path}/common/``: The path where analysis products "common" to
       many analysis methods are placed.
 
-    - ``{analysis_path}/{method}/``: The path where analysis products specific
+    - ``{analysis_path}/{plan-key}/``: The path where analysis products specific
       to a single analysis method are placed.
 
-    - ``{analysis_path}/{method}/ref``: The path for DAP reference files
+    - ``{analysis_path}/{plan-key}/ref``: The path for DAP reference files
 
-    - ``{analysis_path}/{method}/qa``: The path for DAP quality assurance plots
+    - ``{analysis_path}/{plan-key}/qa``: The path for DAP quality assurance plots
 
 These defaults are set by
-:func:`~mangadap.config.analysisplan.AnalysisPlanSet.common_path` and
-:func:`~mangadap.config.analysisplan.AnalysisPlanSet.method_path`.  The root of
-the output file names is set by 
-:func:`~mangadap.config.analysisplan.AnalysisPlanSet.dap_file_root`.  In most
+:func:`~mangadap.config.analysisplan.AnalysisPlan.common_path` and
+:func:`~mangadap.config.analysisplan.AnalysisPlan.method_path`.  The root of the
+output file names is set by 
+:func:`~mangadap.config.analysisplan.AnalysisPlan.dap_file_root`.  In most
 cases, you will likely not want to change these.  However, the survey-level
 execution of the DAP for the MaNGA Survey did change these to allow the files to
 be organized by the plate and IFU number of the analyzed datacube.  See
@@ -298,7 +305,7 @@ the datacube to analyze as follows:
 
 .. code-block:: console
 
-    manga_dap -f input_file.fits --cube_module my_datacube MyDataCube --plan_module mangadap.config.analysisplan.AnalysisPlanSet -o dap
+    manga_dap -f input_file.fits --cube_module my_datacube MyDataCube --plan_module mangadap.config.analysisplan.AnalysisPlan -o dap
 
 A few notes:
 
@@ -315,13 +322,15 @@ A few notes:
 
     - Currently, the ``manga_dap`` defaults to using the MaNGA-specific classes.
       This means that you must force the code to use the
-      :class:`~mangadap.config.analysisplan.AnalysisPlanSet` base class, if you
+      :class:`~mangadap.config.analysisplan.AnalysisPlan` base class, if you
       haven't created a new subclass.  Here, I've defined the full object to
       import, connected by ``.``.
 
     - I did not include a plan file (using the ``-p`` option).  This means the
       code will use the "default" analysis plan; see
-      :func:`~mangadap.config.analysisplan.AnalysisPlanSet.default`.
+      :func:`~mangadap.config.analysisplan.AnalysisPlan.default`.  See
+      `default_plan.toml
+      <https://github.com/sdss/mangadap/blob/master/mangadap/config/default_plan.toml>`_
 
     - I set the top-level directory for the output to be ``./dap/``.
 

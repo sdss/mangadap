@@ -19,17 +19,23 @@ Implements a wrapper class for pPXF.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import time
+import inspect
 import warnings
 import logging
 
+from IPython import embed
+
 import numpy
-from scipy import interpolate, fftpack
+#from scipy import interpolate, fftpack
+from matplotlib import pyplot
+
 import astropy.constants
 
 from ppxf import ppxf, capfit
 
 from ..par.parset import KeywordParSet
+from ..par.artifactdb import ArtifactDB
+from ..par.emissionlinedb import EmissionLineDB
 from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
@@ -37,74 +43,57 @@ from ..util.sampling import spectrum_velocity_scale, angstroms_per_pixel, Resamp
 from ..util.resolution import match_spectral_resolution, SpectralResolution
 from ..util.constants import DAPConstants
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-from .templatelibrary import TemplateLibrary
+from .templatelibrary import TemplateLibraryDef, TemplateLibrary
 from .spectralfitting import StellarKinematicsFit
 from .util import sample_growth, optimal_scale
-#from .util import residual_growth, optimal_scale
 
-# For debugging
-from matplotlib import pyplot
-#from ..contrib import ppxf_util
 
 class PPXFFitPar(KeywordParSet):
     r"""
     Define a parameter set used by the pPXF fitting method.
-
-    .. todo::
-        The overlap between this and
-        :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
-        is not well designed.
 
     The defined parameters are:
 
     .. include:: ../tables/ppxffitpar.rst
 
     """
-    def __init__(self, template_library_key=None, template_library=None, guess_redshift=None,
-                 guess_dispersion=None, iteration_mode=None, reject_boxcar=None,
-                 match_resolution=None, velscale_ratio=None, minimum_snr=None, pixelmask=None,
-                 bias=None, degree=None, mdegree=None, moments=None):
-    
-        arr_in_fl = [ numpy.ndarray, list, int, float ] # guess kinematics
-        in_fl = [ int, float ]                          # bias, minimum S/N
+    def __init__(self, guess_redshift=0., guess_dispersion=100.,
+                 iteration_mode='nonzero_templates', template_library='MILESHC',
+                 matched_resolution=False, pixelmask=None, reject_boxcar=100, velscale_ratio=1,
+                 bias=None, degree=8, mdegree=0, moments=2):
 
-        _def = self._keyword_defaults()
-        
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
+        arr_in_fl = [numpy.ndarray, list, int, float]
+        in_fl = [int, float]
+
         iter_opt = PPXFFit.iteration_modes()
-        moment_opt = [ 2, 4, 6 ]
+        moment_opt = [2, 4, 6]
 
-        pars =     [ 'template_library_key', 'template_library', 'guess_redshift',
-                     'guess_dispersion', 'iteration_mode', 'reject_boxcar', 'match_resolution',
-                     'velscale_ratio', 'minimum_snr', 'pixelmask', 'bias', 'degree', 'mdegree',
-                     'moments' ]
-        values =   [ template_library_key, template_library, guess_redshift, guess_dispersion,
-                     iteration_mode, reject_boxcar, match_resolution, velscale_ratio, minimum_snr,
-                     pixelmask, bias, degree, mdegree, moments ]
-        options =  [ None, None, None, None, iter_opt, None, None, None, None, None, None, None,
-                     None, moment_opt ]
-        defaults = [ None, None, None, None, 'global_template', None, True, None, None, None,
-                     _def['bias'], _def['degree'], _def['mdegree'], _def['moments'] ]
-        dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, str, int, bool, int, in_fl,
-                     PixelMask, in_fl, int, int, int ]
-
-
-        descr = ['Keyword of the library to fit.  See ' \
-                    ':func:`mangadap.proc.templatelibrary.available_template_libraries`.',
-                 'Object with the spectra in the template library that have been prepared ' \
-                    'for analysis of the data.',
-                 'Initial guess for the redshift (:math:`cz`) of each binned spectrum.',
+        values = [guess_redshift, guess_dispersion, iteration_mode, template_library,
+                  matched_resolution, pixelmask, reject_boxcar, velscale_ratio, bias, degree,
+                  mdegree, moments]
+        options = [None, None, iter_opt, None, None, None, None, None, None, None, None,
+                   moment_opt]
+        dtypes = [arr_in_fl, arr_in_fl, str, [str, TemplateLibraryDef], bool, PixelMask, int,
+                  int, in_fl, int, int, int ]
+        descr = ['Initial guess for the redshift (:math:`cz`) of each binned spectrum.',
                  'Initial guess for the velocity dispersion for each binned spectrum.',
                  'Iteration mode to use; see :func:`PPXFFit.iteration_modes`.',
+                 'Keyword identifier or definition object used to build the spectral template ' \
+                    'library used during the fit.',
+                 'Flag that the spectral resolution of the templates are (should be) matched ' \
+                    'to the galaxy data.',
+                 'Pixel mask to include during the fitting; see ' \
+                    ':func:`~mangadap.util.pixelmask.SpectralPixelMask`.',
                  'Number of pixels in the boxcar used to determine the local sigma for ' \
                     'rejecting outliers.',
-                 'Match the spectral resolution of the template to that of the galaxy data.  ' \
-                    'This is used only when constructing the template library.  Default is True.',
                  'The **integer** ratio between the velocity scale of the pixel in the galaxy ' \
-                    'data to that of the template data.  This is used only when constructing ' \
-                    'the template library.  Default is None, which is the same as assuming ' \
-                    'that the velocity scales are identical.',
-                 'Minimum S/N ratio to include in the fitting.',
-                 'Pixel mask to include during the fitting.',
+                    'data to that of the template data.',
                  '`ppxf`_ ``bias`` parameter used to penalize low S/N spectra toward a ' \
                     'Gaussian LOSVD.',
                  '`ppxf`_ ``degree`` parameter used to set the order of the additive polynomial ' \
@@ -115,35 +104,12 @@ class PPXFFitPar(KeywordParSet):
                     r'LOSVD to fit.  The DAP has not been well tested for fits that include ' \
                     r'any more than :math:`V` and :math:`\sigma`.']
 
-        super(PPXFFitPar, self).__init__(pars, values=values, defaults=defaults, options=options,
-                                         dtypes=dtypes, descr=descr)
-        self._check()
-
-
-    @staticmethod
-    def _keyword_defaults():
-        """
-        Return the keyword defaults.  Pulled from
-        :class:`mangadap.contrib.ppxf.ppxf`.
-        """
-        return { 'bias':None, 'degree':8, 'mdegree':0, 'moments':2 }
-
-
-    def _check(self):
-        """
-        Perform some preliminary checks on the values of the parameters.
-        """
-        pass
-#        if self['reddening'] is not None:
-#            if self['mdegree'] > 0:
-#                warnings.warn('Cannot both fit multiplicative polynomial and reddening.' \
-#                              'Ignoring mdegree.')
-#                self['mdegree'] = 0
-        # Other checks (and the one above) done within pPXF
-
+        super().__init__(pars, values=values, defaults=defaults, options=options, dtypes=dtypes,
+                         descr=descr)
+        self.templates = None
 
     def toheader(self, hdr):
-        hdr['PPXFTPLK'] = (self['template_library_key'], 'Template library key used with pPXF')
+        hdr['PPXFTPLK'] = (self['template_library']['key'], 'Template library key used with pPXF')
         hdr['PPXFMODE'] = (self['iteration_mode'], 'pPXF iteration mode')
         hdr['PPXFBIAS'] = (str(self['bias']) if self['bias'] is None else self['bias'],
                             'pPXF bias value')
@@ -154,9 +120,9 @@ class PPXFFitPar(KeywordParSet):
             hdr['PPXFRBOX'] = (self['reject_boxcar'], 'pPXF rejection boxcar')
         return hdr
 
-
     def fromheader(self, hdr):
-        self['template_library_key'] = hdr['PPXFTPLK']
+        # TODO: Instead check this against the key of the current template library
+        #self['template_library_key'] = hdr['PPXFTPLK']
         self['bias'] = eval(hdr['PPXFBIAS'])
         self['degree'] = hdr['PPXFAO']
         self['mdegree'] = hdr['PPXFMO']
@@ -167,6 +133,83 @@ class PPXFFitPar(KeywordParSet):
         except KeyError as e:
             warnings.warn('Input header does not specify rejection boxcar.')
             self['reject_boxcar'] = None
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate the parameters based on the provided dictionary.
+        """
+
+        # Copy over the primary keywords
+        _d = {}
+        for key in ['guess_redshift', 'guess_dispersion', 'iteration_mode', 'matched_resolution',
+                    'reject_boxcar', 'velscale_ratio', 'bias', 'degree', 'mdegree', 'moments']:
+            if key in d.keys():
+                _d[key] = d[key]
+
+        artifacts = None if 'artifact_mask' not in d.keys() or d['artifact_mask'] is None \
+                        else ArtifactDB.from_key(d['artifact_mask'])
+        emission_lines = None if 'emission_line_mask' not in d.keys() \
+                                    or d['emission_line_mask'] is None \
+                                    else EmissionLineDB.from_key(d['emission_line_mask'])
+        waverange = None if 'waverange' not in d.keys() or d['waverange'] is None \
+                        else d['waverange']
+
+        if not all([a is None for a in [artifacts, emission_lines, waverange]]):
+            _d['pixelmask'] = SpectralPixelMask(artdb=artifacts, emldb=emission_lines,
+                                                waverange=waverange)
+
+        if 'templates' in d.keys():
+            _d['template_library'] = TemplateLibraryDef.from_dict(d['templates'])
+            
+        # Return the instantiation
+        return super().from_dict(_d)
+
+    def fill(self, binned_spectra, guess_vel=None, guess_sig=None, **kwargs):
+        """
+        Use the provided object to "fill" the parameters by constructing the
+        template library spectra used during the fit and to set the initial
+        guess kinematics for each spectrum.
+
+        kwargs are passed directly to the template library construction
+
+        """
+
+        # Fill the guess kinematics
+        c = astropy.constants.c.to('km/s').value
+        nbins = binned_spectra.nbins
+        if isinstance(guess_vel, (list, numpy.ndarray)):
+            _guess_vel = numpy.asarray(guess_vel)
+            if _guess_vel.size > 1 and _guess_vel.size != nbins:
+                raise ValueError('Incorrect number of guess velocities provided; expected '
+                                 f'{nbins}, found {_guess_vel.size}.')
+            self['guess_redshift'] = _guess_vel.copy()/c
+        elif guess_vel is not None:
+            self['guess_redshift'] = numpy.full(nbins, guess_vel/c, dtype=float)
+        else:
+            self['guess_redshift'] = numpy.zeros(nbins, dtype=float)
+
+        if isinstance(guess_sig, (list, numpy.ndarray)):
+            _guess_sig = numpy.asarray(guess_sig)
+            if _guess_sig.size > 1 and _guess_sig.size != nbins:
+                raise ValueError('Incorrect number of guess dispersions provided; expected '
+                                 f'{nbins}, found {_guess_sig.size}.')
+            self['guess_dispersion'] = _guess_sig.copy()
+        elif guess_sig is not None:
+            self['guess_dispersion'] = numpy.full(nbins, guess_sig, dtype=float)
+        else:
+            self['guess_dispersion'] = numpy.full(nbins, 100., dtype=float)
+
+        # Instatiate the template library
+        if self['template_library'] is not None:
+            velocity_offset = None if self['guess_redshift'] is None \
+                                else numpy.mean(c * self['guess_redshift'])
+            self.templates = TemplateLibrary(self['template_library'],
+                                             velocity_offset=velocity_offset,
+                                             cube=binned_spectra.cube,
+                                             match_resolution=self['matched_resolution'],
+                                             velscale_ratio=self['velscale_ratio'],
+                                             **kwargs)
 
 
 class PPXFFitResult:
@@ -1556,8 +1599,8 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         return model_flux, model_mask, model_par
 
-    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False,
-                                   debug=False):
+    def fit_SpatiallyBinnedSpectra(self, binned_spectra, gpm=None, par=None, loggers=None,
+                                   quiet=False, debug=False):
         """
 
         This is a basic interface that is geared for the DAP that
@@ -1571,7 +1614,7 @@ class PPXFFit(StellarKinematicsFit):
         if par is None:
             raise ValueError('Required parameters for PPXFFit have not been defined.')
         # Check the parameters
-        _def = PPXFFitPar._keyword_defaults()
+#        _def = PPXFFitPar._keyword_defaults()
 #        if par['regul'] != _def['regul'] or par['reddening'] != _def['reddening'] \
 #                or par['component'] != _def['component'] or par['reg_dim'] != _def['reg_dim']:
 #            raise NotImplementedError('Cannot use regul, reddening, component, or regul_dim yet.')
@@ -1587,17 +1630,23 @@ class PPXFFit(StellarKinematicsFit):
                 and not binned_spectra.hdu['PRIMARY'].header['STCKPRE']:
             raise ValueError('PPXFFit expects LSF measurements based on a pre-pixelized Gaussian.')
 
+#        # TemplateLibrary object always needed
+#        if par['template_library'] is None \
+#                or not isinstance(par['template_library'], TemplateLibrary):
+#            raise TypeError('Must provide a TemplateLibrary object for fitting.')
+#        if par['template_library'].hdu is None:
+#            raise ValueError('Provided TemplateLibrary object is undefined!')
+
         # TemplateLibrary object always needed
-        if par['template_library'] is None \
-                or not isinstance(par['template_library'], TemplateLibrary):
+        if par.templates is None or not isinstance(par.templates, TemplateLibrary):
             raise TypeError('Must provide a TemplateLibrary object for fitting.')
-        if par['template_library'].hdu is None:
+        if par.templates.hdu is None:
             raise ValueError('Provided TemplateLibrary object is undefined!')
 
         # Select the spectra that meet the selection criteria
         # TODO: Link this to the StellarContinuumModel._bins_to_fit()
         # function...
-        good_spec = binned_spectra.above_snr_limit(par['minimum_snr'], debug=debug)
+#        good_spec = binned_spectra.above_snr_limit(par['minimum_snr'], debug=debug)
 
         # Get the object data
         obj_wave = binned_spectra['WAVE'].data.copy()
@@ -1605,27 +1654,36 @@ class PPXFFit(StellarKinematicsFit):
         obj_ferr = numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
                                                     flag=binned_spectra.do_not_fit_flags()) , -0.5)
         obj_sres = binned_spectra.copy_to_array(ext='SPECRES')
+        guess_redshift = par['guess_redshift']
+        guess_dispersion = par['guess_dispersion']
+        binid = binned_spectra['BINS'].data['BINID']
+        binid_index = numpy.arange(binned_spectra.nbins)
+        if gpm is not None:
+            obj_flux = obj_flux[gpm,:]
+            obj_ferr = obj_ferr[gpm,:]
+            obj_sres = obj_sres[gpm,:]
+            guess_redshift = guess_redshift[gpm]
+            guess_dispersion = guess_dispersion[gpm]
+            binid = binid[gpm]
+            binid_index = binid_index[gpm]
 
         # Warn the user that only a single spectral resolution is used
         # for the templates
         if not self.quiet:
             warnings.warn('Adopting mean spectral resolution of all templates!')
-        tpl_sres = numpy.mean(par['template_library']['SPECRES'].data, axis=0).ravel()
+        tpl_sres = numpy.mean(par.templates['SPECRES'].data, axis=0).ravel()
 
         # Perform the fit
         # TODO: Alias window is never used...
         model_wave, model_flux, model_mask, model_par \
-                = self.fit(par['template_library']['WAVE'].data.copy(),
-                           par['template_library']['FLUX'].data.copy(),
-                           binned_spectra['WAVE'].data.copy(), obj_flux[good_spec,:],
-                           obj_ferr[good_spec,:], par['guess_redshift'][good_spec],
-                           par['guess_dispersion'][good_spec], iteration_mode=par['iteration_mode'],
+                = self.fit(par.templates['WAVE'].data.copy(), par.templates['FLUX'].data.copy(),
+                           binned_spectra['WAVE'].data.copy(), obj_flux, obj_ferr, guess_redshift,
+                           guess_dispersion, iteration_mode=par['iteration_mode'],
                            reject_boxcar=par['reject_boxcar'], ensemble=True,
                            velscale_ratio=par['velscale_ratio'], mask=par['pixelmask'],
-                           matched_resolution=par['match_resolution'],
-                           tpl_sres=tpl_sres, obj_sres=obj_sres[good_spec,:],
-                           waverange=par['pixelmask'].waverange, bias=par['bias'],
-                           degree=par['degree'], mdegree=par['mdegree'],
+                           matched_resolution=par['matched_resolution'], tpl_sres=tpl_sres,
+                           obj_sres=obj_sres, waverange=par['pixelmask'].waverange,
+                           bias=par['bias'], degree=par['degree'], mdegree=par['mdegree'],
                            moments=par['moments'], loggers=loggers, quiet=quiet, dvtol=1e-9)
                            #plot=True)
 
@@ -1635,8 +1693,8 @@ class PPXFFit(StellarKinematicsFit):
 
         # Save the the bin ID numbers indices based on the spectra
         # selected to be fit
-        model_par['BINID'] = binned_spectra['BINS'].data['BINID'][good_spec]
-        model_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[good_spec]
+        model_par['BINID'] = binid #binned_spectra['BINS'].data['BINID'][good_spec]
+        model_par['BINID_INDEX'] = binid_index #numpy.arange(binned_spectra.nbins)[good_spec]
 
         # Only return model and model parameters for the *fitted*
         # spectra

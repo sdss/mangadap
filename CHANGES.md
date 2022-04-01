@@ -30,13 +30,17 @@
  - Added documentation for how to fit one spectrum and to fit a (non-MaNGA)
    datacube.
  - Remove "filtered" fitting from pPXF module
+ - Major refactor of how module parameters are input and changed.
+    - Input analysis plan is now provided by a toml file.
+    - Module parameter definition classes all now have defaults.  Altering any
+      of those defaults is done via the plan toml file.
 
 3.1.2 (29 Jul 2021)
 -------------------
 
  - Additional updates to documentation for DR17 release.
- - Includes includes of MaNGA IDs used in the construction of the MaStar
-   HC version 2 library.
+ - Includes MaNGA IDs used in the construction of the MaStar HC version 2
+   library.
 
 
 3.1.1 (1 Mar 2021)

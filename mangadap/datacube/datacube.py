@@ -347,10 +347,17 @@ class DataCube:
             base class.  If the attributes ``directory_path`` or ``file_name``
             do not exist or if either of them are None, this returns None.
         """
-        if not hasattr(self, 'directory_path') or not hasattr(self, 'file_path') \
-                or self.directory_path is None or self.file_name is None:
+        try:
+            return self.directory_path / self.file_name
+        except:
+            warnings.warn('File path for input cube not defined!')
             return None
-        return self.directory_path / self.file_name
+
+        # TODO: Unsure why, but the code below can lead to maximum recursion depth error!
+#        if not hasattr(self, 'directory_path') or not hasattr(self, 'file_path') \
+#                or self.directory_path is None or self.file_name is None:
+#            return None
+#        return self.directory_path / self.file_name
 
     @property
     def output_root(self):

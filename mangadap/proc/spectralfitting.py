@@ -34,7 +34,7 @@ from matplotlib import pyplot
 
 
 # BASE CLASS -----------------------------------------------------------
-class SpectralFitting():
+class SpectralFitting:
     """
     Base class for spectral fitting.
     """
@@ -165,13 +165,13 @@ class StellarKinematicsFit(SpectralFitting):
 
 
 # ----------------------------------------------------------------------
-class CompositionFit(SpectralFitting):
-    """
-    Base class for fitting the spectral composition.
-    """
-    def __init__(self, fit_method, bitmask, par=None):
-        SpectralFitting.__init__(self, 'composition', bitmask=bitmask, par=par)
-        self.fit_method = fit_method
+#class CompositionFit(SpectralFitting):
+#    """
+#    Base class for fitting the spectral composition.
+#    """
+#    def __init__(self, fit_method, bitmask, par=None):
+#        SpectralFitting.__init__(self, 'composition', bitmask=bitmask, par=par)
+#        self.fit_method = fit_method
 
 
 # ----------------------------------------------------------------------
@@ -344,12 +344,15 @@ class EmissionLineFit(SpectralFitting):
         return bins_to_fit
 
     @staticmethod
-    def select_spaxels_to_fit(binned_spectra, bins_to_fit=None, debug=False):
+    def select_spaxels_to_fit(binned_spectra, minimum_snr=None, bins_to_fit=None, debug=False):
         """
         Select spaxels for which to fit emission lines.
         """
         if not debug:
-            return binned_spectra.check_fgoodpix()
+            good_spaxels = binned_spectra.check_fgoodpix()
+            if minimum_snr is None:
+                return good_spaxels
+            return good_spaxels & binned_spectra.above_snr_limit(minimum_snr, original_spaxels=True)
 
         warnings.warn('DEBUG!!')
 

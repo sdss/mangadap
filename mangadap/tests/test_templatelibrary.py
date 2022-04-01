@@ -5,17 +5,15 @@ import numpy
 import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
-from mangadap.proc.templatelibrary import TemplateLibrary, available_template_libraries
+from mangadap.proc.templatelibrary import TemplateLibrary #, available_template_libraries
 from mangadap.util.sampling import spectrum_velocity_scale, spectral_coordinate_step
 from mangadap.tests.util import requires_remote, remote_data_file, data_test_file
 
 
 def test_read():
-    tpl_list = available_template_libraries()
     for key in TemplateLibrary.supported_libraries:
-        tpl = TemplateLibrary(key, tpllib_list=tpl_list, match_resolution=False, velscale_ratio=1,
-                              spectral_step=1e-4, log=True, hardcopy=False)
-
+        tpl = TemplateLibrary(key, match_resolution=False, velscale_ratio=1, spectral_step=1e-4,
+                              log=True, hardcopy=False)
 
 def test_mileshc():
     tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=4, spectral_step=1e-4,
