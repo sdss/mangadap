@@ -1,21 +1,14 @@
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
 from scipy import special
-from matplotlib import pyplot
 
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.util.constants import DAPConstants
 from mangadap.tests.util import data_test_file
 from mangadap.proc.rukia import Rukia, LegendrePolynomial
 
-#import warnings
-#warnings.simplefilter('error', UserWarning)
 
 def pixelated_gaussian(x, c=0.0, s=1.0):
     """

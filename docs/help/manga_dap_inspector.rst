@@ -5,6 +5,8 @@
                                [--model_file MODEL_FILE] [--ext [EXT ...]]
                                [--maskspec]
     
+    Inspect results of the MaNGA DAP
+    
     optional arguments:
       -h, --help            show this help message and exit
       --maps_file MAPS_FILE

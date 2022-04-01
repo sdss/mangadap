@@ -1,10 +1,46 @@
 
+3.1.3dev
+--------
+
+ - Update to custom datacube class implementation.  Previous version
+   required a file within the mangadap/ directory structure; new code
+   allows for imports from a local user file.
+ - Deal with cubes where all the spaxels have valid data.
+ - Updates to `manga_dap_inspector` to use a cursor on the map selector
+   and a range slider for the vmin,vmax in the map.
+ - Refactor installation details inspired by `pypeit` package.
+    - Installation dependencies and setup moved into `setup.cfg`
+    - Versioning now done automatically
+    - Change scripting protocol
+    - tox testing CI    
+    - Updated MANIFEST
+- Major overhaul of how paths and output files are defined, needed to complete
+  abstraction and move away from MaNGA-specific code.
+    - Input paths and file names now defined as part of the DataCube subclass.
+      For MaNGA, this is done by subclassing the `MaNGADataCube` from the
+      `mangadap.config.manga.MaNGAConfig` class.  For user-defined DataCube
+      subclasses, these paths can be defined directly.
+    - Output paths for primary output files now defined by the `AnalysisPlanSet`
+      object or a relevant subclass.  For MaNGA, a subclass is necessary to put
+      all the files in a subdirectory using the plate and ifu, but likely most
+      other implementations can use `AnalysisPlanSet` directly.  Reference file
+      names adjusted and defined by each main analysis class.
+ - Remove all instances of `numpy.float`, `numpy.int`, `numpy.bool`, given
+   impending numpy deprecation of these types.
+ - Added documentation for how to fit one spectrum and to fit a (non-MaNGA)
+   datacube.
+ - Remove "filtered" fitting from pPXF module
+ - Major refactor of how module parameters are input and changed.
+    - Input analysis plan is now provided by a toml file.
+    - Module parameter definition classes all now have defaults.  Altering any
+      of those defaults is done via the plan toml file.
+
 3.1.2 (29 Jul 2021)
 -------------------
 
  - Additional updates to documentation for DR17 release.
- - Includes includes of MaNGA IDs used in the construction of the MaStar
-   HC version 2 library.
+ - Includes MaNGA IDs used in the construction of the MaStar HC version 2
+   library.
 
 
 3.1.1 (1 Mar 2021)

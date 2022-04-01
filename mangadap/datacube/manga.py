@@ -1,6 +1,22 @@
 """
 Implement the derived class for MaNGA datacubes.
 
+.. todo::
+
+    - Further optimize calculation of transfer matrix/
+    - Make DRP file class flexible to linear or log-linear wavelength
+      sampling?  Incorporate into MODE?
+    - Reconstructed broad-band images and PSFs are *not* restructured in
+      the CUBE files!  
+    - Image reconstruction has transpose sense wrt DRP output!
+    - Add logging
+    - Need to be clear about which functions use the RSS spectra to
+      create CUBE related data, like the covariance matrix and
+      instrumental dispersion calculations.
+    - Computing the approximate covariance cube is currently not
+      possible with only the CUBE on disk.  There's a logic problem that
+      needs to be fixed.
+
 ----
 
 .. include license and copyright
@@ -12,7 +28,7 @@ Implement the derived class for MaNGA datacubes.
 .. include:: ../include/links.rst
 """
 import time
-import os
+from pathlib import Path
 import warnings
 
 from IPython import embed
@@ -22,15 +38,20 @@ import numpy
 from astropy.io import fits
 from astropy.wcs import WCS
 
-from ..config import defaults
-from ..util.drpfits import DRPFits, DRPFitsBitMask
+from ..config.manga import MaNGAConfig
+from ..util.drpbitmask import DRPFitsBitMask, DRPQuality3DBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
 from ..spectra import MaNGARSS
 from .datacube import DataCube
 
-class MaNGADataCube(DRPFits, DataCube):
+
+# NOTE: Because of inheriting from MaNGAConfig and the specific code in the
+# MaNGAConfig.from_file method, beware of adding a `from_file` method to this!
+# It shouldn't be a problem though, because the main instantiation method is
+# effectively the "from_file" method.
+class MaNGADataCube(MaNGAConfig, DataCube):
     r"""
     Container class for a MaNGA datacube.
 
@@ -47,7 +68,7 @@ class MaNGADataCube(DRPFits, DataCube):
     dictionary.
 
     Args:
-        ifile (:obj:`str`):
+        ifile (:obj:`str`, `Path`_):
             The file with the MaNGA datacube. The name is expected to
             follow the nominal naming convention, which is used to
             parse the plate, ifudesign, and whether or not the
@@ -74,7 +95,7 @@ class MaNGADataCube(DRPFits, DataCube):
         sres_ext (:obj:`str`, optional):
             The extension to use when constructing the spectral
             resolution vectors. See
-            :func:`~mangadap.util.drpfits.DRPFits.spectral_resolution`.
+            :func:`~mangadap.config.manga.MaNGAConfig.spectral_resolution`.
         sres_fill (:obj:`bool`, optional):
             Fill masked values by interpolation. Default is to leave
             masked pixels in returned array.
@@ -88,15 +109,15 @@ class MaNGADataCube(DRPFits, DataCube):
     def __init__(self, ifile, z=None, vdisp=None, ell=None, pa=None, reff=None, sres_ext=None,
                  sres_fill=True, covar_ext=None):
 
-        if not os.path.isfile(ifile):
-            raise FileNotFoundError('File does not exist: {0}'.format(ifile))
-
-        # Parse the relevant information from the filename
-        directory_path = os.path.split(os.path.abspath(ifile))[0]
-        plate, ifudesign, log = ifile.split('-')[1:4]
-        # Instantiate the DRPFits base
-        DRPFits.__init__(self, int(plate), int(ifudesign), 'CUBE', log='LOG' in log,
-                         directory_path=directory_path)
+        # Use the configuration class method to construct the configuration
+        # based on the input data file
+        cfg = MaNGAConfig.from_file(ifile)
+        # and then use the parent class init to set it to self.  NOTE: This is
+        # round about, but the way I got it to work.  There must be a better way
+        # to do this...
+        MaNGAConfig.__init__(self, cfg.plate, cfg.ifudesign, mode=cfg.mode, log=cfg.log,
+                             drpver=cfg.drpver, redux_path=cfg.redux_path,
+                             chart_path=cfg.chart_path, directory_path=cfg.directory_path)
 
         # Collect the metadata into a dictionary
         meta = {}
@@ -106,13 +127,8 @@ class MaNGADataCube(DRPFits, DataCube):
         meta['pa'] = pa
         meta['reff'] = reff
 
-        # Try to define the BitMask object
-        try:
-            bitmask = DRPFitsBitMask(mode='CUBE')
-        except:
-            warnings.warn('Unable to define bit mask for MaNGA datacube.  Can only distinguish '
-                          ' between masked (values greater than 0) and unmasked (values of 0).')
-            bitmask = None
+        # Define the relevant BitMask object
+        bitmask = DRPFitsBitMask(mode='CUBE')
 
         # Open the file and initialize the DataCube base class
         with fits.open(ifile) as hdu:
@@ -127,9 +143,14 @@ class MaNGADataCube(DRPFits, DataCube):
             # NOTE: Need to keep a log of what spectral resolution
             # vectors were used so that the same vectors are read from
             # the RSS file, if/when it is loaded.
-            self.sres_ext, sres = DRPFits.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
+            self.sres_ext, sres = MaNGAConfig.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
+
+            # Pull the Galactic E(B-V) from the header and add it to the metadata
+            meta['ebv'] = prihdr['EBVGAL']
+            # Determine if the datacube was flagged as having CRITICAL DRP failures
+            meta['drpcrit'] = DRPQuality3DBitMask().flagged(prihdr['DRP3QUAL'], flag='CRITICAL')
 
             # NOTE: Transposes are done here because of how the data is
             # read from the fits file. The covariance is NOT transposed
@@ -143,93 +164,13 @@ class MaNGADataCube(DRPFits, DataCube):
             DataCube.__init__(self, hdu['FLUX'].data.T, wave=hdu['WAVE'].data,
                               ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T, bitmask=bitmask,
                               sres=sres.T, covar=covar, wcs=WCS(header=fluxhdr, fix=True),
-                              pixelscale=0.5, log=self.samp == 'LOG', meta=meta, prihdr=prihdr,
-                              fluxhdr=fluxhdr)
+                              pixelscale=0.5, log=self.log, meta=meta, prihdr=prihdr,
+                              fluxhdr=fluxhdr, name=f'{self.plate}-{self.ifudesign}')
         print('Reading MaNGA datacube data ... DONE')
-
-        # Try to use the header to set the DRP version
-        self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
-                        else defaults.drp_version()
-        # Reduction path is always set to the default. A warning is
-        # thrown if the default reduction path is not the same as the
-        # path expected for the file.
-        self.redux_path = defaults.drp_redux_path(drpver=self.drpver)
-        if self.directory_path != defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                              redux_path=self.redux_path):
-            warnings.warn('Default reduction path does not match file path.  May not be able to '
-                          'find paired RSS file if requested.')
-
-    # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
-
-    @staticmethod
-    def build_file_name(plate, ifudesign, log=True):
-        """
-        Return the name of the DRP datacube file.
-
-        This is a simple wrapper for
-        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
-        specific to the datacube.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-
-        Returns:
-            :obj:`str`: The relevant file name.
-        """
-        return DRPFits.build_file_name(plate, ifudesign, 'CUBE', log=log)
-
-    @staticmethod
-    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None):
-        """
-        Construct the default path and file name with the MaNGA
-        datacube.
-
-        This is a simple wrapper for
-        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
-        to the datacube files.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-            drpver (:obj:`str`, optional):
-                DRP version, which is used to define the default DRP
-                redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
-            redux_path (:obj:`str`, optional):
-                The path to the top level directory containing the
-                DRP output files for a given DRP version. Default is
-                defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
-                Providing this ignores anything provided for
-                ``drpver`` or ``redux_path``.
-
-        Returns:
-            :obj:`tuple`: Two strings with the default path to and
-            name of the DRP data file.
-        """
-        return DRPFits.default_paths(plate, ifudesign, 'CUBE', log=log, drpver=drpver,
-                                     redux_path=redux_path, directory_path=directory_path)
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None, **kwargs):
+                      chart_path=None, directory_path=None, **kwargs):
         """
         Construct a :class:`mangadap.datacube.manga.MaNGADataCube`
         object based on its plate-ifu designation.
@@ -249,15 +190,19 @@ class MaNGADataCube(DRPFits, DataCube):
             drpver (:obj:`str`, optional):
                 DRP version, which is used to define the default DRP
                 redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
+                :func:`mangadap.config.manga.drp_version`
             redux_path (:obj:`str`, optional):
                 The path to the top level directory containing the
                 DRP output files for a given DRP version. Default is
                 defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
+                :func:`mangadap.config.manga.drp_redux_path`.
+            chart_path (:obj:`str`, optional):
+                The path to the directory containing the finding chart images
+                for this plate.  Default is defined by
+                :func:`mangadap.config.manga.drp_finding_chart_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
+                :func:`mangadap.config.manga.drp_directory_path`.
                 Providing this ignores anything provided for
                 ``drpver`` or ``redux_path``.
             **kwargs:
@@ -266,9 +211,63 @@ class MaNGADataCube(DRPFits, DataCube):
                 :class:`mangadap.datacube.manga.MaNGADataCube` or
                 :class:`mangadap.spectra.manga.MaNGARSS`.
         """
-        path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
-                                            redux_path=redux_path, directory_path=directory_path)
-        return cls(os.path.join(path, file_name), **kwargs)
+        # Use the input to instantiate the configuration
+        cfg = MaNGAConfig(plate, ifudesign, log=log, drpver=drpver, redux_path=redux_path,
+                          chart_path=chart_path, directory_path=directory_path)
+        # Then use the configuration to instantiate the object
+        return cls(str(cfg.file_path), **kwargs)
+
+    @classmethod
+    def from_config(cls, cfgfile):
+        """
+        Construct a :class:`mangadap.datacube.manga.MaNGADataCube` or
+        :class:`mangadap.spectra.manga.MaNGARSS` object from a
+        configuration file.
+
+        Using the data read from the configuration file, the method
+        instantiates the class using
+        :func:`mangadap.spectra.manga.MaNGARSS.from_plateifu` or
+        :func:`mangadap.datacube.manga.MaNGADataCube.from_plateifu`.
+        This method will therefore fault for this base class!
+
+        The format of the configuration file is:
+
+        .. todo::
+
+            Fill this in.
+
+        Args:
+            cfgfile (:obj:`str`):
+                Configuration file
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Overrides any value in the configuration
+                file.
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Overrides
+                any value in the configuration file.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Providing this
+                ignores anything provided for ``drpver`` or
+                ``redux_path``. Overrides any value in the
+                configuration file.
+        """
+        # First use the base class method to instantiate the configuration
+        cfg = MaNGAConfig.from_config(cfgfile, mode='CUBE')
+
+        # Then read the file (again...) to get the relevant keyword arguments
+        full_cfg = DefaultConfig(cfgfile, interpolate=True)
+        kwargs = {}
+        kwargs['z'] = full_cfg.getfloat('z')
+        kwargs['vdisp'] = full_cfg.getfloat('vdisp')
+        kwargs['ell'] = full_cfg.getfloat('ell')
+        kwargs['pa'] = full_cfg.getfloat('pa')
+        kwargs['reff'] = full_cfg.getfloat('reff')
+        kwargs['sres_ext'] = full_cfg.get('sres_ext')
+        kwargs['sres_fill'] = full_cfg.getbool('sres_fill', default=True)
+        kwargs['covar_ext'] = full_cfg.get('covar_ext')
+        return cls(str(cfg.file_path), **kwargs)
 
     def load_rss(self, force=False):
         """
@@ -299,19 +298,18 @@ class MaNGADataCube(DRPFits, DataCube):
         if self.rss is not None and not force:
             return
 
-        rss_file = DRPFits.build_file_name(self.plate, self.ifudesign, 'RSS', log=self.log)
-        rss_file_path = os.path.join(self.directory_path, rss_file)
-        if not os.path.isfile(rss_file_path):
+        # Get the RSS counterpart
+        rss_cfg = MaNGAConfig(self.plate, self.ifudesign, mode='RSS', log=self.log,
+                              directory_path=self.directory_path)
+        if not rss_cfg.file_path.exists():
             # Not in this directory.  Check the nominal directory
-            warnings.warn('Could not find: {0}'.format(rss_file_path))
-            rss_file_path = os.path.join(
-                    defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                redux_path=self.redux_path), rss_file)
-        if not os.path.isfile(rss_file_path):
-            warnings.warn('Could not find: {0}'.format(rss_file_path))
-            raise FileNotFoundError('Could not find RSS file.')
+            warnings.warn(f'Could not find: {rss_file_path}.  Trying the default path.')
+            rss_cfg = MaNGAConfig(self.plate, self.ifudesign, mode='RSS', log=self.log)
+        if not rss_cfg.file_path.exists():
+            raise FileNotFoundError(f'Could not find: {rss_file_path}')
 
-        self.rss = MaNGARSS(rss_file_path, sres_ext=self.sres_ext, sres_fill=self.sres_fill)
+        self.rss = MaNGARSS(str(rss_cfg.file_path), sres_ext=self.sres_ext,
+                            sres_fill=self.sres_fill)
 
     def mean_sky_coordinates(self, center_coo=None, offset='OBJ'):
         """
@@ -359,9 +357,9 @@ class MaNGADataCube(DRPFits, DataCube):
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
         231). The default ``rlim`` is provided by
-        :func:`mangadap.config.defaults.regrid_rlim`.
+        :func:`mangadap.config.manga.MaNGAConfig.regrid_rlim`.
         """
-        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        _rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
         return super().approximate_correlation_matrix(sigma_rho, _rlim, rho_tol=rho_tol, redo=redo)
 
     def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, rho_tol=None,
@@ -375,9 +373,9 @@ class MaNGADataCube(DRPFits, DataCube):
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
         231). The default ``rlim`` is provided by
-        :func:`mangadap.config.defaults.regrid_rlim`.
+        :func:`~mangadap.config.manga.MaNGAConfig.regrid_rlim`.
         """
-        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        _rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
         return super().approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
                                                      rho_tol=rho_tol, csr=csr, quiet=quiet)
 
@@ -392,9 +390,9 @@ class MaNGADataCube(DRPFits, DataCube):
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
         231). The default ``rlim`` is provided by
-        :func:`mangadap.config.defaults.regrid_rlim`.
+        :func:`mangadap.config.manga.MaNGAConfig.regrid_rlim`.
         """
-        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        _rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
         return super().approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
                                                    rlim=_rlim, rho_tol=rho_tol, csr=csr,
                                                    quiet=quiet)

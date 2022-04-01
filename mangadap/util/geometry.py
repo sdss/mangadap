@@ -472,7 +472,7 @@ class SemiMajorAxisCoo:
         _y = numpy.atleast_1d(y)
         if _x.size != _y.size:
             raise ValueError('X and Y arrays must have the same size')
-        out = numpy.empty((_x.size, 6), dtype=numpy.float)
+        out = numpy.empty((_x.size, 6), dtype=float)
         for i, (xx, yy) in enumerate(zip(_x.ravel(),_y.ravel())):
             self._setB(xx,yy)
             out[i,:] = linalg.lu_solve((self.Alu, self.Apiv), self.B)
@@ -504,7 +504,7 @@ class SemiMajorAxisCoo:
         _y = numpy.atleast_1d(y)
         if _x.size != _y.size:
             raise ValueError('X and Y arrays must have the same size')
-        out = numpy.empty((_x.size, 4), dtype=numpy.float)
+        out = numpy.empty((_x.size, 4), dtype=float)
         for i, (xx, yy) in enumerate(zip(_x.ravel(),_y.ravel())):
             self._setD(xx,yy)
             out[i,:] = linalg.lu_solve((self.Clu, self.Cpiv), self.D)

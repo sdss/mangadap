@@ -2,6 +2,12 @@ r"""
 Eric EMSELLEM - ESO / CRAL
 eric.emsellem@eso.org
 
+.. warning::
+
+    This module is significantly out of date with the rest of the MaNGA DAP
+    code, as it was never directly incorporated in the workflow.  It is included
+    here for reference.
+
 The main goal of this script is to derive :math:`\lambda_R` and
 :math:`V/\sigma` radial profiles, given a set of coordinates
 :math:`(x,y)` and kinematic measurements (:math:`V`, :math:`\sigma`, but

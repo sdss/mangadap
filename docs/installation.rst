@@ -37,148 +37,92 @@ so along with a full package manager, like `Anaconda`_, or you can
 install python 3 directly from `python.org`_.
 
 
-Install the DAP code
---------------------
+Python environment setup
+------------------------
 
-The preferred method to install the DAP and ensure its dependencies
-are met is to, from the top-level, ``mangadap`` directory, run:
+You are **strongly** encouraged to build an isolated python environment
+specifically for the DAP.  This can be done using `virtualenv`_:
 
 .. code-block:: console
 
-    pip3 install -e .
+    virtualenv dap
+    source dap/bin/activate
+
+or `conda`_:
+
+.. code-block:: console
+
+    conda create -n dap python=3.9
+    conda activate dap
+
+See the `Virtualenv documentation <https://virtualenv.pypa.io/en/latest/>`_
+and/or `Managing Environments with Conda
+<https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_
+for more details. See also `virtualenvwrapper
+<https://virtualenvwrapper.readthedocs.io/en/latest/>`_ as an option for more
+easily managing `virtualenv`_ environments.
+
+Install the DAP code
+--------------------
+
+Once you have cloned the repository, the preferred method to install the DAP and
+ensure its dependencies are met is to perform a local pip install.  From the
+top-level ``mangadap`` directory, run:
+
+.. code-block:: console
+
+    pip install -e .
 
 This approach is preferred because it eases uninstalling the code:
 
 .. code-block:: console
     
-    pip3 uninstall sdss-mangadap
+    pip uninstall sdss-mangadap
 
-Alternatively, if you anticipate making changes to the DAP code, run:
-
-.. code-block:: console
-
-    python3 setup.py develop
-
-----
-
-To install only the DAP dependencies, run:
+If you plan to develop the code, you should install the development dependencies
+as follows:
 
 .. code-block:: console
 
-    pip3 install -r requirements.txt
+    pip install -e ".[dev]"
 
-To install the additional development (including the testing package
-``pytest``) and documentation dependencies, also run::
+.. note::
 
-.. code-block:: console
-
-    pip3 install -r requirements_doc.txt
-    pip3 install -r requirements_dev.txt
-
+    The use of the quotations above is shell dependent; e.g., you need them for
+    zshell, but not for bash.  Also beware the exact characters used in the html
+    above may not be the quotation characters you need for the command line
+    (i.e., copy-pasting the line above may throw an error).
 
 Test your installation
 ----------------------
 
-To test the installation, you can do one of the following:
+To test the installation, make sure you have `pytest` installed and then
 
- * Run the tests via the setup script:
+.. code-block:: console
 
-    .. code-block:: console
+    cd mangadap/tests
+    pytest . -W ignore
 
-        python3 setup.py test
+Some tests require a set of "remote" data that are not located in the repo for
+space considerations. You can download these data by running the following
+script:
 
- * Run the tests using `pytest` directly:
+.. code-block:: console
 
-    .. code-block:: console
+    python download_test_data.py
 
-        cd mangadap/tests
-        pytest .
-
-Some tests requires a set of "remote" data that are not located in
-the repo for space considerations. Downloading the data used by these
-tests currently requires `SDSS Collaboration Access`_. The link in
-the last sentence points to a description of how this access is
-granted for Marvin using a ``~\.netrc`` file. The DAP uses the same
-``~\.netrc`` file to authenticate access to the ``data.sdss.org``
-host for downloading the test data. Once you have your ``~\.netrc``
-file, you can download the necessary test data and rerun the tests to
-include usage of that data like this:
-
-    .. code-block:: console
-
-        python3 download_test_data.py
-        cd mangadap/tests
-        pytest .
-
-
-Local Environment Setup
------------------------
-
-The DAP uses environmental variables to define the paths to specific
-data and other repositories. If these are not defined, warnings will
-be issued every time the DAP is installed or imported. The relevant
-environmental variables, their default, and their usage are provided
-below.
-
-+----------------------------+-------------------------------------+------------------------------------------------+
-|                   Variable |                             Default |                                       Comments |
-+============================+=====================================+================================================+
-| ``MANGADRP_VER``           | ``v3_1_1`` (i.e., MPL-11)           | Version of the DRP, used for path construction |
-+----------------------------+-------------------------------------+------------------------------------------------+
-| ``MANGA_SPECTRO_REDUX``    | ``$HOME/MaNGA/redux``               | Root path for the reduced data                 |
-+----------------------------+-------------------------------------+------------------------------------------------+
-| ``MANGADAP_VER``           | ``mangadap.__version__``            | Version of the DAP, used for path construction |
-+----------------------------+-------------------------------------+------------------------------------------------+
-| ``MANGA_SPECTRO_ANALYSIS`` | ``$HOME/MaNGA/analysis``            | Root path for the analysis data                |
-+----------------------------+-------------------------------------+------------------------------------------------+
-
-These environmental variables can be added to, e.g., your
-``.bash_profile`` file in your home directory or be included in a script
-that is sourced when you want to run the DAP.  The lines added to your
-``.bash_profile`` file could look something like this:
-
-.. code-block:: bash
-
-    export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
-    export MANGADRP_VER=v3_1_1
-
-    export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
-    export MANGADAP_VER=3.1.0
+And then executing the tests with the same commands above.
 
 .. note::
 
- * Importantly, note that ``$MANGADAP_VER`` is **only** used to set the
-   path names, not to select the specific version of the DAP that
-   should be used. The version of the DAP used is always the one
-   installed by your python environment.
- * The DAP checks that these variables are defined *every time it is
-   imported*. If they are not, warnings are raised and the defaults
-   are used.
- * Some of these same variables are defined by `Marvin`_. It is
-   possible to have both Marvin and the DAP point to the same
-   directory, but beware that this may mean that some of the files
-   get overwritten!
- * Two additional variables (``$MANGACORE_VER`` and
-   ``$MANGACORE_DIR``) are used in a specific mode of survey-level
-   execution of the DAP. However, this is a niche usage mode and is
-   effectively never used. See :ref:`execution-rundap`.
- * The DAP expects to find the DRP ``LOGCUBE`` *and* ``LOGRSS`` files
-   in the directory
-   ``$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[PLATE]/stack``, where
-   ``[PLATE]`` is the desired plate number. The ``LOGRSS`` files are
-   required if you want to properly account for
-   :ref:`spatialcovariance`. This path can be altered when executing
-   the DAP.
- * The DAP expects to find/write data to
-   ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``. This path
-   can be altered when executing the DAP, but the subdirectory
-   structure used by the DAP to organize its outputs within this root
-   directory cannot currently be changed.
+    If you have `SDSS Collaboration Access`_ and you have a `~/.netrc` file
+    (e.g., from using collaboration access with Marvin), this script will pull
+    the data from the (still public) `mangawork` directory on the SAS.
+
 
 Problems?
 ---------
 
-We have limited support to offer installation help. However, if you
-have problems, particularly those that you think may be a more
-general problem, please `Submit an issue`_.
+If you have problems, particularly those that you think may be a more general
+problem, please `Submit an issue`_.
 

@@ -23,6 +23,7 @@ Submodules
    :maxdepth: 4
 
    mangadap.dapfits
+   mangadap.version
 
 Module contents
 ---------------

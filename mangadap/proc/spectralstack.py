@@ -19,7 +19,9 @@ from IPython import embed
 
 import numpy
 from scipy import sparse, interpolate
-from astropy.io import fits
+from matplotlib import pyplot, rc
+
+#from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import KeywordParSet
@@ -27,10 +29,6 @@ from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
 
-from matplotlib import pyplot, rc
-
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 class SpectralStackPar(KeywordParSet):
     r"""
@@ -43,8 +41,14 @@ class SpectralStackPar(KeywordParSet):
     The defined parameters are:
 
     .. include:: ../tables/spectralstackpar.rst
+
+    .. warning::
+
+        Velocity registration is currently *not* implemented.
+
     """
-    def __init__(self, operation=None, register=None, cz=None, covar_mode=None, covar_par=None):
+    def __init__(self, operation='mean', register=False, cz=None, covar_mode='none',
+                 covar_par=None):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
@@ -66,8 +70,8 @@ class SpectralStackPar(KeywordParSet):
                  'The parameter(s) needed to perform a given method of handling the ' \
                     'covariance.  See :func:`SpectralStack.covariance_mode_options` for the ' \
                     'available options.']
-        super(SpectralStackPar, self).__init__(pars, values=values, defaults=defaults,
-                                               options=options, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, options=options, dtypes=dtypes,
+                         descr=descr)
 
     def toheader(self, hdr):
         """
@@ -442,8 +446,8 @@ class SpectralStack:
         # Setup for output
         nbin = self.flux.shape[0]
         nchan = covar.shape[-1]
-        self.covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-        variance_ratio = numpy.ma.zeros( (nbin,nchan), dtype=numpy.float) \
+        self.covar = numpy.empty(nchan, dtype=sparse.csr_matrix)
+        variance_ratio = numpy.ma.zeros( (nbin,nchan), dtype=float) \
                             if recalibrate_ivar else None
 
         # Calculate the covariance in the stack
@@ -529,7 +533,7 @@ class SpectralStack:
         nchan = self.covar.shape[-1]
         nbin = self.flux.shape[0]
         inpix = numpy.ma.power(self.npix, -1.)
-        covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        covar = numpy.empty(nchan, dtype=sparse.csr_matrix)
         for i in range(nchan):
             j = self.covar.input_indx[i]
             _inpix = inpix[:,j,None]*inpix[None,:,j]
@@ -1140,7 +1144,7 @@ class SpectralStack:
                                                            keep_range=keep_range)
 
         # Calculate the transfer matrix
-        self._set_rebin_transfer_matrix(numpy.zeros(nspec, dtype=numpy.int) 
+        self._set_rebin_transfer_matrix(numpy.zeros(nspec, dtype=int) 
                                             if binid is None else binid, binwgt=binwgt)
 
         # Stack the spectra with or without covariance

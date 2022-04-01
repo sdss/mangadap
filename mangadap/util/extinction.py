@@ -71,7 +71,7 @@ def reddening_vector_calzetti(wave, ebv, rv=None):
         warnings.warn('Invalid wavelength range in input vector.  Invalid regions will be masked.')
 
     # Extinction curve
-    ext = numpy.ma.zeros(_wave.size, dtype=numpy.float)
+    ext = numpy.ma.zeros(_wave.size, dtype=float)
     ext[numpy.invert(w1) & numpy.invert(w2)] = numpy.ma.masked
     ext[w1] = 2.659*(-1.857 + 1.040*k[w1]) + _rv
     ext[w2] = 2.659*(polyval(k[w2], [-2.156, 1.509, -0.198, 0.011])) + _rv
@@ -134,8 +134,8 @@ def reddening_vector_ccm(wave, ebv, rv=None, original=False):
 
     _rv = default_ccm_rv() if rv is None else rv
 
-    a = numpy.zeros(k.size, dtype=numpy.float)
-    b = numpy.zeros(k.size, dtype=numpy.float)
+    a = numpy.zeros(k.size, dtype=float)
+    b = numpy.zeros(k.size, dtype=float)
 
     # Compute the Infrared portion
     w1 = (k > 0.3) & (k < 1.1)
@@ -161,8 +161,8 @@ def reddening_vector_ccm(wave, ebv, rv=None, original=False):
     w1 = (k >= 3.3) & (k < 8.)
 
     w2 = w1 & (k > 5.9)
-    fa = numpy.zeros(k.size, dtype=numpy.float)
-    fb = numpy.zeros(k.size, dtype=numpy.float)
+    fa = numpy.zeros(k.size, dtype=float)
+    fb = numpy.zeros(k.size, dtype=float)
     fa[w2] = -0.04473 * numpy.square(k[w2]-5.9) - 0.009779 * numpy.power(k[w2]-5.9,3)
     fb[w2] =   0.2130 * numpy.square(k[w2]-5.9) +   0.1207 * numpy.power(k[w2]-5.9,3)
 
@@ -267,7 +267,7 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
 
     # Wavenumber in 1/micron
     k = 1e4/_wave
-    ext = numpy.ma.zeros(_wave.size, dtype=numpy.float)
+    ext = numpy.ma.zeros(_wave.size, dtype=float)
     
     # UV portion
     w1 = k > 1e4/2700.

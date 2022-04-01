@@ -14,9 +14,9 @@ Base class for a datacube
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
-# TODO: List the required metadata somewhere in here?
-
 # TODO: Force the datacube data arrays to be read-only?
+
+import warnings
 
 from IPython import embed
 
@@ -25,6 +25,7 @@ import numpy
 from scipy import sparse, interpolate
 
 from astropy.io import fits
+import astropy.constants
 
 from ..util.bitmask import BitMask
 from ..util.mapping import permute_wcs_axes
@@ -84,12 +85,8 @@ class DataCube:
     flattened row-major memory block); see
     :func:`~mangadap.util.covariance.Covariance.transpose_raw_shape`.
     
-    Derived classes should, in particular, provide the read methods.
-    The critical components of the derived classes are:
-
-    .. todo::
-
-        Fill this in.
+    See :ref:`datacube_subclass` for instructions on subclassing this object for
+    non-MaNGA datacubes.
 
     Args:
         flux (`numpy.ndarray`_):
@@ -145,10 +142,12 @@ class DataCube:
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
         meta (:obj:`dict`, optional):
-            A free-form dictionary used to hold metadata relevant to
-            the datacube. Metadata required by analysis modules are
-            indicated where relevant. If None, :attr:`meta` is
-            instantiated as an empty dictionary.
+            A free-form dictionary used to hold metadata relevant to the
+            datacube. Metadata required by analysis modules are indicated where
+            relevant. If None, :attr:`meta` is instantiated as an empty
+            dictionary and populated with the bare minimum needed to execute the
+            DAP.  NOTE: Currently this is a required argument because an
+            estimate of the redshift is needed to execute the DAP.
         prihdr (`astropy.io.fits.Header`_, optional):
             Primary header read from datacube fits file. If None,
             instantiated as an empty `astropy.io.fits.Header`_.
@@ -231,10 +230,21 @@ class DataCube:
             Approximate correlation matrix; see
             :func:`approximate_correlation_matrix`.
     """
+
+    instrument = None
+    """
+    The name of the instrument used to collect the data.  This is *only* used in
+    construction of the root name for output files.  See
+    :func:`~mangadap.datacube.datacube.DataCube.output_root`.
+    """
+
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
                  axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None, prihdr=None,
-                 fluxhdr=None):
+                 fluxhdr=None, name=None):
+
+        # Set an identifier for the datacube
+        self.name = name
 
         if wcs is None and wave is None:
             raise ValueError('Must either provide a single wavelength vector or a WCS that can '
@@ -260,6 +270,7 @@ class DataCube:
         self.meta = {} if meta is None else meta
         if not isinstance(self.meta, dict):
             raise TypeError('Metadata must be provided as a dictionary.')
+        self.populate_metadata()
 
         self.wave = None if wave is None else numpy.atleast_1d(wave)
         if self.wave is None:
@@ -292,6 +303,10 @@ class DataCube:
         if self.bitmask is None:
             # Ensure mask is a boolean array
             self.mask = self.mask.astype(bool)
+
+        self.redux_bitmask = None
+        self.redux_qual_key = None
+        self.redux_qual_flag = None
         
         self.sres = None
         if sres is not None:
@@ -311,7 +326,7 @@ class DataCube:
 
         # Allocate attributes for primary and flux array fits headers
         self.prihdr = fits.Header() if prihdr is None else prihdr
-        self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
+        self.fluxhdr = self.prihdr.copy() if fluxhdr is None else fluxhdr
 
         # Allow for a RowStackedSpectrum counterpart
         self.rss = None
@@ -320,6 +335,173 @@ class DataCube:
         self.sigma_rho = None
         self.correl_rlim = None
         self.approx_correl = None
+
+    @property
+    def file_path(self):
+        """
+        Return the full path to the input file.
+
+        .. warning::
+
+            The required attributes for this method are *not* defined by the
+            base class.  If the attributes ``directory_path`` or ``file_name``
+            do not exist or if either of them are None, this returns None.
+        """
+        try:
+            return self.directory_path / self.file_name
+        except:
+            warnings.warn('File path for input cube not defined!')
+            return None
+
+        # TODO: Unsure why, but the code below can lead to maximum recursion depth error!
+#        if not hasattr(self, 'directory_path') or not hasattr(self, 'file_path') \
+#                or self.directory_path is None or self.file_name is None:
+#            return None
+#        return self.directory_path / self.file_name
+
+    @property
+    def output_root(self):
+        if self.instrument is None and self.name is None:
+            raise ValueError('Output root is undefined.  Must provide instrument and/or name.')
+        if self.instrument is not None and self.name is not None:
+            return f'{self.instrument}-{self.name}'
+        if self.instrument is not None:
+            return f'{self.instrument}'
+        return f'{self.name}'
+
+    @property
+    def can_analyze(self):
+        """
+        Confirm that the DAP can analyze the datacube.
+
+        The only requirement is:
+
+            - the :math:`cz` velocity (``'vel'`` in :attr:`meta`) must be
+              greater than -500 km/s.
+
+        Returns:
+            :obj:`bool`: Flag whether or not the DAP can analyze the datacube.
+
+        """
+        return self.meta['vel'] is not None and self.meta['vel'] > -500
+
+    def populate_metadata(self):
+        r"""
+        Populate and validate the :class:`DataCube` metadata (in :attr:`meta`)
+        to ensure the it can be analyzed by the DAP.
+
+        The only required metadata keyword is ``z``, which sets the initial
+        guess for the bulk redshift of the galaxy.  If this key is not available
+        or its value doesn't meet the criterion below, this function will raise
+        an exception, meaning the DAP will fault before it starts processing the
+        DataCube.
+
+        The metadata provided must meet the following **critical criteria** or
+        the method will fault:
+
+            - Velocity (:math:`cz`) must be greater than -500.
+
+        For the remainder of the metadata, if the keyword does not exist, if the
+        value is None, or if the value is outside the accepted range, a default
+        is chosen. The metadata keywords, acceptable ranges, and defaults are
+        provided below.
+
+        +-------------+--------------------------------+---------+
+        |   Keyword   |                          Range | Default |
+        +=============+================================+=========+
+        | ``vdisp``   |             :math:`\sigma > 0` |     100 |
+        +-------------+--------------------------------+---------+
+        | ``ell``     | :math:`0 \leq \varepsilon < 1` |    None |
+        +-------------+--------------------------------+---------+
+        | ``pa``      |    :math:`0 \leq \phi_0 < 360` |    None |
+        +-------------+--------------------------------+---------+
+        | ``reff``    |        :math:`R_{\rm eff} > 0` |    None |
+        +-------------+--------------------------------+---------+
+        | ``ebv``     |          :math:`E(B-V) \geq 0` |    None |
+        +-------------+--------------------------------+---------+
+        | ``drpcrit`` |                  True or False |   False |
+        +-------------+--------------------------------+---------+
+
+        All other metadata in :attr:`meta` are ignored.
+
+        If they do not already exist in :attr:`meta`, this method adds the
+        following keywords:
+
+            - ``z``: The bulk redshift of the galaxy, used to calculate
+              :math:`cz`.
+
+            - ``vel``: The initial guess velocity (:math:`cz`) in km/s.
+
+            - ``vdisp``: The initial guess velocity dispersion in km/s.
+
+            - ``ell``: The isophotal ellipticity (:math:`1-b/a`) to use when
+                calculating semi-major axis coordinates.
+
+            - ``pa``: The isophotal position angle in deg from N through E, used
+              when calculating semi-major axis coordinates.
+
+            - ``reff``: The effective radius in arcsec (DataCube WCS coordinates
+              are expected to be in deg), used as a normalization of the
+              semi-major axis radius in various output data.
+
+            - ``ebv``: The E(B-V) Galactic reddening along the line-of-sight to
+              the galaxy.
+
+            - ``drpcrit``: A flag that indicates critical failures in the data
+              reduction (True implies poor data quality).  In MaNGA, the DRP will
+              flag datacubes as having CRITICAL failures, but the survey
+              approach was to run the DAP on these datacubes anyway.  This flag
+              is then used to propagate the caution in using the data analysis
+              products to the user.
+        """
+        keys = self.meta.keys()
+        if 'z' not in keys or self.meta['z'] is None:
+            warnings.warn('The bulk redshift has not been defined.  The DAP will *not* be able '
+                          'to analyze this datacube.')
+            self.meta['z'] = None
+        self.meta['vel'] = None if self.meta['z'] is None \
+                            else astropy.constants.c.to('km/s').value * self.meta['z']
+
+        if 'vdisp' not in keys or self.meta['vdisp'] is None or not self.meta['vdisp'] > 0:
+            warnings.warn('Velocity dispersion not provided or not greater than 0 km/s.  '
+                        'Adopting initial guess of 100 km/s.')
+            self.meta['vdisp'] = 100.0
+
+        if 'ell' not in keys or self.meta['ell'] is None or self.meta['ell'] < 0 \
+                or self.meta['ell'] > 1:
+            warnings.warn('Ellipticity not provided or not in the range 0 <= ell <= 1.  '
+                        'Setting to None.')
+            self.meta['ell'] = None
+
+        if 'pa' not in keys or self.meta['pa'] is None:
+            warnings.warn('Position angle not provided. Setting to None.')
+            self.meta['pa'] = None
+
+        # Impose expected range
+        if self.meta['pa'] is not None and (self.meta['pa'] < 0 or self.meta['pa'] >= 360):
+            warnings.warn('Imposing 0-360 range on position angle.')
+            while self.meta['pa'] < 0:
+                self.meta['pa'] += 360
+            while self.meta['pa'] >= 360:
+                self.meta['pa'] -= 360
+
+        if 'reff' not in keys or self.meta['reff'] is None or not self.meta['reff'] > 0:
+            warnings.warn('Effective radius not provided or not greater than 0. Setting to None.')
+            self.meta['reff'] = None
+
+        if 'ebv' not in keys or self.meta['ebv'] is None or self.meta['ebv'] < 0:
+            warnings.warn('Galactic reddening not provided or not >= 0. Setting to None.')
+            self.meta['ebv'] = None
+
+        if 'drpcrit' not in keys or not isinstance(self.meta['drpcrit'], bool):
+            warnings.warn('Data reduction quality flag not provided or not a boolean.  Setting '
+                          'quality flag to False (i.e., data reduction is expected to be high '
+                          'quality).')
+            self.meta['drpcrit'] = False
+
+        if not self.can_analyze:
+            warnings.warn('The DAP will not be able to analyze this datacube.  See '
+                          '"DataCube.can_analyze".')
 
     @classmethod
     def from_config(cls, cfgfile, **kwargs):
@@ -342,7 +524,7 @@ class DataCube:
                 scripts.
         """
         raise NotImplementedError('No from_config method is available for {0}.'.format(
-                                  self.__class__.__name__))
+                                  cls.__name__))
 
     # TODO: write a from_rss classmethod
 
@@ -366,7 +548,7 @@ class DataCube:
         x = (x - x[0])*numpy.cos(numpy.radians(y[0]))
         return numpy.sqrt(polygon_area(x, y))*3600
 
-    def _get_wavelength_vector(self, nwave):
+    def _get_wavelength_vector(self):
         """
         Use the `astropy.wcs.WCS`_ attribute (:attr:`wcs`) to
         generate the datacube wavelength vector.
@@ -380,17 +562,29 @@ class DataCube:
 
         Raises:
             ValueError:
-                Raised if :attr:`wcs` is not defined.
+                Raised if :attr:`wcs` or :attr:`nwave` is not defined.
         """
+        if self.nwave is None:
+            raise ValueError('Length of the spectral axis (nwave) must be defined.')
         if self.wcs is None:
             raise ValueError('World coordinate system required to construct wavelength vector.')
-        coo = numpy.array([numpy.ones(nwave), numpy.ones(nwave), numpy.arange(nwave)+1]).T
+        coo = numpy.array([numpy.ones(self.nwave), numpy.ones(self.nwave),
+                           numpy.arange(self.nwave)+1]).T
         return self.wcs.all_pix2world(coo, 1)[:,2]*self.wcs.wcs.cunit[2].to('angstrom')
 
     @property
     def nspec(self):
         """Number of spectra in the datacube."""
         return numpy.prod(self.spatial_shape)
+
+    @staticmethod
+    def propagate_flags():
+        """
+        Flags that should be propagated from the observed data to the analyzed data.
+
+        The base class returns ``None``.
+        """
+        return None
 
     @staticmethod
     def do_not_use_flags():
@@ -579,7 +773,7 @@ class DataCube:
 
         # Add in any masked data
         if use_mask:
-            mask |= self.mask if self.bitmask is None \
+            mask |= self.mask.reshape(nspec,-1) if self.bitmask is None \
                     else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
@@ -690,6 +884,7 @@ class DataCube:
             # Not offsetting, so we're done
             return x, y
 
+        # TODO: Use astropy.coordinates.SkyOffset 
         # Offset and return
         if len(center_coo) != 2:
             raise ValueError('Provided coordinates are expected to be a single x,y pair.')
@@ -1007,9 +1202,8 @@ class DataCube:
             C_{ij} = \rho_{ij}(V_{i} V_{j})^{1/2}
 
         where :math:`\rho_{ij}` is approximated by
-        :func:`approximate_correlation_matrix` and
-        :math:`V_i\equivC_{ii}` are the variances provided by the
-        inverse of :attr:`ivar`.
+        :func:`approximate_correlation_matrix` and :math:`V_i\equiv C_{ii}` are
+        the variances provided by the inverse of :attr:`ivar`.
 
         The method first calculates :math:`\rho_{ij}` if it hasn't
         been yet or the provided ``sigma_rho`` and/or ``rlim`` values

@@ -311,47 +311,50 @@ Changing the moment parameters
 
 The moment measurements are performed by
 :class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`; see
-:ref:`emission-line-moments`. A set of parameter files that define a
-list of emission-line moment sets are provided with the DAP source
-distribution and located at
-``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters``. There are
-a few methods that you can use to change the set of emission-line
-parameters used by
-:class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`:
+:ref:`emission-line-moments`. A set of parameter files that define a list of
+emission-line moment sets are provided with the DAP source distribution and
+located at ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters``.  The
+database you wish to use is selected by the ``passbands`` parameter in the
+relevant parameter block of the :ref:`plan` file.  The keyword is simply the
+capitalized name of the file without the ".par" extension.  For example, to use
+the `elbmpl9.par
+<https://github.com/sdss/mangadap/blob/master/mangadap/data/emission_bandpass_filters/elbmpl9.par>`__
+database, the plan file would include
 
-    #. To use one of the existing parameter databases, you can change
-       the ``emission_passbands`` keyword in the
-       :class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`
-       configuration file. The keyword should be the capitalized root
-       of the parameter filename. E.g., to use
-       ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters/elbmpl9.par``,
-       set the keyword to ``ELBMPL9``.
+.. code-block:: toml
 
-    #. To use a *new* parameter database, write the file and save it in
-       the ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters/``
-       directory, and then change the relevant configuration file in
-       the same way as described above.
+    [default.eline_moments]
+     passbands = 'ELBMPL9'
+
+To provide a user-defined database, simply replace the ``passbands`` keyword
+with the name of the local file defining the database (in the format given
+above).  For example, 
+
+.. code-block:: toml
+
+    [default.eline_moments]
+     passbands = '/path/to/my/local/file/my_elb_database.par'
 
 .. _emissionlines-modeling:
 
 Gaussian Emission-Line Modeling
 -------------------------------
 
-The DAP models the emission lines using single-component Gaussian
-functions.  See :mod:`mangadap.proc.emissionlinemoments` and
-:ref:`emission-line-modeling`.  In survey-level runs of the DAP, we have
-typically paired the set of moment measurements and Gaussian models;
-however, the number of emission-line moment measurements need not be
-matched to the number of emission-line Gaussian models and vice versa.
+The DAP models the emission lines using single-component Gaussian functions.
+See :mod:`mangadap.proc.emissionlinemoments` and :ref:`emission-line-modeling`.
+In survey-level runs of the DAP, we have typically paired the set of moment
+measurements and Gaussian models; however, the number of emission-line moment
+measurements need not be matched to the number of emission-line Gaussian models
+and vice versa.
 
 .. _emissionlines-model-par-format:
 
 Input Data Format
 ~~~~~~~~~~~~~~~~~
 
-The parameters that define the emission-line models to fit are provided
-via the :class:`~mangadap.par.emissionlinedb.EmissionLineDB` object,
-which is built using an `SDSS-style parameter file`_.
+The parameters that define the emission-line models to fit are provided via the
+:class:`~mangadap.par.emissionlinedb.EmissionLineDB` object, which is built
+using an `SDSS-style parameter file`_.
 
 The columns of the parameter file are:
 
@@ -424,11 +427,10 @@ and an example file might look like this:
       width calculations.  Nominally, these should be the same, but it's
       up to the person that writes the two parameter files to make sure
       that is true.
-    
-    * The format of this file has changed in version 3.1.0 in a way that
-      removes many of the parameters used by the
-      :class:`~mangadap.proc.elric.Elric` fitter. That class is effectively
-      now deprecated.
+      
+    * The format of this file has changed in version 3.1.0 in a way that removes
+      many of the parameters used by the :class:`~mangadap.proc.elric.Elric`
+      fitter. That class is now deprecated.
 
 .. _emission-line-modeling-action:
 
@@ -451,28 +453,43 @@ Emission-Line "Modes"
 Changing the modeling parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
+The moment measurements are performed by
+:class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`; see
+:ref:`emission-line-moments`. A set of parameter files that define a list of
+emission-line moment sets are provided with the DAP source distribution and
+located at ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters``.  The
+database you wish to use is selected by the ``passbands`` parameters in the
+relevant parameter block of the :ref:`plan` file.  The keyword is simply the
+capitalized name of the file without the ".par" extension.  To provide a
+user-defined database, simply replace the ``passbands`` keyword with the name of
+the local file defining the database (in the format given above).
+
 The emission-line modeling is performed by
 :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`; see
 :ref:`emission-line-modeling`. A set of files that define a list of
-emission-line model parameter sets are provided with the DAP source
-distribution and located at
-``$MANGADAP_DIR/mangadap/data/emission_lines``. There are a few
-methods that you can use to change the set of emission-line
-parameters used by
-:class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`:
+emission-line model parameter sets are provided with the DAP source distribution
+and located at ``$MANGADAP_DIR/mangadap/data/emission_lines``.  The database you
+wish to use is selected by the ``emission_lines`` parameter in the relevant
+parameter block of the :ref:`plan` file.  The keyword is simply the capitalized
+name of the file without the ".par" extension.  For example, to use the
+`elpmpl11.par
+<https://github.com/sdss/mangadap/blob/master/mangadap/data/emission_lines/elpmpl11.par>`__
+database, the plan file would include
 
-    #. To use one of the existing parameter databases, you can change
-       the ``emission_lines`` keyword in the
-       :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`
-       configuration file. The keyword should be the capitalized root
-       of the parameter filename. E.g., to use
-       ``$MANGADAP_DIR/mangadap/data/emission_lines/elpmpl9.par``,
-       set the keyword to ``ELPMPL9``.
+.. code-block:: toml
 
-    #. To use a *new* parameter database, write the file and save it
-       in the ``$MANGADAP_DIR/mangadap/data/emission_lines/``
-       directory, and then change the relevant configuration file in
-       the same way as described above.
+    [default.eline_fits.fit]
+     emissionpassbands = 'ELPMPL11'
+
+To provide a user-defined database, simply replace the ``passbands`` keyword
+with the name of the local file defining the database (in the format given
+above).  For example, 
+
+.. code-block:: toml
+
+    [default.eline_fits.fit]
+     emissionpassbands = '/path/to/my/local/file/my_elp_database.par'
 
 ----
 

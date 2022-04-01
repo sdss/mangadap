@@ -36,9 +36,9 @@ from pydl.pydlutils.yanny import yanny
 
 from ..datacube import MaNGADataCube
 from ..spectra import MaNGARSS
-from ..config import defaults
+#from ..config import defaults
+from ..config import manga
 from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
-from ..util.exception_tools import print_frame
 
 class DRPComplete:
     r"""
@@ -147,16 +147,15 @@ class DRPComplete:
                  directory_path=None, readonly=False):
 
         # Input properties
-        self.drpver = defaults.drp_version() if drpver is None else str(drpver)
-        self.redux_path = defaults.drp_redux_path(self.drpver) \
+        self.drpver = manga.drp_version() if drpver is None else str(drpver)
+        self.redux_path = manga.drp_redux_path(self.drpver) \
                                 if redux_path is None else str(redux_path)
 
-        self.dapver = defaults.dap_version() if dapver is None else str(dapver)
-        self.analysis_path = defaults.dap_analysis_path(self.drpver, self.dapver) \
+        self.dapver = manga.dap_version() if dapver is None else str(dapver)
+        self.analysis_path = manga.dap_analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
-        self.directory_path = defaults.dap_common_path(drpver=self.drpver, dapver=self.dapver,
-                                                       analysis_path=self.analysis_path) \
-                             if directory_path is None else str(directory_path)
+        self.directory_path = self.analysis_path / 'common' if directory_path is None \
+                                    else str(directory_path)
 
         self.hdu = None
         self.nobs = None
@@ -177,7 +176,7 @@ class DRPComplete:
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
 
-        self.drpall = defaults.drpall_file(drpver=self.drpver,redux_path=self.redux_path) \
+        self.drpall = manga.drpall_file(drpver=self.drpver,redux_path=self.redux_path) \
                             if drpall is None else drpall
         
         if (platetargets is not None and catid is None) or \
@@ -188,10 +187,10 @@ class DRPComplete:
         self.platetargets = None
         if platetargets is not None:
             self.platetargets = numpy.array( arginp_to_list(platetargets) )
-            self.catid = numpy.array( arginp_to_list(catid) ).astype(numpy.int)
+            self.catid = numpy.array( arginp_to_list(catid) ).astype(int)
         else:
             try:
-                self.platetargets, self.catid = defaults.plate_target_files()
+                self.platetargets, self.catid = manga.plate_target_files()
             except:
                 warnings.warn('Could not define platetargets files.  '
                               'Updates must use DRPall file.')
@@ -262,7 +261,7 @@ class DRPComplete:
         :func:`~mangadap.config.defaults.redshift_fix_file` that
         returns the redshift fix data.
         """
-        return self._read_fix_data(defaults.redshift_fix_file())
+        return self._read_fix_data(manga.redshift_fix_file())
 
     def _read_photometry_fix(self):
         """
@@ -270,7 +269,7 @@ class DRPComplete:
         :func:`~mangadap.config.defaults.photometry_fix_file` that
         returns the photometry fix data.
         """
-        return self._read_fix_data(defaults.photometry_fix_file())
+        return self._read_fix_data(manga.photometry_fix_file())
 
     def _match_platetargets(self, quiet=True):
         """
@@ -888,7 +887,7 @@ class DRPComplete:
 
     def write(self, platelist, ifudesignlist, modes, mangaid, objra, objdec, catid, catindx,
               trg_version, trg_id, manga_trg1, manga_trg3, vel, veldisp, ell, pa, Reff, drpver=None,
-              redux_path=None, dapver=None, analysis_path=None, clobber=True):
+              redux_path=None, dapver=None, analysis_path=None, overwrite=True):
         r"""
         Write the drpcomplete fits binary table.
 
@@ -960,19 +959,19 @@ class DRPComplete:
             dapver (str) : (**Optional**) DAP version, see above.
             analysis_path (str) : (**Optional**) Path to the top level
                 directory for the DAP output files, see above.
-            clobber (bool): (**Optional**) Overwrite any existing file.
+            overwrite (bool): (**Optional**) Overwrite any existing file.
 
         Raises:
             AttributeError: Raised if drpcomplete fits file was opened
                 in read-only mode.
             FileExistsError: Raised if the drpcomplete file exists and
-                clobber=False.
+                overwrite=False.
         """
         if self.readonly:
             raise AttributeError('drpcomplete fits file was opened as read-only!')
 
         out=self.file_path()
-        if os.path.isfile(out) and not clobber:
+        if os.path.isfile(out) and not overwrite:
             raise FileExistsError('DRP complete file already exists: {0}'.format(out))
 
         if not os.path.isdir(self.directory_path):
@@ -1018,7 +1017,7 @@ class DRPComplete:
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.BinTableHDU.from_columns(cols, name='DRPC') ])
         print('Writing to disk: {0}'.format(out))
-        self.hdu.writeto(out, overwrite=clobber) #clobber=clobber)
+        self.hdu.writeto(out, overwrite=overwrite)
         self.nobs = self.hdu['DRPC'].header['NAXIS2']
 
 #    def grab_data(self, plate=None, ifudesign=None, index=None, reread=False):
@@ -1068,7 +1067,7 @@ class DRPComplete:
 #                 self.hdu['DRPC'].data['PA'][index], self.hdu['DRPC'].data['REFF'][index] ]
 
     def write_par(self, ofile, mode, plate=None, ifudesign=None, index=None, reread=False,
-                  clobber=True):
+                  overwrite=True):
         """
         Write the SDSS-style parameter (Yanny) file for use with the
         MaNGA DAP.
@@ -1082,12 +1081,12 @@ class DRPComplete:
             index (int): (**Optional**) Index of the row in :attr:`data`
                 with the data to return
             reread (bool): (**Optional**) Force the database to be re-read
-            clobber (bool): (**Optional**) Overwrite any existing parameter
+            overwrite (bool): (**Optional**) Overwrite any existing parameter
                 file
 
         Raises:
             IOError: Raised if the parameter file already exists and
-                clobber is False.
+                overwrite is False.
             ValueError: Raised if
 
                 - the row with the data is unknown because either
@@ -1100,8 +1099,8 @@ class DRPComplete:
         if not self._confirm_access(reread=reread):
             raise IOError('Could not access database!')
 
-        if os.path.exists(ofile) and not clobber:
-            raise IOError('Parameter file already exists.  Set clobber=True to overwrite.')
+        if os.path.exists(ofile) and not overwrite:
+            raise IOError('Parameter file already exists.  Set overwrite=True to overwrite.')
 
         if (plate is None or ifudesign is None) and index is None:
             raise ValueError('Must provide plate and ifudesign or row index!')
@@ -1166,7 +1165,7 @@ class DRPComplete:
         Raises:
             IOError:
                 Raised if the parameter file already exists and
-                clobber is False.
+                overwrite is False.
             ValueError:
                 Raised if
                     - the row with the data is unknown because either

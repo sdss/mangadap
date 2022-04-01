@@ -21,6 +21,8 @@ import numpy
 import logging
 import warnings
 
+from IPython import embed
+
 from scipy import sparse
 
 from astropy.wcs import WCS
@@ -163,10 +165,14 @@ class DAPFitsUtil:
     def clean_map_header(hdr, multichannel=False):
 
         # Change header keywords to the default values for the third axis
+        # TODO: Should instead read the header into a wcs, manipulate the wcs
+        # object and then rewrite it to a header.
         if multichannel:
             hdr['NAXIS'] = 3
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
+            if 'CTYPE3' in hdr:
+                hdr.remove('CTYPE3')
+            if 'CUNIT3' in hdr:
+                hdr.remove('CUNIT3')
             hdr['CTYPE3'] = ' '
             hdr['CUNIT3'] = ' '
             hdr['CRPIX3'] = 1
@@ -175,19 +181,19 @@ class DAPFitsUtil:
         else:
             hdr['NAXIS'] = 2
             #hdr.remove('NAXIS3')
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
-            hdr.remove('CRPIX3')
-            hdr.remove('CRVAL3')
-            hdr.remove('CD3_3')
+            for key in ['CTYPE3', 'CUNIT3', 'CRPIX3', 'CRVAL3', 'CD3_3', 'CDELT3']:
+                if key in hdr:
+                    hdr.remove(key)
 
         # Remove everything but the WCS information
         w = WCS(header=hdr)
         hdr = w.to_header().copy()
 
         # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+        if 'DATA-OBS' in hdr:
+            hdr.comments['DATE-OBS'] = 'Date of median exposure'
+        if 'MJD-OBS' in hdr:
+            hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values
         hdr['BSCALE'] = 1.
@@ -235,8 +241,10 @@ class DAPFitsUtil:
         hdr = w.to_header().copy()
 
         # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+        if 'DATA-OBS' in hdr:
+            hdr.comments['DATE-OBS'] = 'Date of median exposure'
+        if 'MJD-OBS' in hdr:
+            hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values; BUNIT added during
         # "finalize"
@@ -395,13 +403,36 @@ class DAPFitsUtil:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
 #        print(unique_bins)
 
-        # Need to handle missing bins
-        if unique_bins.size != unique_bins[-1]+2 \
-                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            if not quiet:
-                warnings.warn('Bin numbers and indices do not match.  Map values are expected '
-                              'to be sorted by their bin number.')
-            unique_bins = numpy.arange(-1,unique_bins.size-1)
+        # Handle missing bins by changing from the bin id to the bin index.
+        # Detecting whether or not there is a need for handling missing bins is
+        # done by comparing the unique array to a full string of all indices up
+        # to the maximum index in the unique array.  **This assumes bins can
+        # only either be -1, to indicate that the spaxel/bin was not analyzed,
+        # or a non-negative index number** (i.e., all bin IDs must be >= -1).
+        # The code handles cases both with and without any ignored bins.
+        warn = False
+        if numpy.any(unique_bins < 0):
+            # Includes ignored bins/spaxels
+            if unique_bins.size != unique_bins[-1]+2 \
+                    or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+                warn = True
+                unique_bins = numpy.arange(-1,unique_bins.size-1)
+        else:
+            # All bins/spaxels have valid bin numbers
+            if unique_bins.size != unique_bins[-1]+1 \
+                    or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
+                warn = True
+                unique_bins = numpy.arange(unique_bins.size)
+        if warn and not quiet:
+            warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
+                          'sorted by their bin number.')
+
+#        if unique_bins.size != unique_bins[-1]+2 \
+#                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+#            if not quiet:
+#                warnings.warn('Bin numbers and indices do not match.  Map values are expected '
+#                              'to be sorted by their bin number.')
+#            unique_bins = numpy.arange(-1,unique_bins.size-1)
 
         # Get the valid bins
         indx = bin_indx > -1
@@ -427,7 +458,7 @@ class DAPFitsUtil:
                 print('out: ', new_arr[i].ravel()[indx][nf])
                 new_arr[i].ravel()[indx][nf] = 0.0
                 raise ValueError('NaNs in data!')
-                
+
         return tuple([ a for a in new_arr]) if narr > 1 else new_arr[0]
 
 
@@ -486,17 +517,35 @@ class DAPFitsUtil:
         # unique set
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
 
-        # Handle missing bins by changing from the bin id to the bin
-        # index.  Detecting whether or not there is a need for handling
-        # missing bins is done by comparing the unique array to a full
-        # string of all indices up to the maximum index in the unique
-        # array.  **This always assumes there are bins with indices of
-        # -1.**
-        if unique_bins.size != unique_bins[-1]+2 \
-                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
-                          'to be sorted by their bin number.')
-            unique_bins = numpy.arange(-1,unique_bins.size-1)
+        # Handle missing bins by changing from the bin id to the bin index.
+        # Detecting whether or not there is a need for handling missing bins is
+        # done by comparing the unique array to a full string of all indices up
+        # to the maximum index in the unique array.  **This assumes bins can
+        # only either be -1, to indicate that the spaxel/bin was not analyzed,
+        # or a non-negative index number** (i.e., all bin IDs must be >= -1).
+        # The code handles cases both with and without any ignored bins.
+        warn = False
+        if numpy.any(unique_bins < 0):
+            # Includes ignored bins/spaxels
+            if unique_bins.size != unique_bins[-1]+2 \
+                    or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+                warn = True
+                unique_bins = numpy.arange(-1,unique_bins.size-1)
+        else:
+            # All bins/spaxels have valid bin numbers
+            if unique_bins.size != unique_bins[-1]+1 \
+                    or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
+                warn = True
+                unique_bins = numpy.arange(unique_bins.size)
+        if warn and not quiet:
+            warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
+                          'sorted by their bin number.')
+
+#        if unique_bins.size != unique_bins[-1]+2 \
+#                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+#            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+#                          'to be sorted by their bin number.')
+#            unique_bins = numpy.arange(-1,unique_bins.size-1)
 
         # Get the valid bins
         indx = bin_indx > -1
@@ -517,7 +566,7 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def write(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
+    def write(hdu, ofile, overwrite=False, checksum=False, symlink_dir=None, relative_symlink=True,
               loggers=None, quiet=False):
         """
         Write an HDUList to an output file.  It is expected that the hdu
@@ -541,7 +590,7 @@ class DAPFitsUtil:
         # Write the data
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-        hdu.writeto(_ofile, overwrite=clobber, checksum=checksum)
+        hdu.writeto(_ofile, overwrite=overwrite, checksum=checksum)
 
         # Transpose it back
         hdu = DAPFitsUtil.transpose_image_data(hdu)
@@ -551,7 +600,7 @@ class DAPFitsUtil:
             if not quiet:
                 log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
             # And compress it
-            compress_file(_ofile, clobber=clobber)
+            compress_file(_ofile, overwrite=overwrite)
             os.remove(_ofile)
     
         # Create the symlink if requested
@@ -567,8 +616,14 @@ class DAPFitsUtil:
         flattened spatial dimension, ignoring the bins with indices of
         -1.
         """
-        return tuple(map(lambda x : x[1:], numpy.unique(bin_indx.ravel(), return_index=True))) \
-                    if return_index else numpy.unique(bin_indx.ravel())[1:]
+        uniq, indx = numpy.unique(bin_indx.ravel(), return_index=True)
+        if uniq[0] == -1:
+            uniq = uniq[1:]
+            indx = indx[1:]
+        return (uniq, indx) if return_index else uniq
+        
+#        return tuple(map(lambda x : x[1:], numpy.unique(bin_indx.ravel(), return_index=True))) \
+#                    if return_index else numpy.unique(bin_indx.ravel())[1:]
 
 
     # TODO: Consolidate these with what's in datacube and rowstackedspectra.
@@ -730,17 +785,104 @@ class DAPFitsUtil:
         # Return the masked array; "missing bins" are fully masked
         return _a
 
-    
     @staticmethod
-    def marginalize_mask(mask, inp_flags, inp_bitmask, out_bitmask, out_mask=None,
-                         out_flag=None, dispaxis=2):
-        _out_mask = numpy.zeros(DAPFitsUtil.get_spatial_shape(mask.shape, dispaxis),
-                                dtype=out_bitmask.minimum_dtype()) \
-                        if out_mask is None else out_mask
-        _inp_flags = inp_flags if isinstance(inp_flags, list) else [ inp_flags ]
+    def marginalize_mask(mask, inp_flags=None, inp_bitmask=None, out_flag=None, out_bitmask=None,
+                         out_mask=None, dispaxis=2):
+        """
+        Marginalize a mask over one of its spectral dimension.
+
+        The output mask selects pixels that are masked by *all* pixels along the
+        spectral axis.
+
+        If no optional arguments are provided, the input mask must be a boolean
+        array and the result is identically ``numpy.all(mask, axis=dispaxis)``.
+
+        Args:
+            mask (`numpy.ndarray`_):
+                The mask with more than 1 dimension.  The spectral axis is
+                defined by ``dispaxis``.  The array can be either a bitmask or a
+                boolean mask; the latter is assumed if ``inp_bitmask`` is not
+                provided, and vice versa.
+            inp_flags (:obj:`str`, :obj:`list`, optional):
+                The list of input flags used to select masked values in bitmask
+                arrays.  If None and ``inp_bitmask`` is provided, all flags are
+                check individually.
+            inp_bitmask (:class:`~mangadap.util.bitmask.BitMask`, optional):
+                Object used to identify bits in the input mask.
+            out_flag (:obj:`str`, optional):
+                If returning a bitmask, this sets the flag to use to identify
+                the masked pixels.  If None and ``inp_bitmask`` is provided, the
+                output flags are identical to the input flags.
+            out_bitmask (:class:`~mangadap.util.bitmask.BitMask`, optional):
+                Object used to identify bits in the output mask.
+            out_mask (`numpy.ndarray`_, optional):
+                If provided, any masking is applied directly to this array;
+                i.e., this is both modified and returned by the function.  If
+                provided, the array must have the correct shape (same as the
+                input array wihtout the spectral axis).
+            dispaxis (:obj:`int`, optional):
+                The spectral axis of the array.
+
+        Returns:
+            `numpy.ndarray`_: A mask array with the marginalized mask.  The
+            shape is the same as the input array, but without the spectral axis.
+
+        Raises:
+            ValueError:
+                Raised if the input arrays have incorrect shapes.
+        """
+        # Check the input
+        if not mask.ndim > 1:
+            raise ValueError('Input mask array must have more than one dimension.')
+
+        itype = bool if inp_bitmask is None else inp_bitmask.minimum_dtype()
+        # TODO: Need to use 'same_kind' here instead of 'equiv' because MaNGA
+        # DRP doesn't necessarily use the minimum dtype for the masks.
+        if not numpy.can_cast(mask.dtype, numpy.dtype(itype), casting='same_kind'):
+            raise TypeError(f'Cannot cast input mask with type {mask.dtype} to expected type '
+                            f'{numpy.dtype(itype)}.')
+
+        spatial_shape = DAPFitsUtil.get_spatial_shape(mask.shape, dispaxis)
+
+        if out_mask is not None and out_mask.shape != spatial_shape:
+            raise ValueError('Provided output mask has incorrect shape; expected '
+                             f'{spatial_shape}, found {out_mask.shape}.')
+
+        if inp_bitmask is None and inp_flags is not None:
+            raise ValueError('Cannot interpret input flags without inp_bitmask.')
+        if out_bitmask is None and out_flag is not None:
+            raise ValueError('Cannot interpret output flags without out_bitmask.')
+        if out_bitmask is not None and out_flag is None:
+            raise ValueError('If providing the output bitmask, must also provide the output flag.')
+
+        otype = bool if out_bitmask is None else out_bitmask.minimum_dtype()
+        # TODO: May need to use 'same_kind' instead of 'equiv'
+        if out_mask is not None \
+                and not numpy.can_cast(out_mask.dtype, numpy.dtype(otype), casting='equiv'):
+            raise TypeError('Provided output mask has incorrect type; expected '
+                            f'{numpy.dtype(otype)}, found {out_mask.dtype}.')
+        _out_mask = numpy.zeros(spatial_shape, dtype=otype) if out_mask is None else out_mask
+
+        if inp_bitmask is None:
+            # Handle the case when the input mask is a boolean array
+            indx = numpy.all(mask, axis=dispaxis)
+            if out_bitmask is None:
+                _out_mask |= indx
+                return _out_mask
+            _out_mask[indx] = out_bitmask.turn_on(_out_mask[indx], out_flag)
+            return _out_mask
+
+        # Handle the case when the input mask is a bit mask
+        if inp_flags is None:
+            inp_flags = inp_bitmask.keys()
+        _inp_flags = inp_flags if isinstance(inp_flags, list) else [inp_flags]
+
         for flag in _inp_flags:
             indx = numpy.all(inp_bitmask.flagged(mask, flag=flag), axis=dispaxis)
             if numpy.sum(indx) == 0:
+                continue
+            if out_bitmask is None:
+                _out_mask |= indx
                 continue
             _out_mask[indx] = out_bitmask.turn_on(_out_mask[indx],
                                                   (flag if out_flag is None else out_flag))
@@ -757,7 +899,7 @@ class DAPFitsUtil:
             return ('FLAG16BIT', '16-bit mask')
         if bit_type in [numpy.uint8, numpy.int8]:
             return ('FLAG8BIT', '8-bit mask')
-        if bit_type == numpy.bool:
+        if bit_type in [bool, numpy.bool_]:
             return ('MASKZERO', 'Binary mask; zero values are good/unmasked')
         raise ValueError('Invalid bit_type: {0}!'.format(str(bit_type)))
 

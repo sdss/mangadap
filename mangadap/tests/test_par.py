@@ -1,9 +1,5 @@
 import pytest
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 from astropy.io import fits
 
 from mangadap.par.parset import ParSet

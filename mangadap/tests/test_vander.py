@@ -1,25 +1,16 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
 
-from matplotlib import pyplot
-
 from mangadap.util.vander import Legendre1D
-#from mangadap.tests.util import data_test_file
-
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 
 def test_1d_fit():
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     y = 3 + 0.2*x + x*x - x*x*x 
-    y += numpy.random.normal(scale=0.01, size=x.size)
+    y += rng.normal(scale=0.01, size=x.size)
 
     c = numpy.polynomial.legendre.legfit(x,y,4)
     leg = Legendre1D(x,4)
@@ -29,13 +20,14 @@ def test_1d_fit():
 
 
 def test_2d_fit():
+    rng = numpy.random.default_rng(seed=8001)
 
     x = numpy.linspace(-1, 1, 1000)
     c = numpy.array([[3, 0.2,   1,   -1],
                      [4, 0.4, 0.8, -0.8]])
 
     y = numpy.sum([_c[:,None] * numpy.power(x,i)[None,:] for i,_c in enumerate(c.T)], axis=0)
-    y += numpy.random.normal(scale=0.01, size=y.size).reshape(y.shape)
+    y += rng.normal(scale=0.01, size=y.size).reshape(y.shape)
 
     c = numpy.polynomial.legendre.legfit(x,y.T,4)
 
@@ -47,13 +39,15 @@ def test_2d_fit():
 
 def test_w1d_1d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     y = 3 + 0.2*x + x*x - x*x*x 
     # Add noise
-    y += numpy.random.normal(scale=0.01, size=x.size)
+    y += rng.normal(scale=0.01, size=x.size)
     # Add in deviates
-    indx = numpy.unique(numpy.random.randint(1000, size=10))
-    y[indx] += numpy.random.normal(scale=10, size=len(indx))
+    indx = numpy.unique(rng.integers(1000, size=10))
+    y[indx] += rng.normal(scale=10, size=len(indx))
     w = numpy.ones(y.shape, dtype=float)
     w[indx] = 0.
 
@@ -70,17 +64,19 @@ def test_w1d_1d_fit():
 
 def test_w1d_2d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     c = numpy.array([[3, 0.2,   1,   -1],
                      [4, 0.4, 0.8, -0.8]])
 
     y = numpy.sum([_c[:,None] * numpy.power(x,i)[None,:] for i,_c in enumerate(c.T)], axis=0)
     # Add noise
-    y += numpy.random.normal(scale=0.01, size=y.size).reshape(y.shape)
+    y += rng.normal(scale=0.01, size=y.size).reshape(y.shape)
     # Add in deviates
-    indx = numpy.unique(numpy.random.randint(1000, size=10))
-    y[0,indx] += numpy.random.normal(scale=10, size=len(indx))
-    y[1,indx] += numpy.random.normal(scale=10, size=len(indx))
+    indx = numpy.unique(rng.integers(1000, size=10))
+    y[0,indx] += rng.normal(scale=10, size=len(indx))
+    y[1,indx] += rng.normal(scale=10, size=len(indx))
     # Weight all y vectors the same
     w = numpy.ones(x.shape, dtype=float)
     w[indx] = 0.
@@ -98,16 +94,18 @@ def test_w1d_2d_fit():
 
 def test_w2d_2d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     c = numpy.array([[3, 0.2,   1,   -1],
                      [4, 0.4, 0.8, -0.8]])
 
     y = numpy.sum([_c[:,None] * numpy.power(x,i)[None,:] for i,_c in enumerate(c.T)], axis=0)
     # Add noise
-    y += numpy.random.normal(scale=0.01, size=y.size).reshape(y.shape)
+    y += rng.normal(scale=0.01, size=y.size).reshape(y.shape)
     # Add in deviates
-    indx = numpy.unravel_index(numpy.unique(numpy.random.randint(y.size, size=20)), y.shape)
-    y[indx] += numpy.random.normal(scale=10, size=len(indx[0]))
+    indx = numpy.unravel_index(numpy.unique(rng.integers(y.size, size=20)), y.shape)
+    y[indx] += rng.normal(scale=10, size=len(indx[0]))
     # Weight y vectors independently
     w = numpy.ones(y.shape, dtype=float)
     w[indx] = 0.
@@ -130,14 +128,16 @@ def test_w2d_2d_fit():
 
 def test_glbrej_1d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     y = 3 + 0.2*x + x*x - x*x*x 
     # Add noise
     sigma = 0.01
-    y += numpy.random.normal(scale=sigma, size=x.size)
+    y += rng.normal(scale=sigma, size=x.size)
     # Add in deviates
-    outlier = numpy.unique(numpy.random.randint(1000, size=10))
-    offset = numpy.random.normal(scale=10, size=len(outlier))
+    outlier = numpy.unique(rng.integers(1000, size=10))
+    offset = rng.normal(scale=10, size=len(outlier))
     indx = numpy.absolute(offset) > 10*sigma
     outlier = outlier[indx]
     y[outlier] += offset[indx] 
@@ -151,14 +151,16 @@ def test_glbrej_1d_fit():
 
 def test_locrej_1d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     y = 3 + 0.2*x + x*x - x*x*x 
     # Add noise
     sigma = 0.01
-    y += numpy.random.normal(scale=sigma, size=x.size) * numpy.absolute(x) * 5
+    y += rng.normal(scale=sigma, size=x.size) * numpy.absolute(x) * 5
     # Add in deviates
-    outlier = numpy.unique(numpy.random.randint(1000, size=10))
-    offset = numpy.random.normal(scale=10, size=len(outlier))
+    outlier = numpy.unique(rng.integers(1000, size=10))
+    offset = rng.normal(scale=10, size=len(outlier))
     indx = numpy.absolute(offset) > 10*sigma
     outlier = outlier[indx]
     y[outlier] += offset[indx] 
@@ -184,6 +186,8 @@ def test_locrej_1d_fit():
 
 def test_glbrej_2d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     c = numpy.array([[3, 0.2,   1,   -1],
                      [4, 0.4, 0.8, -0.8]])
@@ -191,10 +195,10 @@ def test_glbrej_2d_fit():
     y = numpy.sum([_c[:,None] * numpy.power(x,i)[None,:] for i,_c in enumerate(c.T)], axis=0)
     # Add noise
     sigma = 0.01
-    y += numpy.random.normal(scale=sigma, size=y.size).reshape(y.shape)
+    y += rng.normal(scale=sigma, size=y.size).reshape(y.shape)
     # Add in deviates
-    outlier = numpy.unravel_index(numpy.unique(numpy.random.randint(y.size, size=20)), y.shape)
-    offset = numpy.random.normal(scale=10, size=len(outlier[0]))
+    outlier = numpy.unravel_index(numpy.unique(rng.integers(y.size, size=20)), y.shape)
+    offset = rng.normal(scale=10, size=len(outlier[0]))
     indx = numpy.absolute(offset) > 10*sigma
     outlier = (outlier[0][indx], outlier[1][indx])
     y[outlier] += offset[indx] 
@@ -208,6 +212,8 @@ def test_glbrej_2d_fit():
 
 def test_locrej_2d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     c = numpy.array([[3, 0.2,   1,   -1],
                      [4, 0.4, 0.8, -0.8]])
@@ -215,11 +221,11 @@ def test_locrej_2d_fit():
     y = numpy.sum([_c[:,None] * numpy.power(x,i)[None,:] for i,_c in enumerate(c.T)], axis=0)
     # Add noise
     sigma = 0.01
-    y += numpy.random.normal(scale=sigma, size=y.size).reshape(y.shape) \
+    y += rng.normal(scale=sigma, size=y.size).reshape(y.shape) \
             * numpy.absolute(x)[None,:] * 5
     # Add in deviates
-    outlier = numpy.unravel_index(numpy.unique(numpy.random.randint(y.size, size=20)), y.shape)
-    offset = numpy.random.normal(scale=10, size=len(outlier[0]))
+    outlier = numpy.unravel_index(numpy.unique(rng.integers(y.size, size=20)), y.shape)
+    offset = rng.normal(scale=10, size=len(outlier[0]))
     indx = numpy.absolute(offset) > 10*sigma
     outlier = (outlier[0][indx], outlier[1][indx])
     y[outlier] += offset[indx] 
@@ -239,16 +245,18 @@ def test_locrej_2d_fit():
 
 def test_ew_glbrej_1d_fit():
 
+    rng = numpy.random.default_rng(seed=8001)
+
     x = numpy.linspace(-1, 1, 1000)
     y = 3 + 0.2*x + x*x - x*x*x 
 
     # Add noise
     sigma = 0.01
-    noise = numpy.random.normal(scale=sigma, size=x.size)
+    noise = rng.normal(scale=sigma, size=x.size)
     err = numpy.full(y.shape, sigma, dtype=float)
 
-    outlier = numpy.unique(numpy.random.randint(1000, size=10))
-    offset = numpy.random.normal(scale=10., size=len(outlier))
+    outlier = numpy.unique(rng.integers(1000, size=10))
+    offset = rng.normal(scale=10., size=len(outlier))
     noise[outlier] = offset
     err[outlier] = 10.
 
@@ -262,3 +270,5 @@ def test_ew_glbrej_1d_fit():
     # Fewer points should be rejected when accounting for errors
     assert numpy.sum(_rej) > numpy.sum(rej), \
             'Should not have rejected as many points when accounting for error'
+
+

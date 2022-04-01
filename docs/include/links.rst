@@ -2,7 +2,10 @@
 
 .. _pypi: https://pypi.org/project/sdss-mangadap/
 .. _Anaconda: https://www.continuum.io/DOWNLOADS
+.. _conda: https://docs.conda.io/projects/conda/en/latest/index.html
+.. _virtualenv: https://virtualenv.pypa.io/en/latest/
 .. _python.org: https://www.python.org/
+.. _toml: https://toml.io/en/
 
 .. core
 
@@ -16,6 +19,8 @@
 .. _argparse.ArgumentParser: https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html
 .. _eval: https://docs.python.org/3/library/functions.html#eval
+.. _Path: https://docs.python.org/3/library/pathlib.html
+.. _Path.glob: https://docs.python.org/3/library/pathlib.html#pathlib.Path.glob
 
 .. configobj
 
@@ -81,8 +86,11 @@
 .. misc
 
 .. _requests: https://pypi.org/project/requests/
+.. _IPython.embed: https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _vorbin: https://pypi.org/project/vorbin/
+.. _tomli: https://pypi.org/project/tomli/
+.. _spectres: https://pypi.org/project/spectres/
 
 .. SDSS
 
@@ -118,6 +126,7 @@
 .. _DR15 SAS: https://dr15.sdss.org/sas/dr15/manga/spectro/analysis/v2_4_3/2.2.1/
 .. _MPL-10 SAS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.1
 .. _MPL-11 SAS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_1_1/3.1.0
+.. _DR17 SAS: https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0
 .. _MANGA_SPECTRO_ANALYSIS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis
 .. _MANGA_SPECTRO_REDUX: https://data.sdss.org/sas/mangawork/manga/spectro/redux
 

@@ -1,9 +1,4 @@
-import pytest
-
 import os
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 from IPython import embed
 
@@ -11,8 +6,7 @@ import numpy
 
 from astropy.io import fits
 
-from matplotlib import pyplot
-
+from mangadap.config.manga import MaNGAConfig
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.covariance import Covariance
 from mangadap.util.constants import DAPConstants
@@ -21,6 +15,8 @@ from mangadap.tests.util import requires_remote, remote_data_file
 #-----------------------------------------------------------------------------
 
 def test_samples():
+
+    rng = numpy.random.default_rng(seed=8001)
     
     # Build a bogus covariance matrix
     m = numpy.zeros(10, dtype=float)
@@ -31,7 +27,7 @@ def test_samples():
             + numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=2)
 
     # Draw samples
-    s = numpy.random.multivariate_normal(m, c, size=100000)
+    s = rng.multivariate_normal(m, c, size=100000)
 
     # Instantiate
     covar = Covariance.from_samples(s.T, cov_tol=0.1)
@@ -125,6 +121,8 @@ def test_array():
 
 def test_io():
 
+    rng = numpy.random.default_rng(seed=8001)
+    
     # Clean up in case of a failure
     ofile = 'test_covar_io.fits'
     if os.path.isfile(ofile):
@@ -139,7 +137,7 @@ def test_io():
             + numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=2)
 
     # Draw samples
-    s = numpy.random.multivariate_normal(m, c, size=100000)
+    s = rng.multivariate_normal(m, c, size=100000)
 
     # Instantiate
     covar = Covariance.from_samples(s.T, cov_tol=0.1)
@@ -155,8 +153,8 @@ def test_io():
 
 @requires_remote
 def test_read_drp():
-    drpfile = os.path.join(remote_data_file(), MaNGADataCube.build_file_name(7815, 3702))
-    
+    cfg = MaNGAConfig(7815, 3702)
+    drpfile = remote_data_file(cfg.file_name)
     assert os.path.isfile(drpfile), 'Did not find file'
 
     with fits.open(drpfile) as hdu:
@@ -177,7 +175,7 @@ def test_rectification_recovery():
                                        covar_ext='GCORREL')
     cube.load_rss()
 
-    hdu = fits.open(cube.file_path())
+    hdu = fits.open(str(cube.file_path))
     channel = hdu['GCORREL'].header['BBINDEX']
 
     gcorrel = numpy.zeros(eval(hdu['GCORREL'].header['COVSHAPE']), dtype=float)
@@ -210,6 +208,7 @@ def test_rectification_recovery():
     assert numpy.ma.median(cube.sres[...,channel].ravel() - sres) < 0.1, \
             'Bad spectral resolution rectification'
 
+#    from matplotlib import pyplot
 #    zoom = 12
 #    xs = int(C.shape[0]/2 - C.shape[0]/2/zoom)
 #    xe = xs + int(C.shape[0]/zoom) + 1

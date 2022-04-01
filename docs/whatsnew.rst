@@ -5,6 +5,47 @@
 What's New in the DAP
 *********************
 
+Version 4.0.0
+=============
+
+User-level changes/bug fixes
+----------------------------
+
+* Major overhaul of how paths and output files are defined.
+
+  * Input paths and file names now defined as part of the
+    :class:`~mangadap.datacube.datacube.DataCube` subclass.  For MaNGA, this is
+    done by subclassing the :class:`~mangadap.datacube.manga.MaNGADataCube` from
+    the :class:`~mangadap.config.manga.MaNGAConfig` class.  For user-defined 
+    :class:`~mangadap.datacube.datacube.DataCube` subclasses, these paths can be
+    defined directly.
+  * Output paths for primary output files now defined by the
+    :class:`~mangadap.config.analysisplan.AnalysisPlan` object or a relevant
+    subclass.  For MaNGA, a subclass is necessary to put all the files in a
+    subdirectory using the `plate` and `ifudesign` numbers, but likely most
+    other implementations can use the
+    :class:`~mangadap.config.analysisplan.AnalysisPlan` object directly. 
+  
+* Update to ingestion of custom :class:`~mangadap.datacube.datacube.DataCube`
+  class in `manga_dap` script; new code allows for imports from a local user
+  file.
+* Update `manga_dap_inspector` script to use a cursor on the map selector and a
+  range slider for the vmin,vmax in the map.  Some bugs persist in the map z
+  range.
+* Refactor to simplify installation (inspired by work on `pypeit` package)
+* Improved/Added documentation for how to fit one spectrum and to fit a
+  (non-MaNGA) datacube.
+* Major refactor of how module parameters are input and changed; analysis plan
+  is now provided/changed via a toml file.
+
+Under-the-hood changes/bug fixes
+--------------------------------
+
+* Deal with cubes where all the spaxels have valid data.
+* Remove "filtered" fitting from pPXF module
+* Remove all instances of `numpy.float`, `numpy.int`, `numpy.bool`, given
+  impending numpy deprecation of these types.
+
 MPL-11 (3.1.0)
 ==============
 
