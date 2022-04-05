@@ -536,11 +536,17 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
     _model_emission = select_spectrum(model_emission, pos)
 
     wavelim = [wave[0], wave[-1]]
-    fluxlim = [numpy.ma.amin(_masked_spec)-1, numpy.ma.amax(_masked_spec)+1]
-    continuum_residlim = [numpy.ma.amin(_masked_spec-_model_continuum)-0.1,
-                          numpy.ma.amax(_masked_spec-_model_continuum)+0.1]
-    residlim = [numpy.ma.amin(_masked_spec-_model_spec)-0.1,
-                numpy.ma.amax(_masked_spec-_model_spec)+0.1]
+    fluxlim = [numpy.ma.amin(masked_spec), numpy.ma.amax(masked_spec)]
+    continuum_residlim = [numpy.ma.amin(masked_spec-model_continuum)-0.1,
+                          numpy.ma.amax(masked_spec-model_continuum)+0.1]
+    residlim = [numpy.ma.amin(masked_spec-model_spec)-0.1,
+                numpy.ma.amax(masked_spec-model_spec)+0.1]
+
+#    fluxlim = [numpy.ma.amin(_masked_spec)-1, numpy.ma.amax(_masked_spec)+1]
+#    continuum_residlim = [numpy.ma.amin(_masked_spec-_model_continuum)-0.1,
+#                          numpy.ma.amax(_masked_spec-_model_continuum)+0.1]
+#    residlim = [numpy.ma.amin(_masked_spec-_model_spec)-0.1,
+#                numpy.ma.amax(_masked_spec-_model_spec)+0.1]
 
     spectrum_ax = fig.add_axes([ 0.40, 0.31, 0.58, 0.6 ], facecolor='0.95')
     spectrum_ax.set_xlim(wavelim)

@@ -1,6 +1,23 @@
 
-3.1.3dev
+4.0.3dev
 --------
+
+ - Minor change to `manga_dap_inspector` to change initial spectral plotting
+   limits to the minimum and maximum of the whole cube instead of just the
+   center spaxel.
+
+4.0.2 (1 Apr 2022)
+------------------
+
+ - tomli dependency hotfix for pip distribution
+
+4.0.1 (1 Apr 2022)
+------------------
+
+ - Package name hot fix for pip distribution
+
+4.0.0 (1 Apr 2022)
+------------------
 
  - Update to custom datacube class implementation.  Previous version
    required a file within the mangadap/ directory structure; new code
