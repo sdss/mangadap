@@ -5,6 +5,8 @@
  - Minor change to `manga_dap_inspector` to change initial spectral plotting
    limits to the minimum and maximum of the whole cube instead of just the
    center spaxel.
+ - Deprecated most of the configuration files and directores to the `outofdate/`
+   directory.
 
 4.0.2 (1 Apr 2022)
 ------------------
