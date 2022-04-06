@@ -30,6 +30,7 @@ from .drpcomplete import DRPComplete
 from ..util.parser import arginp_to_list
 from ..util.fileio import create_symlink
 
+
 class rundap:
     r"""
     Class used for automated execution of the MaNGA DAP via submission

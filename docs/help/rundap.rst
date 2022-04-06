@@ -1,16 +1,16 @@
 .. code-block:: console
 
     $ rundap -h
-    usage: rundap [-h] [--overwrite] [-v] [--quiet] [--print_version] [--loose]
+    usage: rundap [-h] [--overwrite] [-v] [--quiet] [--print_version]
                   [--drpver DRPVER] [--redux_path REDUX_PATH] [--dapver DAPVER]
                   [--analysis_path ANALYSIS_PATH] [--plan_file PLAN_FILE]
                   [--platelist PLATELIST] [--ifudesignlist IFUDESIGNLIST]
                   [--list_file LIST_FILE] [--combinatorics] [--sres_ext SRES_EXT]
                   [--sres_fill SRES_FILL] [--covar_ext COVAR_EXT] [--on_disk]
-                  [--log] [--no_proc] [--no_plots] [--post] [--post_plots]
-                  [--label LABEL] [--nodes NODES] [--cpus CPUS] [--fast QOS]
-                  [--umask UMASK] [--walltime WALLTIME] [--toughness] [--create]
-                  [--submit] [--progress] [--queue QUEUE]
+                  [--can_analyze] [--log] [--no_proc] [--no_plots] [--post]
+                  [--post_plots] [--label LABEL] [--nodes NODES] [--cpus CPUS]
+                  [--fast QOS] [--umask UMASK] [--walltime WALLTIME] [--toughness]
+                  [--create] [--submit] [--progress] [--queue QUEUE]
     
     Perform analysis of integral-field data.
     
@@ -23,8 +23,6 @@
                             set up to -vv (default: 0)
       --quiet               suppress screen output (default: False)
       --print_version       print DAP version and stop (default: False)
-      --loose               Only throw warnings if the versioning is not identically
-                            as it should be for the designated MPL (default: False)
       --drpver DRPVER       MaNGA DRP version for analysis; $MANGADRP_VER by default
                             (default: None)
       --redux_path REDUX_PATH
@@ -58,6 +56,10 @@
       --on_disk             When using the DRPall file to collate the data for input
                             to the DAP, search for available DRP files on disk
                             instead of using the DRPall file content. (default:
+                            False)
+      --can_analyze         Only construct script files for datacubes that
+                            can/should be analyzed by the DAP. See :func:`~mangadap.
+                            survey.drpcomplete.DRPComplete.can_analyze`. (default:
                             False)
       --log                 Have the main DAP executable produce a log file
                             (default: False)
