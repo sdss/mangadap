@@ -326,7 +326,7 @@ class rundap:
 #        except Exception as e:
 #            raise ValueError('MPL is undefined!') from e
 
-        if self.drpver is None
+        if self.drpver is None:
             self.drpver = manga.drp_version()
         if self.dapver is None:
             self.dapver = manga.dap_version()
