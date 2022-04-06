@@ -31,7 +31,7 @@
  artifact_mask      = 'BADSKY'
 
 [default.eline_fits]
- key                  = 'EFITSSP'
+ key                  = 'EFITHC2'
  fit_method           = 'sasuke'
 
 [default.eline_fits.fit]
@@ -45,7 +45,7 @@
  mdegree              = 14
 
 [default.eline_fits.fit.templates]
- key              = 'MASTARSSP'
+ key              = 'MASTARHC2'
 
 [default.indices]
  key                      = 'INDXEN'

@@ -508,6 +508,8 @@ def gmr_data(cube, min_frac=0.8):
         return None
 
     flux = cube.copy_to_masked_array()
+    # Fix the ordering
+    flux = flux.reshape(cube.flux.shape).T.reshape(npix,-1)
     gpm = numpy.logical_not(numpy.ma.getmaskarray(flux)).astype(float)
 
     # Wavelengths in these files are in angstroms
@@ -518,7 +520,7 @@ def gmr_data(cube, min_frac=0.8):
     g_wgt = interpolate.interp1d(g_wave[indx], g_eff[indx], bounds_error=False,
                                  fill_value=0.)(cube.wave)[None,:]*gpm
     g_mask = numpy.sum((g_wgt[:, 1:]>0).astype(float) * numpy.diff(cube.wave)[None, :],
-                       axis=1).reshape(cube.spatial_shape) < min_frac*(g_hi-g_lo)
+                       axis=1).reshape(cube.spatial_shape[::-1]) < min_frac*(g_hi-g_lo)
     if numpy.all(g_mask):
         warnings.warn('Datacube has insufficient coverage of the g-band to construct a g-r image.')
         return None
@@ -537,9 +539,9 @@ def gmr_data(cube, min_frac=0.8):
         return None
 
     g = numpy.sum(g_wgt[:, 1:] * flux[:, 1:] * numpy.diff(cube.wave)[None,:],
-                       axis=1).reshape(cube.spatial_shape)
+                       axis=1).reshape(cube.spatial_shape[::-1])
     r = numpy.sum(r_wgt[:, 1:] * flux[:, 1:] * numpy.diff(cube.wave)[None,:],
-                       axis=1).reshape(cube.spatial_shape)
+                       axis=1).reshape(cube.spatial_shape[::-1])
     return -2.5*numpy.ma.log10(numpy.ma.divide(numpy.ma.MaskedArray(g, mask=g_mask),
                                                numpy.ma.MaskedArray(r, mask=r_mask)))
 

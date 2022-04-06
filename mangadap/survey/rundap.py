@@ -68,27 +68,23 @@ class rundap:
             version of the DAP.  Default is True, meaning the code will
             raise an exception if the expected version are not the same
             as the environment.
-        mplver (:obj:`str`, optional):
-            MPL version to analyze.  Used with
-            :class:`mangadap.survey.mangampl.MaNGAMPL` to set the DAP
-            dependencies.  Ideally, this controls the modules that are
-            loaded before execution of the DAP.  The default version
-            (selected if mplver=None) is defined by
-            :class:`mangadap.survey.mangampl.MaNGAMPL`.
+        drpver (:obj:`str`, optional):
+            DRP version to analyze.  Default is defined by
+            :func:`mangadap.config.manga.drp_version`
         redux_path (:obj:`str`, optional):
             The top-level path with the DRP files used to override the
             default defined by
-            :func:`mangadap.config.defaults.drp_redux_path`.
+            :func:`mangadap.config.manga.drp_redux_path`.
         dapver (:obj:`str`, optional):
             The DAP version to use for the analysis, used to override
             the default defined by
-            :func:`mangadap.config.defaults.dap_version`.  *Only
+            :func:`mangadap.config.manga.dap_version`.  *Only
             used to define the file paths, not used to switch to the
             specified code version!*
         analysis_path (:obj:`str`, optional):
             The top-level path for the DAP output files, used to
             override the default defined by
-            :func:`mangadap.config.defaults.dap_analysis_path`.
+            :func:`mangadap.config.manga.dap_analysis_path`.
         plan_file (:obj:`str`, optional):
             Name of the plan file to use for *all* DRP data in this run,
             used to override the default defined by
@@ -224,7 +220,7 @@ class rundap:
             during a redo mode or if they are provided with any other
             mode.
     """
-    def __init__(self, overwrite=None, quiet=False, strictver=True, mplver=None, redux_path=None,
+    def __init__(self, overwrite=None, quiet=False, strictver=True, drpver=None, redux_path=None,
                  dapver=None, analysis_path=None, plan_file=None, platelist=None,
                  ifudesignlist=None, combinatorics=False, list_file=None, sres_ext=None,
                  sres_fill=None, covar_ext=None, on_disk=False, log=False, dapproc=True,
@@ -238,7 +234,7 @@ class rundap:
 
         # Override environment
         self.strictver = strictver
-        self.mpl = mplver
+        self.drpver = drpver
         self.redux_path = None if redux_path is None else Path(redux_path).resolve()
         self.dapver = dapver
         self.analysis_path = None if analysis_path is None else Path(analysis_path).resolve()
@@ -320,18 +316,25 @@ class rundap:
                           'Setting to report progress.')
             self.report_progress = True
 
-        # Make sure the selected MPL version is available
-        try:
-            self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
-        except Exception as e:
-            raise ValueError('MPL is undefined!') from e
+        # Used from self.mpl:
+        #   drpver, mplver
+        #   show(), verify_versions()
 
-        self.dapver = manga.dap_version() if self.dapver is None else self.dapver
+#        # Make sure the selected MPL version is available
+#        try:
+#            self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
+#        except Exception as e:
+#            raise ValueError('MPL is undefined!') from e
+
+        if self.drpver is None
+            self.drpver = manga.drp_version()
+        if self.dapver is None:
+            self.dapver = manga.dap_version()
 
         # Set the output paths
-        self.redux_path = manga.drp_redux_path(self.mpl.drpver) \
+        self.redux_path = manga.drp_redux_path(self.drpver) \
                                 if self.redux_path is None else self.redux_path
-        self.analysis_path = manga.dap_analysis_path(self.mpl.drpver, self.dapver) \
+        self.analysis_path = manga.dap_analysis_path(self.drpver, self.dapver) \
                                     if self.analysis_path is None else self.analysis_path
 
         # Set the subdirectory from which the scripts are sourced and
@@ -623,8 +626,7 @@ class rundap:
     def set_pltifu_status(self, plate, ifudesign, status='queued'):
         """
         Generate a touch file that signifies the status for a given
-        plate/ifudesign/mode.  The root of the touch file is set by
-        :func:`mangadap.config.defaults.dap_file_root`.
+        plate/ifudesign/mode.
 
         Args:
             plate (:obj:`int`):
@@ -773,18 +775,21 @@ class rundap:
             command = f'OMP_NUM_THREADS=1 dap_ppxffit_qa -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
+            command += f' -b 2.5'
             file.write(f'{command}\n')
             file.write('\n')
 
             command = f'OMP_NUM_THREADS=1 spotcheck_dap_maps -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
+            command += f' -b 2.5'
             file.write(f'{command}\n')
             file.write('\n')
 
             command = f'OMP_NUM_THREADS=1 dap_fit_residuals -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
+            command += f' -b 2.5'
             file.write(f'{command}\n')
             file.write('\n')
 

@@ -13,7 +13,7 @@ class RunDap(scriptbase.ScriptBase):
         """
         Return the name of the executable.
         """
-        return 'manga_dap'
+        return 'rundap'
 
     @classmethod
     def get_parser(cls, width=None):
@@ -37,9 +37,11 @@ class RunDap(scriptbase.ScriptBase):
         parser.add_argument("--loose", help="Only throw warnings if the versioning is "
                             "not identically as it should be for the designated MPL",
                             action="store_true", default=False)
-        parser.add_argument("--mplver", type=str, default=None,
-                            help='select MPL version to analyze; if None, uses the version '
-                                 'defined by the current environmental variables')
+#        parser.add_argument("--mplver", type=str, default=None,
+#                            help='select MPL version to analyze; if None, uses the version '
+#                                 'defined by the current environmental variables')
+        parser.add_argument("--drpver", type=str, default=None,
+                            help='MaNGA DRP version for analysis; $MANGADRP_VER by default')
         parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
         parser.add_argument("--dapver", type=str,
                             help="optional output version, different from product version",
@@ -132,7 +134,7 @@ class RunDap(scriptbase.ScriptBase):
             nodes = args.nodes
 
         _rundap = rundap(overwrite=args.overwrite, quiet=args.quiet, strictver=not args.loose,
-                         mplver=args.mplver, redux_path=args.redux_path, dapver=args.dapver,
+                         drpver=args.drpver, redux_path=args.redux_path, dapver=args.dapver,
                          analysis_path=args.analysis_path, plan_file=args.plan_file,
                          platelist=args.platelist, ifudesignlist=args.ifudesignlist,
                          combinatorics=args.combinatorics, list_file=args.list_file,

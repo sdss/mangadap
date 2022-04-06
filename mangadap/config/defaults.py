@@ -69,64 +69,64 @@ def dapall_file(drpver=None, dapver=None, analysis_path=None):
 
 # USED BY:
 #   - scripts/rundap.py
-def dap_file_root(plate, ifudesign, mode=None):
-    """
-    Generate the root name of the MaNGA DAP parameter and script
-    files for a given plate/ifudesign/mode.
-    
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        ifudesign (:obj:`int`):
-            IFU design number
-        mode (:obj:`str`, optional):
-            Mode of the DRP reduction; either ``RSS`` or ``CUBE``. If
-            None, the mode is excluded from the file root.
-
-    Returns:
-        :obj:`str`: Root name for the DAP file:
-        ``mangadap-[PLATE]-[IFUDESIGN]`` or
-        ``mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]``
-    """
-    return f'mangadap-{plate}-{ifudesign}' if mode is None else \
-                f'mangadap-{plate}-{ifudesign}-LOG{mode}'
-
-    
-# USED BY:
-#   - scripts/rundap.py
-def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
-               directory_path=None):
-    """
-    Return the full path to the DAP configuration file.
-
-    The configuration file provides the input data necessary to
-    instantiate a :class:`mangadap.datacube.manga.MaNGADataCube`.
-    
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        ifudesign (:obj:`int`):
-            IFU design number
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version. Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional): 
-            Path to the root analysis directory. Default is to use
-            :func:`dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            Path to the directory with the DAP output files. Default
-            is to use :func:`dap_common_path`
-
-    Returns:
-        :obj:`str`: Full path to the DAP par file
-    """
-    # Make sure the directory path is defined
-    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
-                                      dapver=dapver, analysis_path=analysis_path) \
-                            if directory_path is None else Path(directory_path).resolve()
-    # Set the name of the par file; put this in its own function?
-    return _directory_path /  f'{dap_file_root(plate, ifudesign, "CUBE")}.ini'
+#def dap_file_root(plate, ifudesign, mode=None):
+#    """
+#    Generate the root name of the MaNGA DAP parameter and script
+#    files for a given plate/ifudesign/mode.
+#    
+#    Args:
+#        plate (:obj:`int`):
+#            Plate number
+#        ifudesign (:obj:`int`):
+#            IFU design number
+#        mode (:obj:`str`, optional):
+#            Mode of the DRP reduction; either ``RSS`` or ``CUBE``. If
+#            None, the mode is excluded from the file root.
+#
+#    Returns:
+#        :obj:`str`: Root name for the DAP file:
+#        ``mangadap-[PLATE]-[IFUDESIGN]`` or
+#        ``mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]``
+#    """
+#    return f'mangadap-{plate}-{ifudesign}' if mode is None else \
+#                f'mangadap-{plate}-{ifudesign}-LOG{mode}'
+#
+#    
+## USED BY:
+##   - scripts/rundap.py
+#def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
+#               directory_path=None):
+#    """
+#    Return the full path to the DAP configuration file.
+#
+#    The configuration file provides the input data necessary to
+#    instantiate a :class:`mangadap.datacube.manga.MaNGADataCube`.
+#    
+#    Args:
+#        plate (:obj:`int`):
+#            Plate number
+#        ifudesign (:obj:`int`):
+#            IFU design number
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        dapver (:obj:`str`, optional):
+#            DAP version. Default is to use :func:`dap_version`.
+#        analysis_path (:obj:`str`, optional): 
+#            Path to the root analysis directory. Default is to use
+#            :func:`dap_analysis_path`.
+#        directory_path (:obj:`str`, optional):
+#            Path to the directory with the DAP output files. Default
+#            is to use :func:`dap_common_path`
+#
+#    Returns:
+#        :obj:`str`: Full path to the DAP par file
+#    """
+#    # Make sure the directory path is defined
+#    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
+#                                      dapver=dapver, analysis_path=analysis_path) \
+#                            if directory_path is None else Path(directory_path).resolve()
+#    # Set the name of the par file; put this in its own function?
+#    return _directory_path /  f'{dap_file_root(plate, ifudesign, "CUBE")}.ini'
 
     
 
