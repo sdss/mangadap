@@ -94,42 +94,42 @@ def list_to_csl_string(flist):
     return out
 
 
-def parse_drp_file_name(name):
-    """
-    Parse the name of a DRP file to provide the plate, ifudesign, and
-    mode.
-
-    Args:
-        name (str): Name of the DRP file.
-
-    Returns:
-        int, int, str: The plate, ifudesign, and mode ('RSS' or 'CUBE')
-        of the DRP file pulled from the file name.
-
-    Raises:
-        TypeError: Raised if *name* is not a string.
-        ValueError: Raised if if the file name does not look like a DRP
-            file because it does not include 'manga-', '-LOG', or
-            '.fits.gz'.
-    """
-
-    if (type(name) != str):
-        raise TypeError("File name must be a string.")
-    if (str.find(name, 'manga-') == -1 or str.find(name, '-LOG') == -1 or 
-        str.find(name, '.fits.gz') == -1):
-        raise ValueError("String does not look like a DRP fits file name.")
-
-    plate_start = str.find(name, '-')+1
-    plate_end = str.find(name,'-',plate_start)
-    plate = long(name[plate_start:plate_end])
-
-    ifudesign_end = str.find(name,'-',plate_end+1)
-    ifudesign = long(name[plate_end+1:ifudesign_end])
-
-    mode_start = str.find(name,'LOG')+3
-    mode = name[mode_start:str.find(name,'.fits.gz')]
-
-    return plate, ifudesign, mode
+#def parse_drp_file_name(name):
+#    """
+#    Parse the name of a DRP file to provide the plate, ifudesign, and
+#    mode.
+#
+#    Args:
+#        name (str): Name of the DRP file.
+#
+#    Returns:
+#        int, int, str: The plate, ifudesign, and mode ('RSS' or 'CUBE')
+#        of the DRP file pulled from the file name.
+#
+#    Raises:
+#        TypeError: Raised if *name* is not a string.
+#        ValueError: Raised if if the file name does not look like a DRP
+#            file because it does not include 'manga-', '-LOG', or
+#            '.fits.gz'.
+#    """
+#
+#    if (type(name) != str):
+#        raise TypeError("File name must be a string.")
+#    if (str.find(name, 'manga-') == -1 or str.find(name, '-LOG') == -1 or 
+#        str.find(name, '.fits.gz') == -1):
+#        raise ValueError("String does not look like a DRP fits file name.")
+#
+#    plate_start = str.find(name, '-')+1
+#    plate_end = str.find(name,'-',plate_start)
+#    plate = long(name[plate_start:plate_end])
+#
+#    ifudesign_end = str.find(name,'-',plate_end+1)
+#    ifudesign = long(name[plate_end+1:ifudesign_end])
+#
+#    mode_start = str.find(name,'LOG')+3
+#    mode = name[mode_start:str.find(name,'.fits.gz')]
+#
+#    return plate, ifudesign, mode
 
 
 #def parse_dap_file_name(name):

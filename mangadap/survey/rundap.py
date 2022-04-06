@@ -12,30 +12,24 @@ Defines the class used to automate the batch execution of the MaNGA DAP.
 .. include:: ../include/links.rst
 """
 from pathlib import Path
-import sys
 import time
 import shutil
-import os
-import glob
 import warnings
-import argparse
+
+from IPython import embed
+
+import numpy
 
 try:
     import pbs.queue
 except:
     warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
-import numpy
-
 from mangadap.config import manga
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.survey.mangampl import MaNGAMPL
 from mangadap.util.parser import arginp_to_list
 from mangadap.util.fileio import create_symlink
-#from mangadap.config.analysisplan import AnalysisPlanSet
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
 
 class rundap:
     r"""
@@ -125,20 +119,10 @@ class rundap:
         covar_ext (:obj:`str`, optional):
             Extension in the MaNGA DRP CUBE file to use as the single
             spatial correlation matrix for all wavelength channels.
-        use_platetargets (:obj:`bool`, optional): 
-            Flag to use the plateTargets files, instead of the DRPall
-            file, as the source of the input data need by the DAP.
-        platetargets (:obj:`str`, :obj:`list`, optional):
-            List of platetargets files to search through to find any
-            given plate-ifudesign combination.  Default is returned as
-            the first element in
-            :func:`mangadap.config.defaults.plate_target_files`.
         on_disk (:obj:`bool`, optional):
             When searching for available files to analyze, search the
             DRP directory path instead of using the data in the DRPall
-            file.  This is implicitly true when using the plateTargets
-            files to collate the data used for the DAP input instead of
-            the DRPall file (i.e., when `use_platetargets=True`).
+            file.  
         log (:obj:`bool`, optional):
             Flag to create the DAP log files.
         dapproc (:obj:`bool`, optional):
@@ -206,9 +190,6 @@ class rundap:
         combinatorics (bool): Use all unique combinations of the entered
             plate/ifudesign/mode lists to create the full list of DRP
             files to analyze.
-        use_platetargets (bool): See above
-        platetargets (list): List of platetargets files to search
-            through to find any given plate-ifudesign combination.
         on_disk (bool): See above
         log (str): See above
         dapproc (bool): Flag to execute the main DAP processing
@@ -246,11 +227,10 @@ class rundap:
     def __init__(self, overwrite=None, quiet=False, strictver=True, mplver=None, redux_path=None,
                  dapver=None, analysis_path=None, plan_file=None, platelist=None,
                  ifudesignlist=None, combinatorics=False, list_file=None, sres_ext=None,
-                 sres_fill=None, covar_ext=None, use_platetargets=False, platetargets=None,
-                 on_disk=False, log=False, dapproc=True, pltifu_plots=True, post_process=False,
-                 post_plots=False, report_progress=False, verbose=0, label='mangadap', nodes=1,
-                 cpus=None, qos=None, umask='0027', walltime='240:00:00', hard=True, create=False,
-                 submit=False, queue=None):
+                 sres_fill=None, covar_ext=None, on_disk=False, log=False, dapproc=True,
+                 pltifu_plots=True, post_process=False, post_plots=False, report_progress=False,
+                 verbose=0, label='mangadap', nodes=1, cpus=None, qos=None, umask='0027',
+                 walltime='240:00:00', hard=True, create=False, submit=False, queue=None):
 
         # Save run-mode options
         self.overwrite = overwrite
@@ -281,10 +261,6 @@ class rundap:
         self.sres_fill = sres_fill
         self.covar_ext = covar_ext
 
-        # Select if plateTargets files should be used to generate the
-        # DRPComplete database, and possibly provide them directly 
-        self.use_platetargets = use_platetargets
-        self.platetargets = arginp_to_list(platetargets)
         self.on_disk = on_disk
 
         # Set the options for output
@@ -307,8 +283,8 @@ class rundap:
         self.umask = umask
         self.walltime = walltime
         self.hard = hard
+        self.create = create
         self.submit = submit
-
         self.q = queue
 
         # If submitting to the cluster, make sure that scripts will be
@@ -356,13 +332,13 @@ class rundap:
         self.redux_path = manga.drp_redux_path(self.mpl.drpver) \
                                 if self.redux_path is None else self.redux_path
         self.analysis_path = manga.dap_analysis_path(self.mpl.drpver, self.dapver) \
-                                    if self.analysis_path is None self.analysis_path
+                                    if self.analysis_path is None else self.analysis_path
 
         # Set the subdirectory from which the scripts are sourced and
         # the various log files are written.  Currently based on start
         # UTC; e.g., analysis_path/log/19May2016T09.17.42UTC
         self.calling_path = self.analysis_path / 'log' \
-                                / time.strftime('%d%b%YT%H.%M.%SUTC',time.gmtime()))
+                                / time.strftime('%d%b%YT%H.%M.%SUTC',time.gmtime())
 
         # Create the calling path. The existence test is executed, even
         # though time stamp should mean that calling_path never exists.
@@ -384,12 +360,11 @@ class rundap:
 
         # Construct the DAPTYPEs and check that the plans yield a fully
         # unique list
-        # TODO: This should probably be check done in AnalysisPlanSet
         self.plan = manga.MaNGAAnalysisPlan.default(analysis_path=self.analysis_path) \
                         if self.plan_file is None \
                         else manga.MaNGAAnalysisPlan.from_toml(self.plan_file,
                                                                analysis_path=self.analysis_path)
-        self.daptypes = list(self.plan.keys())
+        self.daptypes = [self.plan[key]['key'] for key in self.plan.keys()]
         if len(numpy.unique(self.daptypes)) != self.plan.nplans:
             raise ValueError('{0} do not yield unique DAPTYPEs.'.format(
                                 'Default plans' if self.plan_file is None 
@@ -411,15 +386,13 @@ class rundap:
         print(f'        {processes}')
 
         # Create and update the DRPComplete file if necessary
-        self.drpc = DRPComplete(platetargets=self.platetargets, drpver=self.mpl.drpver,
-                                redux_path=self.redux_path, dapver=self.dapver,
-                                analysis_path=self.analysis_path)
+        self.drpc = DRPComplete(drpver=self.mpl.drpver, redux_path=self.redux_path,
+                                dapver=self.dapver, analysis_path=self.analysis_path)
         
         # Update the DRPComplete list; force an update if platetarget
         # files are provided
         self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
-                         combinatorics=self.combinatorics, force=(self.platetargets is not None),
-                         use_platetargets=self.use_platetargets, on_disk=self.on_disk)
+                         combinatorics=self.combinatorics, on_disk=self.on_disk)
 
         # Hereafter, self.platelist and self.ifuplatelist are the INPUT
         # values, whereas self.drpc.platelist and self.drpc.ifuplatelist
@@ -481,45 +454,6 @@ class rundap:
         if db.shape[1] != 2:
             raise ValueError('Input file should contain 2 columns, plate and ifu.')
         return db[:,0].astype(int).tolist(), db[:,1].astype(int).tolist()
-
-    COME BACK TO THIS
-    def _check_paths(self, plate, ifudesign):
-        """
-        Check if the output paths exists for a given plate and ifudesign.
-        If not, create them.  The necessary output paths are:
-
-            - The calling path that contains a copy of the plan, the
-              script input and output files, and the touch files
-            - The main common path defined by
-              :func:`mangadap.config.defaults.dap_common_path`.
-            - The plan-based subdirectories based on the plan file
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                ifudesign number
-        """
-        # Generate the calling path for this plate/ifudesign
-        path = os.path.join(self.calling_path, str(plate), str(ifudesign))
-        if not os.path.isdir(path):
-            os.makedirs(path)
-
-        # Generate the main common path
-        path = defaults.dap_common_path(plate=plate, ifudesign=ifudesign, drpver=self.mpl.drpver,
-                                        dapver=self.dapver, analysis_path=self.analysis_path)
-        if not os.path.isdir(path):
-            os.makedirs(path)
-
-        # Check the reference directories, which creates the full plan
-        # path if necessary
-        for daptype in self.daptypes:
-            path = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign, ref=True,
-                                            drpver=self.mpl.drpver, dapver=self.dapver,
-                                            analysis_path=self.analysis_path)
-            if not os.path.isdir(path):
-                os.makedirs(path)
-
 
     def _create_queue(self):
         """
@@ -686,7 +620,7 @@ class rundap:
     # ******************************************************************
     # Management
     # ******************************************************************
-    def set_pltifu_status(self, plate, ifudesign, mode=None, status='queued'):
+    def set_pltifu_status(self, plate, ifudesign, status='queued'):
         """
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.  The root of the touch file is set by
@@ -697,19 +631,14 @@ class rundap:
                 Plate number
             ifudesign (:obj:`int`):
                 IFU design number
-            mode (:obj:`str`, optional):
-                DRP 3D mode, 'RSS' or 'CUBE'
             status (:obj:`str`, optional):
                 The status signifier for the touch file.
         """
         # Get the name of the status file        
-        COME BACK TO THIS
-        root = defaults.dap_file_root(plate, ifudesign, mode=mode)
-        NEED THE ANALYSISPLAN HERE
-        self.set_status(os.path.join(self.calling_path, str(plate), str(ifudesign), root),
-                        status)
+        root = manga.MaNGAConfig(plate, ifudesign, drpver=self.mpl.drpver,
+                                 redux_path=self.redux_path).cfg_root
+        self.set_status(str(self.calling_path / str(plate) / str(ifudesign) / root), status)
         
-    COME BACK TO THIS (what is root)
     def set_status(self, root, status='queued'):
         """
         Generate a general touch file.
@@ -775,50 +704,35 @@ class rundap:
             script file, the file for the output sent to STDOUT, and the
             file for the output sent to STDERR.
         """
-        # Get the plate and IFU from the DRPComplete database; alway use
-        # the CUBE file
-        plate = self.drpc['PLATE'][index]
-        ifudesign = self.drpc['IFUDESIGN'][index]
-        mode = 'CUBE'
+        # Fake out the plan cube to just require the configuration information
+        self.plan.cube = manga.MaNGAConfig(self.drpc['PLATE'][index],
+                                           self.drpc['IFUDESIGN'][index], drpver=self.mpl.drpver,
+                                           redux_path=self.redux_path)
+        cfgfile = self.plan.common_path() / f'{self.plan.cube.cfg_root}.ini'
 
-        # Check that the path exists, creating it if not
-        # TODO: More efficient way to do this?
-        self._check_paths(plate, ifudesign)
-
-        # Create the parameter file
-        COME BACK TO THIS
-        cfgfile = defaults.dap_config(plate, ifudesign, drpver=self.mpl.drpver, dapver=self.dapver,
-                                      analysis_path=self.analysis_path)
-
-        # Write the par file if it doesn't exist
-        NEED THE ANALYSISPLAN HERE
+        # Write the configuration file if it doesn't exist
         if not cfgfile.exists() or overwrite:
             # overwrite defaults to True
             self.drpc.write_config(cfgfile, index=index, sres_ext=self.sres_ext,
                                    sres_fill=self.sres_fill, covar_ext=self.covar_ext)
             # and create symlinks to it
-            for daptype in self.daptypes:
-                # Generate the ref subdirectory for this plan
-                path = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
-                                                ref=True, drpver=self.mpl.drpver,
-                                                dapver=self.dapver,
-                                                analysis_path=self.analysis_path)
-                create_symlink(cfgfile, path, relative_symlink=relative_symlink,
-                               overwrite=overwrite, quiet=True)
+            for i, key in enumerate(self.plan.keys()):
+                method_ref_dir = self.plan.method_path(plan_index=i, ref=True)
+                create_symlink(str(cfgfile), str(method_ref_dir),
+                               relative_symlink=relative_symlink, overwrite=overwrite, quiet=True)
 
         # Set the root path for the scripts, inputs, outputs, and logs
-        NEED THE ANALYSISPLAN HERE
-        _calling_path = os.path.join(self.calling_path, str(plate), str(ifudesign))
-        scr_file_root = defaults.dap_file_root(plate, ifudesign)
+        _calling_path = self.calling_path / str(self.plan.cube.plate) \
+                            / str(self.plan.cube.ifudesign)
 
         # Set the names for the script, stdout, and stderr files
-        scriptfile = _calling_path / scr_file_root
-        stdoutfile = f'{scriptfile}.out'
-        stderrfile = f'{scriptfile}.err'
+        scriptfile = _calling_path / f'{self.plan.cube.cfg_root}'
+        stdoutfile = Path(f'{scriptfile}.out').resolve()
+        stderrfile = Path(f'{scriptfile}.err').resolve()
 
         ################################################################
         # Script file already exists, so just return
-        if os.path.exists(scriptfile) and not overwrite:
+        if scriptfile.exists() and not overwrite:
             return scriptfile, stdoutfile, stderrfile
 
         # Main script components are:
@@ -829,6 +743,9 @@ class rundap:
         ################################################################
         # Open the script file and write the date as a commented header
         # line
+        if not scriptfile.parent.exists():
+            scriptfile.parent.mkdir(parents=True)
+
         file = open(scriptfile, 'w')
         file.write('# Auto-generated batch file\n')
         file.write(f'# {time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())}\n')
@@ -841,8 +758,7 @@ class rundap:
 
         # Command that runs the DAP
         if dapproc:
-            command = f'OMP_NUM_THREADS=1 manga_dap -c {cfgfile} -r {self.redux_path} ' \
-                      f'-o {self.analysis_path}'
+            command = f'OMP_NUM_THREADS=1 manga_dap -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
             if self.log:
@@ -854,22 +770,19 @@ class rundap:
 
         # Plotting scripts
         if plots:
-            command = f'OMP_NUM_THREADS=1 dap_ppxffit_qa -c {cfgfile} -r {self.redux_path} '\
-                      f'-o {self.analysis_path}'
+            command = f'OMP_NUM_THREADS=1 dap_ppxffit_qa -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
             file.write(f'{command}\n')
             file.write('\n')
 
-            command = f'OMP_NUM_THREADS=1 spotcheck_dap_maps -c {cfgfile} -r {self.redux_path} '\
-                      f'-o {self.analysis_path}'
+            command = f'OMP_NUM_THREADS=1 spotcheck_dap_maps -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
             file.write(f'{command}\n')
             file.write('\n')
 
-            command = f'OMP_NUM_THREADS=1 dap_fit_residuals -c {cfgfile} -r {self.redux_path} '\
-                      f'-o {self.analysis_path}'
+            command = f'OMP_NUM_THREADS=1 dap_fit_residuals -c {cfgfile} -o {self.analysis_path}'
             if self.plan_file is not None:
                 command += f' -p {self.plan_file}'
             file.write(f'{command}\n')

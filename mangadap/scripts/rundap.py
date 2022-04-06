@@ -69,11 +69,6 @@ class RunDap(scriptbase.ScriptBase):
                             help='Use this extension to define the spatial correlation matrix.  '
                                  'Default set by MaNGADataCube class.')
 
-        parser.add_argument("--use_plttargets", action="store_true", default=False,
-                            help="Use platetargets files instead of the DRPall file to "
-                                 "generate the DRP complete database")
-        parser.add_argument("--plttargets", type=str, help="path to plateTargets file(s); "
-                            "if provided will force update to drpcomplete fits file", default=None)
         parser.add_argument('--on_disk', action='store_true', default=False,
                             help='When using the DRPall file to collate the data for input to '
                                  'the DAP, search for available DRP files on disk instead of '
@@ -127,10 +122,9 @@ class RunDap(scriptbase.ScriptBase):
             print(f'DAP Version: {__version__}')
             return
 
-        from mangdap.survey.rundap import rundap
+        from mangadap.survey.rundap import rundap
 
         # Handle special argument cases
-        platetargets = None if args.plttargets is None else arginp_to_list(args.plttargets)
         if args.qos is not None and args.nodes > 1:
             warnings.warn('Requesting the fast node requires node=1.  Ignoring input node number.')
             nodes = 1               # Force the number of nodes to be 1
@@ -143,8 +137,7 @@ class RunDap(scriptbase.ScriptBase):
                          platelist=args.platelist, ifudesignlist=args.ifudesignlist,
                          combinatorics=args.combinatorics, list_file=args.list_file,
                          sres_ext=args.sres_ext, sres_fill=args.sres_fill,
-                         covar_ext=args.covar_ext, use_platetargets=args.use_platetargets,
-                         platetargets=platetargets, on_disk=args.on_disk, log=args.log,
+                         covar_ext=args.covar_ext, on_disk=args.on_disk, log=args.log,
                          dapproc=not args.no_proc, pltifu_plots=not args.no_plots,
                          post_process=args.post, post_plots=args.post_plots,
                          report_progress=args.progress, verbose=args.verbose, label=args.label,

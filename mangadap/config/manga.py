@@ -21,7 +21,7 @@ from IPython import embed
 import numpy
 from astropy.io import fits
 
-#from . import defaults
+from . import defaults
 from . import manga_environ
 from .analysisplan import AnalysisPlan
 from ..util.parser import DefaultConfig
@@ -193,8 +193,12 @@ def plate_target_files():
         string, the second provides the integer catalog index
         determined for each file.
     """
+    core_dir = Path(manga_environ['MANGACORE_DIR']).resolve()
+    if not core_dir.exists():
+        raise ValueError(f'MANGACORE directory does not exist! {core_dir}')
+
     # Default search string
-    search_str = Path(manga_environ['MANGACORE_DIR']).resolve() / 'platedesign' / 'platetargets'
+    search_str =  core_dir / 'platedesign' / 'platetargets'
     file_list = sorted(list(search_path.glob('plateTargets*.par')))
     nfiles = len(file_list)
     if nfiles == 0:
@@ -214,7 +218,7 @@ def redshift_fix_file():
     Returns:
         :obj:`str`: Expected path to the redshift-fix parameter file.
     """
-    return dap_data_root() / 'fix' / 'redshift_fix.par'
+    return defaults.dap_data_root() / 'fix' / 'redshift_fix.par'
 
 
 def photometry_fix_file():
@@ -224,8 +228,52 @@ def photometry_fix_file():
     Returns:
         :obj:`str`: Expected path to the photometry-fix parameter file.
     """
-    return dap_data_root() / 'fix' / 'photometry_fix.par'
+    return defaults.dap_data_root() / 'fix' / 'photometry_fix.par'
 
+
+def parse_plate_ifu_from_file(name):
+    """
+    Parse the plate and ifu numbers from the file name of a MaNGA DRP file.
+    """
+    return tuple([int(n) for n in name.split('-')[1:3]])
+
+
+
+# USED BY:
+#   - scripts/rundap.py
+def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
+               directory_path=None):
+    """
+    Return the full path to the DAP configuration file.
+
+    The configuration file provides the input data necessary to
+    instantiate a :class:`mangadap.datacube.manga.MaNGADataCube`.
+    
+    Args:
+        plate (:obj:`int`):
+            Plate number
+        ifudesign (:obj:`int`):
+            IFU design number
+        drpver (:obj:`str`, optional):
+            DRP version. Default is to use :func:`drp_version`.
+        dapver (:obj:`str`, optional):
+            DAP version. Default is to use :func:`dap_version`.
+        analysis_path (:obj:`str`, optional): 
+            Path to the root analysis directory. Default is to use
+            :func:`dap_analysis_path`.
+        directory_path (:obj:`str`, optional):
+            Path to the directory with the DAP output files. Default
+            is to use :func:`dap_common_path`
+
+    Returns:
+        :obj:`str`: Full path to the DAP par file
+    """
+    # Make sure the directory path is defined
+    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
+                                      dapver=dapver, analysis_path=analysis_path) \
+                            if directory_path is None else Path(directory_path).resolve()
+    # Set the name of the par file; put this in its own function?
+    return _directory_path /  f'{dap_file_root(plate, ifudesign, mode="CUBE")}.ini'
 
 class MaNGAConfig:
 
@@ -340,17 +388,20 @@ class MaNGAConfig:
         if mode not in options:
             raise ValueError(f'Unknown mode {mode}.  Must be in: {options}')
 
-#    @property
-#    def key(self):
-#        """
-#        Unique key used to identify the input data.
-#        """
-#        return f'{self.plate}-{self.ifudesign}'
-
     @property
     def output_root(self):
-#        return f'{self.instrument}-{self.key}'
         return f'{self.instrument}-{self.plate}-{self.ifudesign}'
+
+    @property
+    def cfg_root(self):
+        """
+        Generate the root name of the MaNGA DAP configuration and script files.
+    
+        Returns:
+            :obj:`str`: Root name for the DAP file:
+            ``mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]``
+        """
+        return f'mangadap-{self.plate}-{self.ifudesign}-LOG{self.mode}'
 
     @staticmethod
     def propagate_flags():
@@ -604,6 +655,9 @@ class MaNGAConfig:
             raise FileExistsError(f'{_ofile} already exists; to overwrite, set '
                                   'overwrite=True.')
 
+        if not _ofile.parent.exists():
+            _ofile.parent.mkdir(parents=True)
+
         # Build the configuration data
         cfg = ConfigParser(allow_no_value=True)
         cfg['default'] = {'drpver': drpver,
@@ -636,9 +690,13 @@ class MaNGAAnalysisPlan(AnalysisPlan):
     This class only redefines the output paths from the base class.
     """
     def __init__(self, planlist, cube=None, analysis_path=None):
-        if cube is None:
-            raise ValueError('For a MaNGA analysis plan, you must provide the cube because it '
-                             'is used to define the output paths.')
+#        if cube is None:
+#            raise ValueError('For a MaNGA analysis plan, you must provide the cube because it '
+#                             'is used to define the output paths.')
+        self.cube = cube
+        if self.cube is None:
+            warnings.warn('Instantiation of the MaNGA analysis plan did not include the cube.  '
+                          'Directories will be *undefined*, meaning the code may fault.')
         if analysis_path is None:
             analysis_path = dap_analysis_path(drpver=cube.drpver)
         super().__init__(planlist, cube=cube, analysis_path=analysis_path)
@@ -655,6 +713,9 @@ class MaNGAAnalysisPlan(AnalysisPlan):
         Returns:
             `Path`_: Path object for the "common" output
         """
+        if self.cube is None:
+            raise ValueError('Path undefined because cube being processed was not provided '
+                             'when MaNGAAnalysisPlan was instantiated!')
         return self.analysis_path / 'common' / str(self.cube.plate) / str(self.cube.ifudesign)
 
     def method_path(self, plan_index=0, qa=False, ref=False):
@@ -682,6 +743,9 @@ class MaNGAAnalysisPlan(AnalysisPlan):
                 Raised if the plan index is invalid or if both qa and ref are true.
 
         """
+        if self.cube is None:
+            raise ValueError('Path undefined because cube being processed was not provided '
+                             'when MaNGAAnalysisPlan was instantiated!')
         if plan_index < 0 or plan_index >= self.nplans:
             raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
         if qa and ref:
