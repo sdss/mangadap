@@ -34,12 +34,6 @@ class RunDap(scriptbase.ScriptBase):
                             action="store_true", default=False)
        
         # These arguments are used to override default behavior
-        parser.add_argument("--loose", help="Only throw warnings if the versioning is "
-                            "not identically as it should be for the designated MPL",
-                            action="store_true", default=False)
-#        parser.add_argument("--mplver", type=str, default=None,
-#                            help='select MPL version to analyze; if None, uses the version '
-#                                 'defined by the current environmental variables')
         parser.add_argument("--drpver", type=str, default=None,
                             help='MaNGA DRP version for analysis; $MANGADRP_VER by default')
         parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
@@ -75,6 +69,10 @@ class RunDap(scriptbase.ScriptBase):
                             help='When using the DRPall file to collate the data for input to '
                                  'the DAP, search for available DRP files on disk instead of '
                                  'using the DRPall file content.')
+        parser.add_argument('--can_analyze', action='store_true', default=False,
+                            help='Only construct script files for datacubes that can/should be '
+                                 'analyzed by the DAP.  See '
+                                 ':func:`~mangadap.survey.drpcomplete.DRPComplete.can_analyze`.')
 
         parser.add_argument("--log", help="Have the main DAP executable produce a log file",
                             action="store_true", default=False)
@@ -133,19 +131,19 @@ class RunDap(scriptbase.ScriptBase):
         else:
             nodes = args.nodes
 
-        _rundap = rundap(overwrite=args.overwrite, quiet=args.quiet, strictver=not args.loose,
-                         drpver=args.drpver, redux_path=args.redux_path, dapver=args.dapver,
+        _rundap = rundap(overwrite=args.overwrite, quiet=args.quiet, drpver=args.drpver,
+                         redux_path=args.redux_path, dapver=args.dapver,
                          analysis_path=args.analysis_path, plan_file=args.plan_file,
                          platelist=args.platelist, ifudesignlist=args.ifudesignlist,
                          combinatorics=args.combinatorics, list_file=args.list_file,
                          sres_ext=args.sres_ext, sres_fill=args.sres_fill,
-                         covar_ext=args.covar_ext, on_disk=args.on_disk, log=args.log,
-                         dapproc=not args.no_proc, pltifu_plots=not args.no_plots,
-                         post_process=args.post, post_plots=args.post_plots,
-                         report_progress=args.progress, verbose=args.verbose, label=args.label,
-                         nodes=nodes, cpus=args.cpus, qos=args.qos, umask=args.umask,
-                         walltime=args.walltime, hard=args.hard, create=args.create,
-                         submit=args.submit, queue=args.queue)
+                         covar_ext=args.covar_ext, on_disk=args.on_disk,
+                         can_analyze=args.can_analyze, log=args.log, dapproc=not args.no_proc,
+                         pltifu_plots=not args.no_plots, post_process=args.post,
+                         post_plots=args.post_plots, report_progress=args.progress,
+                         verbose=args.verbose, label=args.label, nodes=nodes, cpus=args.cpus,
+                         qos=args.qos, umask=args.umask, walltime=args.walltime, hard=args.hard,
+                         create=args.create, submit=args.submit, queue=args.queue)
 
 
 

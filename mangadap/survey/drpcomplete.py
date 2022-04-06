@@ -139,7 +139,6 @@ class DRPComplete:
             self.readonly=True
             self.platelist = None
             self.ifudesignlist = None
-            self.catid = None
             return
 
         self.readonly = False
@@ -397,6 +396,8 @@ class DRPComplete:
                         for p,i in zip(drpall_hdu[1].data['plate'], drpall_hdu[1].data['ifudsgn'])]
 
         files = [f for f in files if f.exists()]
+        if len(files) == 0:
+            raise ValueError('Could not find any files to analyze.')
 
         # Get the list of plate and ifus
         pltifu = numpy.array([manga.parse_plate_ifu_from_file(f.name) for f in files]).astype(int)
@@ -823,32 +824,32 @@ class DRPComplete:
             raise ValueError(f'plate={plate},ifudesign={ifudesign} not in drpcomplete file!')
         return numpy.where(indx)[0][0]
 
-#    def can_analyze(self, row=None):
-#        """
-#        Determine if the DAP can analyze a plate-ifu entry in the
-#        database.
-#
-#        The selection is currently:
-#
-#            - MaNGAID != 'NULL'
-#            - MANGA_TARGET1 > 0 or MANGA_TARGET3 > 0
-#            - VEL > -500
-#
-#        Args:
-#            row (:obj:`int`, optional):
-#                The specific row to test.  By default, return a boolean
-#                vector for all the database rows.
-#
-#        Returns:
-#            Either a single boolean or boolean `numpy.ndarray`_
-#            flagging that DAP can (True) or cannot (False) analyze
-#            the data associated with the database entry (or entries).
-#        """
-#        if row is None:
-#            return (self['MANGAID'] != 'NULL') \
-#                    & ((self['MANGA_TARGET1'] > 0) | (self['MANGA_TARGET3'] > 0)) \
-#                    & (self['VEL'] > -500.0)
-#        return self['MANGAID'][row] != 'NULL' \
-#                and (self['MANGA_TARGET1'][row] > 0 or self['MANGA_TARGET3'][row] > 0) \
-#                and self['VEL'][row] > -500.0
-#
+    def can_analyze(self, row=None):
+        """
+        Determine if the DAP can analyze a plate-ifu entry in the
+        database.
+
+        The selection is currently:
+
+            - MaNGAID != 'NULL'
+            - MANGA_TARGET1 > 0 or MANGA_TARGET3 > 0
+            - VEL > -500
+
+        Args:
+            row (:obj:`int`, optional):
+                The specific row to test.  By default, return a boolean
+                vector for all the database rows.
+
+        Returns:
+            Either a single boolean or boolean `numpy.ndarray`_
+            flagging that DAP can (True) or cannot (False) analyze
+            the data associated with the database entry (or entries).
+        """
+        if row is None:
+            return (self['MANGAID'] != 'NULL') \
+                    & ((self['MANGA_TARGET1'] > 0) | (self['MANGA_TARGET3'] > 0)) \
+                    & (self['VEL'] > -500.0)
+        return self['MANGAID'][row] != 'NULL' \
+                and (self['MANGA_TARGET1'][row] > 0 or self['MANGA_TARGET3'][row] > 0) \
+                and self['VEL'][row] > -500.0
+

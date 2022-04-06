@@ -25,11 +25,10 @@ try:
 except:
     warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
-from mangadap.config import manga
-from mangadap.survey.drpcomplete import DRPComplete
-from mangadap.survey.mangampl import MaNGAMPL
-from mangadap.util.parser import arginp_to_list
-from mangadap.util.fileio import create_symlink
+from ..config import manga, manga_environ, python_versions
+from .drpcomplete import DRPComplete
+from ..util.parser import arginp_to_list
+from ..util.fileio import create_symlink
 
 class rundap:
     r"""
@@ -62,12 +61,6 @@ class rundap:
             Suppress output
         print_version (:obj:`bool`, optional):
             Print the class version and return.
-        strictver (:obj:`bool`, optional):
-            Strictly check the version requirements of the dependencies
-            defined in :mangadap.survey.mangampl.MaNGAMPL` for this
-            version of the DAP.  Default is True, meaning the code will
-            raise an exception if the expected version are not the same
-            as the environment.
         drpver (:obj:`str`, optional):
             DRP version to analyze.  Default is defined by
             :func:`mangadap.config.manga.drp_version`
@@ -119,6 +112,10 @@ class rundap:
             When searching for available files to analyze, search the
             DRP directory path instead of using the data in the DRPall
             file.  
+        can_analyze (:obj:`bool`, optional):
+            Only construct script files for datacubes that can/should be
+            analyzed by the DAP.  See
+            :func:`~mangadap.survey.drpcomplete.DRPComplete.can_analyze`.
         log (:obj:`bool`, optional):
             Flag to create the DAP log files.
         dapproc (:obj:`bool`, optional):
@@ -168,9 +165,6 @@ class rundap:
             redo any existing analysis.
         quiet (bool): Suppress output
         print_version (bool): Print the version and then return
-        strictver (bool): Strictly check the version requirements for
-            this version of the dap.  If True, an exception is raised if
-            the expected version are not the same as the environment.
         mpl (:class:`mangadap.survey.mangampl.MaNGAMPL`): MPL version;
             see above.
         redux_path (str): The top-level path with the DRP files.
@@ -187,6 +181,7 @@ class rundap:
             plate/ifudesign/mode lists to create the full list of DRP
             files to analyze.
         on_disk (bool): See above
+        can_analyze (bool): See above
         log (str): See above
         dapproc (bool): Flag to execute the main DAP processing
         pltifu_plots (bool): Create the QA plate-ifu specific plots
@@ -220,10 +215,10 @@ class rundap:
             during a redo mode or if they are provided with any other
             mode.
     """
-    def __init__(self, overwrite=None, quiet=False, strictver=True, drpver=None, redux_path=None,
-                 dapver=None, analysis_path=None, plan_file=None, platelist=None,
-                 ifudesignlist=None, combinatorics=False, list_file=None, sres_ext=None,
-                 sres_fill=None, covar_ext=None, on_disk=False, log=False, dapproc=True,
+    def __init__(self, overwrite=None, quiet=False, drpver=None, redux_path=None, dapver=None,
+                 analysis_path=None, plan_file=None, platelist=None, ifudesignlist=None,
+                 combinatorics=False, list_file=None, sres_ext=None, sres_fill=None,
+                 covar_ext=None, on_disk=False, can_analyze=False, log=False, dapproc=True,
                  pltifu_plots=True, post_process=False, post_plots=False, report_progress=False,
                  verbose=0, label='mangadap', nodes=1, cpus=None, qos=None, umask='0027',
                  walltime='240:00:00', hard=True, create=False, submit=False, queue=None):
@@ -233,7 +228,6 @@ class rundap:
         self.quiet = quiet
 
         # Override environment
-        self.strictver = strictver
         self.drpver = drpver
         self.redux_path = None if redux_path is None else Path(redux_path).resolve()
         self.dapver = dapver
@@ -258,6 +252,7 @@ class rundap:
         self.covar_ext = covar_ext
 
         self.on_disk = on_disk
+        self.can_analyze = can_analyze
 
         # Set the options for output
         self.log = log
@@ -316,16 +311,7 @@ class rundap:
                           'Setting to report progress.')
             self.report_progress = True
 
-        # Used from self.mpl:
-        #   drpver, mplver
-        #   show(), verify_versions()
-
-#        # Make sure the selected MPL version is available
-#        try:
-#            self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
-#        except Exception as e:
-#            raise ValueError('MPL is undefined!') from e
-
+        # Set versions
         if self.drpver is None:
             self.drpver = manga.drp_version()
         if self.dapver is None:
@@ -376,9 +362,11 @@ class rundap:
         # Alert the user of the versions to be used
         if self.q is not None:
             print(f'Attempting to submit to queue: {self.q}')
-        print(f'Versions: DAP:{self.dapver}, {self.mpl.mplver}')
-        self.mpl.show()
-        self.mpl.verify_versions(quiet=self.quiet)
+        print('Versions:')
+        for key in python_versions.keys():
+            print(f'    {key:>12}: {python_versions[key]:<30}')
+        print(f'    {"DRP":>12}: {self.drpver:<30}')
+        print(f'    {"DAP":>12}: {self.dapver:<30}')
         print('Paths:')
         print(f'      REDUX: {self.redux_path}')
         print(f'   ANALYSIS: {self.analysis_path}')
@@ -389,7 +377,7 @@ class rundap:
         print(f'        {processes}')
 
         # Create and update the DRPComplete file if necessary
-        self.drpc = DRPComplete(drpver=self.mpl.drpver, redux_path=self.redux_path,
+        self.drpc = DRPComplete(drpver=self.drpver, redux_path=self.redux_path,
                                 dapver=self.dapver, analysis_path=self.analysis_path)
         
         # Update the DRPComplete list; force an update if platetarget
@@ -405,7 +393,7 @@ class rundap:
 
         # Find the rows in the DRPComplete database with the DRP file
         # meta data
-        drpc_rows = self._selected_drpfile_rows()
+        drpc_rows = self._selected_drpfile_rows(can_analyze=self.can_analyze)
 
         print(f'Number of DRP files to process: {len(drpc_rows)}')
         if len(drpc_rows) == 0:
@@ -637,7 +625,7 @@ class rundap:
                 The status signifier for the touch file.
         """
         # Get the name of the status file        
-        root = manga.MaNGAConfig(plate, ifudesign, drpver=self.mpl.drpver,
+        root = manga.MaNGAConfig(plate, ifudesign, drpver=self.drpver,
                                  redux_path=self.redux_path).cfg_root
         self.set_status(str(self.calling_path / str(plate) / str(ifudesign) / root), status)
         
@@ -653,11 +641,17 @@ class rundap:
         # Touch the status file
         Path(f'{root}.{status}').touch()
 
-    def _selected_drpfile_rows(self):
+    def _selected_drpfile_rows(self, can_analyze=False):
         """
         Find the rows in the
         :class:`mangadap.survey.drpcomplete.DRPComplete` database with
         the selected plates and IFUs to analyze.
+
+        Args:
+            can_analyze (:obj:`bool`, optional):
+                In addition to returning the selected rows, only include those
+                rows with DRP datacubes that can be analyzed.  See
+                :func:`mangadap.survey.drpcomplete.DRPComplete.can_analyze`.
 
         Returns:
             `numpy.ndarray`_: A vector with the rows in the DRPComplete object
@@ -678,6 +672,9 @@ class rundap:
                                 for pi in this_pltifu])
         if numpy.any(rows < 0):
             raise ValueError('Should be able to find all plates and ifus.')
+        if can_analyze:
+            keep = self.drpc.can_analyze()[rows]
+            rows = rows[keep]
         return rows
 
     def write_compute_script(self, index, dapproc=True, plots=True, overwrite=False,
@@ -708,7 +705,7 @@ class rundap:
         """
         # Fake out the plan cube to just require the configuration information
         self.plan.cube = manga.MaNGAConfig(self.drpc['PLATE'][index],
-                                           self.drpc['IFUDESIGN'][index], drpver=self.mpl.drpver,
+                                           self.drpc['IFUDESIGN'][index], drpver=self.drpver,
                                            redux_path=self.redux_path)
         cfgfile = self.plan.common_path() / f'{self.plan.cube.cfg_root}.ini'
 
@@ -847,7 +844,7 @@ class rundap:
 
         # Command that constructs the DAPall file
         command = 'OMP_NUM_THREADS=1 '
-        command += f'construct_dapall --drpver {self.mpl.drpver} -r {self.redux_path} ' \
+        command += f'construct_dapall --drpver {self.drpver} -r {self.redux_path} ' \
                    f'--dapver {self.dapver} -a {self.analysis_path}'
         if self.plan_file is not None:
             command += f' --plan_file {self.plan_file}'
@@ -858,7 +855,7 @@ class rundap:
 
         # Add the plotting commands
         if plots:
-            command = f'OMP_NUM_THREADS=1 dapall_qa --drpver {self.mpl.drpver} ' \
+            command = f'OMP_NUM_THREADS=1 dapall_qa --drpver {self.drpver} ' \
                       f'--redux_path {self.redux_path} --dapver {self.dapver} ' \
                       f'--analysis_path {self.analysis_path}'
             if self.plan_file is not None:
