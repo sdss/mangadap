@@ -20,7 +20,7 @@ for MaNGA the files are:
 
         * ``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING]-[CONTINUUM]-[ELFIT]-[ELMOM].fits.gz``
 
-*Optional Parametersn*: see :ref:`plan`.  The table below lists the parameters
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
 defined by :class:`~mangadap.proc.emissionlinemoments.EmissionLineMomentsDef`
 
 .. include:: ../tables/emissionlinemomentsdef.rst

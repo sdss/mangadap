@@ -43,27 +43,14 @@ import astropy.units
 from astropy.stats import sigma_clip
 
 from .drpcomplete import DRPComplete
-from ..dapfits import DAPMapsBitMask, DAPQualityBitMask
-from ..util.drpbitmask import DRPQuality3DBitMask
+from ..dapfits import DAPMapsBitMask
 from ..config import manga
-from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary, channel_units
+from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary
 from ..util.fitsutil import DAPFitsUtil
-from ..util.log import init_DAP_logging, module_logging, log_output
+from ..util.log import log_output
 from ..config.analysisplan import AnalysisPlan
-from ..par.absorptionindexdb import AbsorptionIndexDB
-from ..par.bandheadindexdb import BandheadIndexDB
-from ..par.emissionlinedb import EmissionLineDB
-from ..par.emissionmomentsdb import EmissionMomentsDB
-from ..proc.util import select_proc_method, sample_growth
-from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from ..proc.stellarcontinuummodel import StellarContinuumModel
-from ..proc.emissionlinemoments import EmissionLineMomentsDef
-#from ..proc.emissionlinemoments import available_emission_line_moment_databases
-from ..proc.emissionlinemodel import EmissionLineModel, EmissionLineModelDef
-#from ..proc.emissionlinemodel import available_emission_line_modeling_methods
-from ..proc.spectralindices import SpectralIndicesDef #, available_spectral_index_databases
+from ..proc.util import sample_growth
 
-from matplotlib import pyplot
 
 class DAPall:
     """
@@ -246,22 +233,12 @@ class DAPall:
         if plan_elmom is None:
             return 'None', None
         return plan_elmom['passbands'], plan_elmom.momdb.channel_names()
-#        if key == 'None':
-#            return 'None', None
-#        db = select_proc_method(key, EmissionLineMomentsDef,
-#                                available_func=available_emission_line_moment_databases)
-#        return db['passbands'], EmissionMomentsDB.from_key(db['passbands']).channel_names()
 
     @staticmethod
     def _emission_line_db_info(plan_elfit):
         if plan_elfit is None:
             return 'None', None
         return plan_elfit['fitpar']['emission_lines'], plan_elfit['fitpar'].emldb.channel_names()
-#        if key == 'None':
-#            return 'None', None
-#        db = select_proc_method(key, EmissionLineModelDef,
-#                                available_func=available_emission_line_modeling_methods)
-#        return db['emission_lines'], EmissionLineDB.from_key(db['emission_lines']).channel_names()
 
     @staticmethod
     def _spectral_index_db_info(plan_sindx):
@@ -274,19 +251,6 @@ class DAPall:
         if len(channels) != nindx:
             raise ValueError('Spectral index channel names not unique!')
         return plan_sindx['absindex'], plan_sindx['bandhead'], channels, units
-#        if key == 'None':
-#            return 0, 'None', 'None', None
-#        db = select_proc_method(key, SpectralIndicesDef,
-#                                available_func=available_spectral_index_databases)
-#        absdb = AbsorptionIndexDB.from_key(db['absindex'])
-#        bhddb = BandheadIndexDB.from_key(db['bandhead'])
-#        nindx = absdb.size + bhddb.size
-#        units = numpy.array(absdb['units'].tolist() + ['']*bhddb.size)
-#        channels = absdb.channel_names()
-#        channels.update(bhddb.channel_names(offset=absdb.size))
-#        if len(channels) != nindx:
-#            raise ValueError('Spectral index channel names not unique!')
-#        return db['absindex'], db['bandhead'], channels, units
 
     # TODO: Fix this!
     def _read(self):
