@@ -1,10 +1,6 @@
 The MaNGA Data Analysis Pipeline
 ================================
 
-.. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)
-   :target: http://www.astropy.org/
-   :alt: Powered by Astropy
-
 .. image:: https://github.com/sdss/mangadap/actions/workflows/ci_tests.yml/badge.svg
    :target: https://github.com/sdss/mangadap/actions
    :alt: Build Status
@@ -20,6 +16,10 @@ The MaNGA Data Analysis Pipeline
 .. image:: https://img.shields.io/github/license/sdss/mangadap
    :target: https://github.com/sdss/mangadap/blob/master/LICENSE.md
    :alt: License
+
+.. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)
+   :target: http://www.astropy.org/
+   :alt: Powered by Astropy
 
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software package
 that has analyzed all galaxy data produced by the MaNGA data-reduction pipeline
