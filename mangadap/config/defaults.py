@@ -44,28 +44,28 @@ def sdss_maskbits_file():
 #   - scripts/dapall_qa.py
 #   - scripts/find_repeat_observations.py
 #   - survey/dapall.py
-def dapall_file(drpver=None, dapver=None, analysis_path=None):
-    """
-    Return the path to the DAPall file.
-
-    Args:
-        drpver (:obj:`str`, optional):
-            DRP version.  Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version.  Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional):
-            Path to the root analysis directory.  Default is to use
-            :func:`dap_analysis_path`
-
-    Returns:
-        :obj:`str`: Full path to the DAPall fits file.
-    """
-    _drpver = drp_version() if drpver is None else drpver
-    _dapver = dap_version() if dapver is None else dapver
-    _analysis_path = dap_analysis_path(drpver=_drpver, dapver=_dapver) \
-                        if analysis_path is None else Path(analysis_path).resolve()
-    return _analysis_path / f'dapall-{_drpver}-{_dapver}.fits'
-
+#def dapall_file(drpver=None, dapver=None, analysis_path=None):
+#    """
+#    Return the path to the DAPall file.
+#
+#    Args:
+#        drpver (:obj:`str`, optional):
+#            DRP version.  Default is to use :func:`drp_version`.
+#        dapver (:obj:`str`, optional):
+#            DAP version.  Default is to use :func:`dap_version`.
+#        analysis_path (:obj:`str`, optional):
+#            Path to the root analysis directory.  Default is to use
+#            :func:`dap_analysis_path`
+#
+#    Returns:
+#        :obj:`str`: Full path to the DAPall fits file.
+#    """
+#    _drpver = drp_version() if drpver is None else drpver
+#    _dapver = dap_version() if dapver is None else dapver
+#    _analysis_path = dap_analysis_path(drpver=_drpver, dapver=_dapver) \
+#                        if analysis_path is None else Path(analysis_path).resolve()
+#    return _analysis_path / f'dapall-{_drpver}-{_dapver}.fits'
+#
 
 # USED BY:
 #   - scripts/rundap.py

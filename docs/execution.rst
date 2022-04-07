@@ -255,7 +255,7 @@ IDs.
 
     The ``rundap`` script constructs the
     :class:`~mangadap.survey.drpcomplete.DRPComplete` object and writes its
-    associated fits file (see :ref:`metadatamodel-drpcomplete`). The data
+    associated fits file; see :ref:`metadatamodel-drpcomplete`. The data
     compiled into this database is pulled from the DRPall file, but some
     corrections may be applied to the NSA redshift or photometry; see, e.g.,
     :ref:`metadatamodel-redshift-fix`.
@@ -264,48 +264,39 @@ To write the post-processing scripts, execute ``rundap`` with the
 ``--post`` and ``--post_plots`` options.  This produces two additional
 types of scripts:
 
-.. todo::
-
-    update the scripts below!
-
  - Scripts to produce QA plots for all IFUs on a given plate.  This file
    is written to, e.g.,
-   ``/path/for/dap/output/log/01Nov2019T16.58.40UTC/7443/7443_fitqa``
+   ``/path/for/dap/output/drpver/dapver/log/06Apr2022T22.15.26UTC/7443/7443_fitqa``
    and looks like this:
 
    .. code-block:: bash
 
         # Auto-generated batch file
-        # Fri 01 Nov 2019 10:58:52
+        # Thu 07 Apr 2022 13:33:27
 
-        touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/7443_fitqa.started
+        touch /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/10001/10001_fitqa.started
 
-        dap_plate_fit_qa 7443 --analysis_path /path/for/dap/output/v2_7_1/2.4.1
+        OMP_NUM_THREADS=1 dap_plate_fit_qa 10001 --analysis_path /path/for/dap/output/drpver/dapver --plan_file /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/plan.toml
 
-        touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/7443_fitqa.done
+        touch /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/10001/10001_fitqa.done
 
  - A script that builds the :ref:`metadatamodel-dapall` and writes its QA plots.  This
    file is written to, e.g.,
-   ``/path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall``
+   ``/path/for/dap/output/drpver/dapver/log/06Apr2022T22.15.26UTC/build_dapall``
    and looks like this:
 
    .. code-block:: bash
 
         # Auto-generated batch file
-        # Fri 01 Nov 2019 10:58:52
+        # Thu 07 Apr 2022 13:33:27
 
-        touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall.started
+        touch /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/build_dapall.started
 
-        construct_dapall --drpver v2_7_1 -r /path/with/drp/output/v2_7_1 --dapver 2.4.1 -a /path/for/dap/output/v2_7_1/2.4.1 -vv
+        OMP_NUM_THREADS=1 construct_dapall --drpver v3_1_1 -r /path/with/drp/output/drpver --dapver 3.1.0 -a /path/for/dap/output/drpver/dapver --plan_file /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/plan.toml -vv
 
-        dap_dapall_qa --drpver v2_7_1 --redux_path /path/with/drp/output/v2_7_1 --dapver 2.4.1 --analysis_path /path/for/dap/output/v2_7_1/2.4.1
+        OMP_NUM_THREADS=1 dapall_qa --drpver v3_1_1 --redux_path /path/with/drp/output/drpver --dapver 3.1.0 --analysis_path /path/for/dap/output/drpver/dapver --plan_file /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/plan.toml
 
-        touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall.done
-
-
-.. todo::
-
-    Check the details here.
+        touch /path/for/dap/output/drpver/dapver/log/07Apr2022T20.33.27UTC/build_dapall.done
 
 In the automated run of the DAP, any entry in the
 :ref:`metadatamodel-drpcomplete` that meets the criteria set by

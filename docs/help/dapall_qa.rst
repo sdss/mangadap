@@ -3,7 +3,7 @@
     $ dapall_qa -h
     usage: dapall_qa [-h] [--drpver DRPVER] [--dapver DAPVER]
                      [--redux_path REDUX_PATH] [--analysis_path ANALYSIS_PATH]
-                     [--plan_file PLAN_FILE] [--daptype DAPTYPE] [--normal_backend]
+                     [--plan_file PLAN_FILE] [--normal_backend]
     
     Construct QA plots using the DAPall metadata
     
@@ -18,6 +18,5 @@
       --plan_file PLAN_FILE
                             parameter file with the MaNGA DAP execution plan to use
                             instead of the default (default: None)
-      --daptype DAPTYPE     DAP processing type (default: None)
       --normal_backend
     

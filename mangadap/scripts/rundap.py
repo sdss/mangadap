@@ -37,9 +37,10 @@ class RunDap(scriptbase.ScriptBase):
         parser.add_argument("--drpver", type=str, default=None,
                             help='MaNGA DRP version for analysis; $MANGADRP_VER by default')
         parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
-        parser.add_argument("--dapver", type=str,
-                            help="optional output version, different from product version",
-                            default=None)
+        parser.add_argument("--dapver", type=str, default=None,
+                            help='optional output version, different from product version.  This '
+                                 '*only* affects the output directory structure.  It does *not* '
+                                 'select the version of the DAP to use.')
         parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
         parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "

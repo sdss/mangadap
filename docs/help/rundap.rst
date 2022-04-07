@@ -27,7 +27,9 @@
                             (default: None)
       --redux_path REDUX_PATH
                             main DRP output path (default: None)
-      --dapver DAPVER       optional output version, different from product version
+      --dapver DAPVER       optional output version, different from product version.
+                            This *only* affects the output directory structure. It
+                            does *not* select the version of the DAP to use.
                             (default: None)
       --analysis_path ANALYSIS_PATH
                             main DAP output path (default: None)

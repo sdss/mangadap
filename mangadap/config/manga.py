@@ -238,7 +238,6 @@ def parse_plate_ifu_from_file(name):
     return tuple([int(n) for n in name.split('-')[1:3]])
 
 
-
 # USED BY:
 #   - scripts/rundap.py
 def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
@@ -274,6 +273,34 @@ def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
                             if directory_path is None else Path(directory_path).resolve()
     # Set the name of the par file; put this in its own function?
     return _directory_path /  f'{dap_file_root(plate, ifudesign, mode="CUBE")}.ini'
+
+
+# USED BY:
+#   - scripts/dapall_qa.py
+#   - scripts/find_repeat_observations.py
+#   - survey/dapall.py
+def dapall_file(drpver=None, dapver=None, analysis_path=None):
+    """
+    Return the path to the DAPall file.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version.  Default is to use :func:`drp_version`.
+        dapver (:obj:`str`, optional):
+            DAP version.  Default is to use :func:`dap_version`.
+        analysis_path (:obj:`str`, optional):
+            Path to the root analysis directory.  Default is to use
+            :func:`dap_analysis_path`
+
+    Returns:
+        :obj:`str`: Full path to the DAPall fits file.
+    """
+    _drpver = drp_version() if drpver is None else drpver
+    _dapver = dap_version() if dapver is None else dapver
+    _analysis_path = dap_analysis_path(drpver=_drpver, dapver=_dapver) \
+                        if analysis_path is None else Path(analysis_path).resolve()
+    return _analysis_path / f'dapall-{_drpver}-{_dapver}.fits'
+
 
 class MaNGAConfig:
 

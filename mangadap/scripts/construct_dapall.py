@@ -45,12 +45,12 @@ class ConstructDapAll(scriptbase.ScriptBase):
         import time
 
         from mangadap.util.log import init_DAP_logging, module_logging
-        from mangadap.config.analysisplan import AnalysisPlan
+        from mangadap.config.manga import MaNGAAnalysisPlan
         from mangadap.survey.dapall import DAPall
 
         t = time.perf_counter()
-        plan = AnalysisPlan.default() if args.plan_file is None \
-                            else AnalysisPlanSet.from_toml(args.plan_file)
+        plan = manga.MaNGAAnalysisPlan.default() if args.plan_file is None \
+                            else manga.MaNGAAnalysisPlan.from_toml(args.plan_file)
 
         # Initialize the logging objects and start the log
         init_DAP_logging(None)#, simple_warnings=False)

@@ -4,7 +4,7 @@
     usage: dap_plate_fit_qa [-h] [--drpver DRPVER] [--dapver DAPVER]
                             [--redux_path REDUX_PATH]
                             [--analysis_path ANALYSIS_PATH] [--plan_file PLAN_FILE]
-                            [--daptype DAPTYPE] [--normal_backend]
+                            [--normal_backend]
                             plate
     
     Construct per-plate QA plots
@@ -23,6 +23,5 @@
       --plan_file PLAN_FILE
                             parameter file with the MaNGA DAP execution plan to use
                             instead of the default (default: None)
-      --daptype DAPTYPE     DAP processing type (default: None)
       --normal_backend
     
