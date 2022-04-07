@@ -7,6 +7,8 @@
    center spaxel.
  - Deprecated most of the configuration files and directores to the `outofdate/`
    directory.
+ - Fixed survey-level execution script `rundap` and the post-processing scripts
+   used to create the DAPall file and QA plots.
 
 4.0.2 (1 Apr 2022)
 ------------------
