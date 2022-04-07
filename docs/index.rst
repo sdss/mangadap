@@ -5,12 +5,12 @@ The MaNGA Data Analysis Pipeline
    :target: http://www.astropy.org/
    :alt: Powered by Astropy
 
-.. image:: https://travis-ci.org/sdss/mangadap.svg?branch=master
-   :target: https://travis-ci.org/sdss/mangadap
+.. image:: https://github.com/sdss/mangadap/actions/workflows/ci_tests.yml/badge.svg
+   :target: https://github.com/sdss/mangadap/actions
    :alt: Build Status
 
-.. image:: https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master
-   :target: https://coveralls.io/github/sdss/mangadap?branch=master
+.. image:: https://codecov.io/gh/sdss/mangadap/branch/master/graph/badge.svg?token=S4veEPJwS1
+   :target: https://codecov.io/gh/sdss/mangadap
    :alt: Coverage Status
 
 .. image:: https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest

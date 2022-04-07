@@ -1,7 +1,7 @@
 # The MaNGA Data Analysis Pipeline
 
 [![Build Status](https://github.com/sdss/mangadap/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/sdss/mangadap/actions)
-[![Coverage Status](https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master)](https://coveralls.io/github/sdss/mangadap?branch=master)
+[![Coverage Status](https://codecov.io/gh/sdss/mangadap/branch/master/graph/badge.svg?token=S4veEPJwS1)](https://codecov.io/gh/sdss/mangadap)
 [![Doc Status](https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest)](https://sdss-mangadap.readthedocs.io/en/latest/)
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 [![License](https://img.shields.io/github/license/sdss/mangadap)](https://github.com/sdss/mangadap/blob/master/LICENSE.md)
