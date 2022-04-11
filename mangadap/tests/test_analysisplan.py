@@ -2,7 +2,6 @@ from pathlib import Path
 from IPython import embed
 
 from mangadap.tests.util import data_test_file
-#from mangadap.config.analysisplan import AnalysisPlanSet, NewAnalysisPlan
 from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.config.manga import MaNGAAnalysisPlan, MaNGAConfig
 
@@ -13,7 +12,7 @@ def test_default():
     assert list(plan.keys())[0] == 'default', 'Name changed'
 
     assert plan.rdxqa['default']['key'] == 'SNRG', 'Default DRP reduction QA key changed.'
-    assert plan.elfit['default']['key'] == 'EFITSSP', 'Default emission-line fit key changed.'
+    assert plan.elfit['default']['key'] == 'EFITHC2', 'Default emission-line fit key changed.'
     assert plan.common_path() == Path('.').resolve() / 'common', 'Common path changed'
 
 

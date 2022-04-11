@@ -183,7 +183,7 @@ User-level changes/bug fixes
 
  * Major revision of the front-end to ease incorporation of non-MaNGA
    datacubes.
- * Major restructuring of directories to ease `pypi`_ distribution and
+ * Major restructuring of directories to ease `pip`_ distribution and
    provide a more formal structure of the executables in ``bin`` and
    their associated scripts.
  * Added ``bin/dap_status`` to check the status of a batch DAP run.

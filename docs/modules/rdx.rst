@@ -1,38 +1,21 @@
 
 .. _drp-redux-assessments:
 
-DRP assessments
-===============
+Basic Reduction Assessments
+===========================
 
 *Analysis class*: :class:`~mangadap.proc.reductionassessments.ReductionAssessment`
 
-*Method definition*: :class:`~mangadap.proc.reductionassessments.ReductionAssessmentDef`
+*Reference root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.common_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]`` for MaNGA
 
-*Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common``
+*Reference file*: see :class:`~mangadap.proc.reductionassessments.ReductionAssessment.default_paths`;
+``manga-[PLATE]-[IFUDESIGN]-[RDXQA].fits.gz`` for MaNGA
 
-*Reference file*: ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY].fits.gz``
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
+defined by :class:`~mangadap.proc.reductionassessments.ReductionAssessmentDef`
 
-*Config files*: ``$MANGADAP_DIR/mangadap/config/reduction_assessments``
-
-*Example config*: ``snrg.ini``
-
-.. code-block:: ini
-
-    # The response function used is that provided by Jim Gunn in June 2001,
-    # found here:
-    #
-    # http://www.sdss3.org/binaries/filter_curves.fits
-    #
-    # and parsed into text files.
-    [Path]
-    dapsrc                 = ${MANGADAP_DIR}
-
-    [default]
-    key                    = SNRG
-    wave_limits
-    response_function_file = ${Path:dapsrc}/data/filter_response/gunn_2001_g_response.db
-    in_vacuum              = True
-    covariance             = True
+.. include:: ../tables/reductionassessmentdef.rst
 
 *Important class dependencies*:
 
