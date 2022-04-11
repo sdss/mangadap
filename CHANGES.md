@@ -1,6 +1,6 @@
 
-4.0.3dev
---------
+4.0.3 (11 Apr 2022)
+-------------------
 
  - Minor change to `manga_dap_inspector` to change initial spectral plotting
    limits to the minimum and maximum of the whole cube instead of just the
