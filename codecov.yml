@@ -1,0 +1,11 @@
+comment:
+  after_n_builds: 6
+
+coverage:
+  status:
+#    project:
+#      default: false  # disable the default status that measures entire project
+    patch:
+      default:
+        target: 30%  # new contributions should have a coverage at least equal to target
+

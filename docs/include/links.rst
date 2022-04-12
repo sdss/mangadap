@@ -1,6 +1,6 @@
 .. distribution
 
-.. _pypi: https://pypi.org/project/sdss-mangadap/
+.. _pip: https://pypi.org/project/sdss-mangadap/
 .. _Anaconda: https://www.continuum.io/DOWNLOADS
 .. _conda: https://docs.conda.io/projects/conda/en/latest/index.html
 .. _virtualenv: https://virtualenv.pypa.io/en/latest/

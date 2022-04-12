@@ -14,7 +14,7 @@ from . import manga_dap_inspector
 from . import manga_dap
 from . import plate_fit_qa
 from . import ppxffit_qa
-#from . import rundap
+from . import rundap
 from . import spotcheck_dap_maps
 from . import template_flux_norm
 from . import write_dap_config

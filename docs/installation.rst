@@ -4,38 +4,12 @@
 Installation
 ============
 
-Clone the repo
---------------
-
-To download the DAP software and associated data, clone the `mangadap
-GitHub repo`_ by executing:
-
-    .. code-block:: console
-
-        git clone https://github.com/sdss/mangadap.git
-
-This will create a ``mangadap`` directory in the current directory.
-Although we try to keep the ``master`` branch of the repository stable,
-we recommend using the most recent tag.  You can do so by executing:
-
-    .. code-block:: console
-
-        cd mangadap
-        ./checkout_current_tag
-
-.. warning::
-
-    There is a distribution of the DAP that can be installed via
-    `pip`, but the installation will be unsuccessful. We're still
-    working out the bugs...
-
 Install Python 3
 ----------------
 
 The DAP is supported for Python 3 only. To install Python, you can do
 so along with a full package manager, like `Anaconda`_, or you can
 install python 3 directly from `python.org`_.
-
 
 Python environment setup
 ------------------------
@@ -65,33 +39,17 @@ easily managing `virtualenv`_ environments.
 Install the DAP code
 --------------------
 
-Once you have cloned the repository, the preferred method to install the DAP and
-ensure its dependencies are met is to perform a local pip install.  From the
-top-level ``mangadap`` directory, run:
+You can install the DAP directly from `pip`_;
 
 .. code-block:: console
 
-    pip install -e .
+    pip install sdss-mangadap
 
-This approach is preferred because it eases uninstalling the code:
+To uninstall:
 
 .. code-block:: console
     
     pip uninstall sdss-mangadap
-
-If you plan to develop the code, you should install the development dependencies
-as follows:
-
-.. code-block:: console
-
-    pip install -e ".[dev]"
-
-.. note::
-
-    The use of the quotations above is shell dependent; e.g., you need them for
-    zshell, but not for bash.  Also beware the exact characters used in the html
-    above may not be the quotation characters you need for the command line
-    (i.e., copy-pasting the line above may throw an error).
 
 Test your installation
 ----------------------
@@ -119,6 +77,38 @@ And then executing the tests with the same commands above.
     (e.g., from using collaboration access with Marvin), this script will pull
     the data from the (still public) `mangawork` directory on the SAS.
 
+Installation from source
+------------------------
+
+To install from the sources, first clone the `mangadap GitHub repo`_ by
+executing:
+
+.. code-block:: console
+
+    git clone https://github.com/sdss/mangadap.git
+
+This will create a ``mangadap`` directory in the current directory.
+Although we try to keep the ``master`` branch of the repository stable,
+we recommend using the most recent tag.  You can do so by executing:
+
+.. code-block:: console
+
+    cd mangadap
+    ./checkout_current_tag
+
+If you plan to develop the code (e.g., in your own fork of the code), you should
+install the development dependencies as follows:
+
+.. code-block:: console
+
+    pip install -e ".[dev]"
+
+.. note::
+
+    The use of the quotations above is shell dependent; e.g., you need them for
+    zshell, but not for bash.  Also beware the exact characters used in the html
+    above may not be the quotation characters you need for the command line
+    (i.e., copy-pasting the line above may throw an error).
 
 Problems?
 ---------

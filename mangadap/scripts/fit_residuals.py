@@ -191,7 +191,7 @@ def get_stellar_continuum_fom_maps(cube, dapmaps):
     return extent, snrg, gmr_data(cube), rms, frms, rchi2, chi_grw
 
 
-def get_emission_line_data(cube, daptype, dapmaps, dapcube):
+def get_emission_line_data(cube, deconstruct_bins, dapmaps, dapcube):
     if not dapmaps.exists():
         raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
     if not dapcube.exists():
@@ -202,20 +202,23 @@ def get_emission_line_data(cube, daptype, dapmaps, dapcube):
     maps_hdu = fits.open(str(dapmaps))
 
     # Get the observed spectra and errors
-    if 'HYB' in daptype:
+    if deconstruct_bins:
         # Fits are to unbinned spectra from DRP datacube
         npix = cube.flux.shape[-1]
-        flux = cube.copy_to_masked_array(attr='flux').T
-        error = numpy.sqrt(inverse(cube.copy_to_masked_array(attr='ivar').T))
+        flux = cube.copy_to_masked_array(attr='flux')
+        error = numpy.sqrt(inverse(cube.copy_to_masked_array(attr='ivar')))
         snrg = maps_hdu['SPX_SNR'].data.ravel()
+        # Fix the ordering
+        flux = flux.reshape(cube.flux.shape).T.reshape(npix,-1)
+        error = error.reshape(cube.flux.shape).T.reshape(npix,-1)
 
     else:
         # Fits are to binned spectra from DAP datacube
         npix = cube_hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
-                                    mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
-                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
+        flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.T.reshape(npix,-1),
+                                    mask=cube_hdu['MASK'].data.T.reshape(npix,-1) > 0)
+        error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.T.reshape(npix,-1),
+                                                mask=cube_hdu['MASK'].data.T.reshape(npix,-1) > 0),
                                -0.5)
         snrg = maps_hdu['BIN_SNR'].data.ravel()
    
@@ -790,9 +793,10 @@ def fit_residuals(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
              fit='sc', ofile=ofile)
 
     # Emission-line fit qa plot
+    deconstruct_bins = plan['eline_fits']['fit']['deconstruct_bins'] != 'ignore'
     ofile_root = f'{cube.output_root}-LOGCUBE-{plan["key"]}-el-fitqa'
     wave, flux, error, model, snrg, rms, frms, rchi2 \
-            = get_emission_line_data(cube, plan["key"], maps_file, cube_file)
+            = get_emission_line_data(cube, deconstruct_bins, maps_file, cube_file)
     ofile = qa_dir / f'{ofile_root}-lambda.png'
     fom_lambda(cube.name, wave, flux, error, model, fit='el', ofile=ofile)
     ofile = qa_dir / f'{ofile_root}-growth.png'
