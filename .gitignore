@@ -4,6 +4,7 @@ python/mangadap/*.__pycache__
 .DS_Store
 */.ipynb_checkpoints/
 .eggs
+*egg-info*
 .pytest_cache
 examples/data/*.fits
 examples/data/*.fits.gz
@@ -11,4 +12,18 @@ examples/output/HYB10-GAU-MILESHC/
 examples/output/VOR10-GAU-MILESHC/
 examples/output/common/
 mangadap/data/remote
+docs/_build/*
+docs/sphinx_warnings.out
+
+*/version.py
+*/cython_version.py
+
+
+dev/*.fits
+dev/repr
+dev/*.db
+dev/stack
+dev/tie_disp
+dev/tie_disp_db.py
+
 

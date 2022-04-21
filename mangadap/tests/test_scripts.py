@@ -9,9 +9,9 @@ from IPython import embed
 from mangadap.tests.util import remote_data_file, data_test_file, drp_test_version
 from mangadap.tests.util import requires_remote, requires_drpcomplete, requires_drpall
 
-from mangadap.scripts import calculate_covariance
-from mangadap.scripts import manga_dap
-from mangadap.scripts import write_dap_config
+from mangadap.scripts.calculate_covariance import CalculateCovariance
+from mangadap.scripts.manga_dap import MangaDap
+from mangadap.scripts.write_dap_config import WriteDapConfig
 from mangadap.util.parser import DefaultConfig
 
 
@@ -29,22 +29,23 @@ def test_calculate_covariance():
     if os.path.isfile(ofile):
         # Clean-up a previous failure
         os.remove(ofile)
+
     # Defaults to central channel
     # TODO: Test contents?
-    calculate_covariance.main(calculate_covariance.parse_args(['7815', '3702', ofile, '-d',
-                                                               remote_data_file()]))
+    CalculateCovariance.main(CalculateCovariance.parse_args(['7815', '3702', ofile, '-d',
+                                                             remote_data_file()]))
     assert os.path.isfile(ofile), 'Output file not written.'
 
     # Do a number of channels
     os.remove(ofile)
-    calculate_covariance.main(calculate_covariance.parse_args(['7815', '3702', ofile, '-n', '11',
-                                                               '-d', remote_data_file()]))
+    CalculateCovariance.main(CalculateCovariance.parse_args(['7815', '3702', ofile, '-n', '11',
+                                                             '-d', remote_data_file()]))
     assert os.path.isfile(ofile), 'Output file not written.'
 
     # Run a specific wavelength
     os.remove(ofile)
-    calculate_covariance.main(calculate_covariance.parse_args(['7815', '3702', ofile, '-w',
-                                                               '4500.', '-d', remote_data_file()]))
+    CalculateCovariance.main(CalculateCovariance.parse_args(['7815', '3702', ofile, '-w',
+                                                             '4500.', '-d', remote_data_file()]))
     assert os.path.isfile(ofile), 'Output file not written.'
 
     # Clean-up
@@ -79,10 +80,10 @@ def test_inspector():
 
 def test_manga_dap_import():
     with pytest.raises(ImportError):
-        manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'), '-m', 'junk']))
+        MangaDap.main(MangaDap.parse_args(['-c', data_test_file('datacube.ini'), '-m', 'junk']))
     
     with pytest.raises(AttributeError):
-        manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'), '-o', 'junk']))
+        MangaDap.main(MangaDap.parse_args(['-c', data_test_file('datacube.ini'), '-o', 'junk']))
     
 
 @requires_remote
@@ -96,12 +97,12 @@ def test_manga_dap():
     # Run the DAP. The binning in plan.par is set to ALL binning, so
     # this run of the DAP just analyzes one spectrum and takes about a
     # minute.
-    manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
-                                         '-p', data_test_file('plan.par'), '-a', odir]))
+    MangaDap.main(MangaDap.parse_args(['-c', data_test_file('datacube.ini'),
+                                       '-p', data_test_file('plan.par'), '-a', odir]))
 
     # Re-run to use existing files.  Takes about 40s.
-    manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
-                                         '-p', data_test_file('plan.par'), '-a', odir]))
+    MangaDap.main(MangaDap.parse_args(['-c', data_test_file('datacube.ini'),
+                                       '-p', data_test_file('plan.par'), '-a', odir]))
 
     # Clean up
     shutil.rmtree(odir)
@@ -139,10 +140,8 @@ def test_write_dap_config_drpcomplete():
         # Clean-up a previous failure
         os.remove(ofile)
 
-    # TODO: Temporarily override
-    drp_test_version = 'v2_7_1'
     drpc = remote_data_file('drpcomplete_{0}.fits'.format(drp_test_version))
-    write_dap_config.main(write_dap_config.parse_args(['7815', '3702', ofile, '-c', drpc]))
+    WriteDapConfig.main(WriteDapConfig.parse_args(['7815', '3702', ofile, '-c', drpc]))
 
     assert os.path.isfile(ofile), 'Output file not written.'
 
@@ -163,7 +162,7 @@ def test_write_dap_config_drpall():
         os.remove(ofile)
 
     drpall = remote_data_file('drpall-{0}.fits'.format(drp_test_version))
-    write_dap_config.main(write_dap_config.parse_args(['7815', '3702', ofile, '-a', drpall]))
+    WriteDapConfig.main(WriteDapConfig.parse_args(['7815', '3702', ofile, '-a', drpall]))
 
     assert os.path.isfile(ofile), 'Output file not written.'
 

@@ -5,6 +5,87 @@
 What's New in the DAP
 *********************
 
+MPL-11 (3.1.0)
+==============
+
+High-level changes
+------------------
+
+ * Most analysis approaches (``DAPTYPE``) now use a set of MaStar Simple
+   Stellar Population models as the continuum for the emission-line fitting
+   module. The models have been published by `Maraston et al. (2020, MNRAS,
+   496, 2962)`_; see also https://www.icg.port.ac.uk/MaStar/. The models used
+   are a subset of the full model library, which spans the full range of
+   parameter space of the full library but enables a faster execution time.
+   The weighting of the different models is **not** constrained to be smooth
+   or to match any parametric star-formation/chemical-enrichment history. The
+   models included in the fit have the following grid of physical
+   parameters::
+
+        Age [Gyr]:    0.00316228, 0.01, 0.03162278, 0.100, 0.300, 1.000, 3.000, 9.000, 14.000
+        log(Z/Z_sun): -1.35, -1., -0.7, -0.33, 0, 0.35
+        IMF Slope:    2.35 (Salpeter)
+
+ * The MPL-11 results include the usual 3 binning schemes used with the
+   MaStar SSP templates, as well as a fourth ``DAPTYPE`` that uses the same
+   hierarchically clustered MaStar templates from the MPL-10 release. This
+   fourth analysis approach provides a useful baseline for assessing the
+   effects of the change in the continuum on the emission-line results; i.e.,
+   all differences in the analysis results between the
+   ``HYB10-MILESHC-MASTARSSP`` and ``HYB10-MILESHC-MASTARHC2`` results should
+   be driven by the difference in the continuum templates used in the
+   emission-line fitting module.
+
+User-level changes/bug fixes
+----------------------------
+
+ * A bug in the reconstruction of the model spectra, **after** the model had
+   been fit, meant that some regions that were masked were incorrectly
+   reconstructed. This did not affect the parameters in the MAPS files or the
+   emission-line-only or stellar-continuum-only spectra. This has now been
+   fixed.
+ * Significant revision to the format of the input files used to provide the
+   list of emission-lines to fit. This change primarily enables the DAP to
+   automatically construct the matrices used by `ppxf`_ to constrain the
+   kinematics of different kinematic components. This functionality was used
+   to test the results of tying the dispersion of emission lines to, say, all
+   be within a factor of 2 of the H-alpha velocity dispersion. In the end,
+   these constraints **were not** implemented in this MPL; the tying strategy
+   for MPL-11 is identical to MPL-10.
+ * The rest wavelengths of a number of emission lines have been updated to
+   better account for the affects of fine-structure blending. For example,
+   the rest wavelength (in vacuum) of the H-alpha line was 6564.632 angstrom
+   in MPL-10, but it is 6564.608 in MPL-11. This is representative of the
+   wavelength changes; i.e., the differences are typically a few hundredths
+   of an angstrom. This change should have a very limited effect on the
+   emission-line measurements.
+
+Under-the-hood changes/bug fixes
+--------------------------------
+
+ * Added the :class:`~mangadap.util.datatable.DataTable` class to handle the
+   binary tables in the reference files, mostly to enable a uniform data model
+   and enable automated documentation.
+ * Enabled fitting a restricted wavelength range in the emission-line
+   module.
+ * Add parameter to change the required fraction of spectral coverage to
+   perform a fit.
+ * Detailed handling of masks for binning, MW extinction correction, and
+   emission-line continuum construction.
+ * Enable the output grid for :class:`~mangadap.util.sampling.Resample`
+   to be defined directly.
+ * Include covariance calculation in
+   :class:`~mangadap.util.sampling.Resample`.
+ * Add a class that reads trace sets produced by IDLUTILS,
+   :class:`~mangadap.util.trace.TraceSet`, but not well tested yet.
+ * Fix untested velocity registration and stacking code, and added
+   registration test.
+ * Upgraded package requirements
+ * Line profile in
+   :class:`~mangadap.proc.emissionlinetempltes.EmissionLineTemplates` now
+   hardwired to be
+   :class:`~mangadap.util.lineprofiles.FFTGaussianLSF`.
+
 MPL-10 (3.0.1)
 ==============
 
@@ -278,7 +359,7 @@ High-level changes
 
  * Three additional emission-lines are fit: He I at 3889 angstroms, and
    the [N I] doublet at 5200 angstroms.  The He I line has its
-   dispersion tied to H:math:`\zeta` at 3890, and the dispersions of the
+   dispersion tied to :math:`{\rm H}\zeta` at 3890, and the dispersions of the
    [N I] doublet are tied.
 
  * The ``MAPS`` file extensions were modified:

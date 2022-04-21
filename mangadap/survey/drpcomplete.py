@@ -38,7 +38,6 @@ from ..datacube import MaNGADataCube
 from ..spectra import MaNGARSS
 from ..config import defaults
 from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
-from ..util.exception_tools import print_frame
 
 class DRPComplete:
     r"""

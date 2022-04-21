@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import ppxffit_qa
-
-if __name__ == '__main__':
-    ppxffit_qa.main(ppxffit_qa.parse_args())

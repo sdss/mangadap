@@ -1,5 +1,5 @@
 The absorption-line index calculations are performed as defined/used
-by Worthey et al. (1994) and Trager et al. (1998) (:math:`{\mathcal
+by Worthey (1994) and Trager et al. (1998) (:math:`{\mathcal
 I}_{\rm WT}`), as well as defined/used by Burstein et al. (1984) and
 Faber et al. (1985) (:math:`{\mathcal I}_{\rm BF}`).
 
@@ -36,7 +36,7 @@ red}})/2` --- and
 When **no pixels are masked** in the spectrum, :math:`S(1) =
 (\lambda_2 - \lambda_1) \equiv \Delta\lambda`.
 
-Following the Worthey et al. (1994) definition, we can then calculate
+Following the Worthey (1994) definition, we can then calculate
 the absorption-line spectral indices as follows:
 
 .. math::

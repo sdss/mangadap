@@ -17,6 +17,8 @@ from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 
+from mangadap.scripts import scriptbase
+
 
 def init_ax(fig, pos, facecolor=None, grid=False):
     ax = fig.add_axes(pos, facecolor=facecolor)
@@ -75,8 +77,13 @@ def compile_data(dapver, analysis_path, daptype, plt):
         hdu = fits.open(maps_file)
 
         # Get the stellar data
-        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[1,:,:].ravel(),
-                                                       return_index=True))
+#        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[1,:,:].ravel(),
+#                                                       return_index=True))
+        uniq, indx = numpy.unique(hdu['BINID'].data[1,:,:].ravel(), return_index=True)
+        if uniq[0] == -1:
+            uniq = uniq[1:]
+            indx = indx[1:]
+
         mask = hdu['STELLAR_VEL_MASK'].data.ravel()[indx] > 0
         indx = indx[numpy.invert(mask)]
 
@@ -88,8 +95,12 @@ def compile_data(dapver, analysis_path, daptype, plt):
 
         # Get the emission-line data
         eml = channel_dictionary(hdu, 'EMLINE_GFLUX')
-        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[3,:,:].ravel(),
-                                                       return_index=True))
+#        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[3,:,:].ravel(),
+#                                                       return_index=True))
+        uniq, indx = numpy.unique(hdu['BINID'].data[3,:,:].ravel(), return_index=True)
+        if uniq[0] == -1:
+            uniq = uniq[1:]
+            indx = indx[1:]
         mask = hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],:,:].ravel()[indx] > 0
         indx = indx[numpy.invert(mask)]
 
@@ -244,57 +255,56 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
     pyplot.close(fig)
 
 
-def parse_args(options=None, return_parser=False):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+class PlateFitQA(scriptbase.ScriptBase):
 
-    parser.add_argument('plate', type=int, help='plate ID to process')
+    @classmethod
+    def get_parser(cls, width=None):
 
-    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
-                        ' defaults to $MANGADAP_DIR', default=None)
-    parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
-    parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+        parser = super().get_parser(description='Construct per-plate QA plots', width=width)
 
-    parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
-                        "execution plan to use instead of the default" , default=None)
+        parser.add_argument('plate', type=int, help='plate ID to process')
 
-    parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
-    parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+        parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
+        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
-    if return_parser:
+        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
+                            "execution plan to use instead of the default" , default=None)
+
+        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+        parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+
         return parser
 
-    return parser.parse_args() if options is None else parser.parse_args(options)
+    @staticmethod
+    def main(args):
+        t = time.perf_counter()
+        if args.bgagg:
+            pyplot.switch_backend('agg')
 
+        # Set the paths
+        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
+                            if args.redux_path is None else args.redux_path
+        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                            if args.analysis_path is None else args.analysis_path
 
-def main(args):
-    t = time.perf_counter()
-    if args.bgagg:
-        pyplot.switch_backend('agg')
+        daptypes = []
+        if args.daptype is None:
+            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                                else AnalysisPlanSet.from_par_file(args.plan_file)
+            for p in analysisplan:
+                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+                el_method = EmissionLineModel.define_method(p['elfit_key'])
+                daptypes += [defaults.dap_method(bin_method['key'],
+                                                 sc_method['fitpar']['template_library_key'],
+                                                 el_method['continuum_tpl_key'])]
+        else:
+            daptypes = [args.daptype]
 
-    # Set the paths
-    redux_path = defaults.drp_redux_path(drpver=args.drpver) \
-                        if args.redux_path is None else args.redux_path
-    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                        if args.analysis_path is None else args.analysis_path
+        for daptype in daptypes:
+            plate_fit_qa(args.dapver, analysis_path, daptype, args.plate)
 
-    daptypes = []
-    if args.daptype is None:
-        analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                            else AnalysisPlanSet.from_par_file(args.plan_file)
-        for p in analysisplan:
-            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-            el_method = EmissionLineModel.define_method(p['elfit_key'])
-            daptypes += [defaults.dap_method(bin_method['key'],
-                                             sc_method['fitpar']['template_library_key'],
-                                             el_method['continuum_tpl_key'])]
-    else:
-        daptypes = [args.daptype]
-
-    for daptype in daptypes:
-        plate_fit_qa(args.dapver, analysis_path, daptype, args.plate)
-
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

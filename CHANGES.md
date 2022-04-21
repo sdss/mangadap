@@ -1,6 +1,33 @@
 
-3.1.1dev
+3.1.3dev
 --------
+
+ - Update to custom datacube class implementation.  Previous version
+   required a file within the mangadap/ directory structure; new code
+   allows for imports from a local user file.
+ - Deal with cubes where all the spaxels have valid data.
+ - Updates to `manga_dap_inspector` to use a cursor on the map selector
+   and a range slider for the vmin,vmax in the map.
+ - Refactor installation details inspired by `pypeit` package.
+    - Installation dependencies and setup moved into `setup.cfg`
+    - Versioning now done automatically
+    - Change scripting protocol
+    - tox testing CI    
+    - Updated MANIFEST
+
+
+3.1.2 (29 Jul 2021)
+-------------------
+
+ - Additional updates to documentation for DR17 release.
+ - Includes includes of MaNGA IDs used in the construction of the MaStar
+   HC version 2 library.
+
+
+3.1.1 (1 Mar 2021)
+------------------
+
+ - Updated documentation for MPL-11 release.
 
 
 3.1.0 (23 Dec 2020)

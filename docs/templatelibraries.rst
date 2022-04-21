@@ -41,6 +41,8 @@ The following spectral template libraries are included with the DAP distribution
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
 | MASTARHC2       |       [5]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/mastarhc_v2/README>`__     |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
+| MASTARSSP       |      [10]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/mastar_ssp_v1.0/README>`__ |
++-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
 | MILES           |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miles/README>`__           |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
 | MILESAVG        |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miles_avg/README>`__       |
@@ -162,5 +164,5 @@ the TemplateLibrary :ref:`templatelibrary-usage` and the
 .. [7] `Westfall et al. (2019, AJ, 158, 231) <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_
 .. [8] `Vazdekis et al. (2012, MNRAS, 424, 157) <https://ui.adsabs.harvard.edu/abs/2012MNRAS.424..157V/abstract>`_
 .. [9] `Le Borgne et al. (2003, A&A, 402, 433) <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..433L/abstract>`_
-
+.. [10] `Maraston et al. (2020, MNRAS, 496, 2962)`_
 

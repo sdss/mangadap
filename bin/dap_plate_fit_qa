@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import plate_fit_qa
-
-if __name__ == '__main__':
-    plate_fit_qa.main(plate_fit_qa.parse_args())

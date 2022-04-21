@@ -99,6 +99,9 @@ class DRPFits:
                 = DRPFits.default_paths(self.plate, self.ifudesign, self.mode, log=log,
                                         drpver=drpver, redux_path=redux_path,
                                         directory_path=directory_path)
+        self.redux_bitmask = DRPQuality3DBitMask()
+        self.redux_qual_key = 'DRP3QUAL'
+        self.redux_qual_flag = 'CRITICAL'
 
     @staticmethod
     def check_mode(mode):
@@ -501,6 +504,11 @@ class DRPFits:
             f.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
             f.write('\n')
             cfg.write(f)
+
+    @staticmethod
+    def propagate_flags():
+        """Flags that should be propagated from the observed data to the analysis data."""
+        return ['FORESTAR']
 
     @staticmethod
     def do_not_use_flags():

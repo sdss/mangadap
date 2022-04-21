@@ -41,66 +41,55 @@ Install the DAP code
 --------------------
 
 The preferred method to install the DAP and ensure its dependencies
-are met is to, from the top-level, ``mangadap`` directory, run:
+are met is to, from the top-level ``mangadap`` directory, run:
 
 .. code-block:: console
 
-    pip3 install -e .
+    pip install -e .
 
 This approach is preferred because it eases uninstalling the code:
 
 .. code-block:: console
     
-    pip3 uninstall sdss-mangadap
+    pip uninstall sdss-mangadap
 
-Alternatively, if you anticipate making changes to the DAP code, run:
-
-.. code-block:: console
-
-    python3 setup.py develop
-
-----
-
-To install only the DAP dependencies, run:
+Alternatively, if you anticipate making changes to the DAP code, also install
+the development dependencies:
 
 .. code-block:: console
 
-    pip3 install -r requirements.txt
+    pip install -e ".[dev]"
 
+.. note::
+
+    The use of the quotations above is shell dependent; e.g., you need them for
+    zshell, but not for bash.  Also beware the exact characters used in the html
+    above may not be the quotation characters you need for the command line
+    (i.e., copy-pasting the line above may throw an error).
 
 Test your installation
 ----------------------
 
-To test the installation, you can do one of the following:
+To test the installation, make sure you have `pytest` installed and then
 
- * Run the tests via the setup script:
+.. code-block:: console
 
-    .. code-block:: console
+    cd mangadap/tests
+    pytest .
 
-        python3 setup.py test
+Some tests require a set of "remote" data that are not located in the repo for
+space considerations. You can download these data by running the following
+script:
 
- * Run the tests using `pytest` directly:
+.. code-block:: console
 
-    .. code-block:: console
+    python download_test_data.py
 
-        cd mangadap/tests
-        python3 -m pytest .
+And then executing the tests with the same commands above.
 
-Some tests requires a set of "remote" data that are not located in
-the repo for space considerations. Downloading the data used by these
-tests currently requires `SDSS Collaboration Access`_. The link in
-the last sentence points to a description of how this access is
-granted for Marvin using a ``~\.netrc`` file. The DAP uses the same
-``~\.netrc`` file to authenticate access to the ``data.sdss.org``
-host for downloading the test data. Once you have your ``~\.netrc``
-file, you can download the necessary test data and rerun the tests to
-include usage of that data like this:
-
-    .. code-block:: console
-
-        python3 download_test_data.py
-        cd mangadap/tests
-        python3 -m pytest .
+Note that, if you have `SDSS Collaboration Access`_ and you have a `~/.netrc`
+file (e.g., from using collaboration access with Marvin), this script will pull
+the data from the (still public) `mangawork` directory on the SAS.
 
 
 Local Environment Setup
@@ -115,7 +104,7 @@ below.
 +----------------------------+-------------------------------------+------------------------------------------------+
 |                   Variable |                             Default |                                       Comments |
 +============================+=====================================+================================================+
-| ``MANGADRP_VER``           | ``v3_0_1`` (i.e., MPL-10)           | Version of the DRP, used for path construction |
+| ``MANGADRP_VER``           | ``v3_1_1`` (i.e., MPL-11)           | Version of the DRP, used for path construction |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGA_SPECTRO_REDUX``    | ``$HOME/MaNGA/redux``               | Root path for the reduced data                 |
 +----------------------------+-------------------------------------+------------------------------------------------+
@@ -132,10 +121,10 @@ that is sourced when you want to run the DAP.  The lines added to your
 .. code-block:: bash
 
     export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
-    export MANGADRP_VER=v3_0_1
+    export MANGADRP_VER=v3_1_1
 
     export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
-    export MANGADAP_VER=3.0.1
+    export MANGADAP_VER=3.1.0
 
 .. note::
 
@@ -167,10 +156,10 @@ that is sourced when you want to run the DAP.  The lines added to your
    structure used by the DAP to organize its outputs within this root
    directory cannot currently be changed.
 
+
 Problems?
 ---------
 
-We have limited support to offer installation help. However, if you
-have problems, particularly those that you think may be a more
-general problem, please `Submit an issue`_.
+If you have problems, particularly those that you think may be a more general
+problem, please `Submit an issue`_.
 

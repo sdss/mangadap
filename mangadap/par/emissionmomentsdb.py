@@ -202,3 +202,5 @@ class EmissionMomentsDB(SpectralFeatureDB):
         for _hk, _mk in zip(hk,mk):
             db[_hk] = self.data[_mk]
         return db
+
+
