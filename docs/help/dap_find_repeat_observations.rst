@@ -6,6 +6,8 @@
                                         [--dapall DAPALL]
                                         [--output_file OUTPUT_FILE] [-o]
     
+    Use the DRPall file to find repeat observations
+    
     optional arguments:
       -h, --help            show this help message and exit
       --drpver DRPVER       DRP version (default: None)
@@ -14,7 +16,7 @@
                             main DAP output path (default: None)
       --dapall DAPALL       full path to DAPall file (default: None)
       --output_file OUTPUT_FILE
-                            output file name, including path; no file is written
-                            by default (default: None)
+                            output file name, including path; no file is written by
+                            default (default: None)
       -o, --overwrite       Overwrite any existing files. (default: False)
     

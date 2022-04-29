@@ -19,6 +19,9 @@ import warnings
 import gzip
 import shutil
 import logging
+
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
@@ -81,30 +84,35 @@ def readfits_1dspec(filename, log10=False):
     return wave, spec
 
 
-def writefits_1dspec(ofile, crval1, cdelt1, flux, hdr=None, clobber=False):
+def writefits_1dspec(ofile, crval1, cdelt1, flux, hdr=None, overwrite=False):
     """
 
     Write a simple one-dimensional spectrum.
 
     Args:
-        ofile (str): Name of the file to write.
-        crval1 (float): (Log base 10 of the) Initial wavelength, which
-            is included in the header with the keyword 'CRVAL1';
-            'CRPIX1' is always set to 1.
-        cdelt1 (float): The change in (log base 10) wavelength per
-            pixel, which is included in the header with the keywords
-            'CDELT1' and 'CD1_1'; 'CRPIX1' is always set to 1.
-        flux (array): Vector of the flux values.
-        clobber (bool): (**Optional**) Flag to overwrite any existing
-            file of the same name.
+        ofile (:obj:`str`):
+            Name of the file to write.
+        crval1 (:obj:`float`):
+            (Log base 10 of the) Initial wavelength, which is included in the
+            header with the keyword 'CRVAL1'; 'CRPIX1' is always set to 1.
+        cdelt1 (:obj:`float`):
+            The change in (log base 10) wavelength per pixel, which is included
+            in the header with the keywords 'CDELT1' and 'CD1_1'; 'CRPIX1' is
+            always set to 1.
+        flux (`numpy.ndarray`_):
+            Vector of the flux values.
+        hdr (`astropy.io.fits.Header`_, optional):
+            Include sampling data in this header instead of beginning with an
+            empty header.
+        overwrite (:obj:`bool`, optional):
+            Flag to overwrite any existing file of the same name.
     """
     _hdr = fits.Header() if hdr is None else hdr
     _hdr['CRPIX1'] = 1
     _hdr['CRVAL1'] = crval1
     _hdr['CDELT1'] = cdelt1
     _hdr['CD1_1'] = _hdr['CDELT1']
-    fits.HDUList([ fits.PrimaryHDU(flux, header=_hdr) ]).writeto(ofile, overwrite=clobber)
-                 #clobber=clobber)
+    fits.HDUList([fits.PrimaryHDU(flux, header=_hdr)]).writeto(ofile, overwrite=overwrite)
 
 
 def read_template_spectrum(filename, data_ext=0, ivar_ext=None, sres_ext=None, log10=False):
@@ -173,8 +181,8 @@ def init_record_array(shape, dtype):
     Utility function that initializes a record array using a provided
     input data type.  For example::
 
-        dtype = [ ('INDX', numpy.int, (2,) ),
-                  ('VALUE', numpy.float) ]
+        dtype = [ ('INDX', int, (2,) ),
+                  ('VALUE', float) ]
 
     Defines two columns, one named `INDEX` with two integers per row and
     the one named `VALUE` with a single float element per row.  See
@@ -200,7 +208,7 @@ def rec_to_fits_type(rec_element):
     based on the provided record array element.
     """
     n = 1 if len(rec_element[0].shape) == 0 else rec_element[0].size
-    if rec_element.dtype == numpy.bool:
+    if rec_element.dtype in [bool, numpy.bool_]:
         return '{0}L'.format(n)
     if rec_element.dtype == numpy.uint8:
         return '{0}B'.format(n)
@@ -266,12 +274,12 @@ def channel_units(hdu, ext, prefix='U'):
     return channel_units.astype(str)
 
 
-def compress_file(ifile, clobber=False):
+def compress_file(ifile, overwrite=False):
     """
     Compress a file using gzip.  The output file has the same name as
     the input file with '.gz' appended.
 
-    Any existing file will be overwritten if clobber is true.
+    Any existing file will be overwritten if overwrite is true.
 
     An error is raised if the input file name already has '.gz' appended
     to the end.
@@ -280,16 +288,15 @@ def compress_file(ifile, clobber=False):
         raise ValueError('File appears to already have been compressed! {0}'.format(ifile))
 
     ofile = '{0}.gz'.format(ifile)
-    if os.path.isfile(ofile) and not clobber:
-        raise FileExistsError('File already exists: {0}.\nTo overwrite, set clobber=True.'.format(
-                                ofile))
+    if os.path.isfile(ofile) and not overwrite:
+        raise FileExistsError(f'File already exists: {ofile}.\nTo overwrite, set overwrite=True.')
 
     with open(ifile, 'rb') as f_in:
         with gzip.open(ofile, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
 
-def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, loggers=None,
+def create_symlink(ofile, symlink_dir, relative_symlink=True, overwrite=False, loggers=None,
                    quiet=False):
     """
     Create a symlink to the input file in the provided directory.  If
@@ -299,7 +306,7 @@ def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, log
     # Check if the file already exists
     olink_dest = os.path.join(symlink_dir, ofile.split('/')[-1])
     if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
-        if clobber:
+        if overwrite:
             os.remove(olink_dest)
         else:
             return

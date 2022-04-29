@@ -5,9 +5,11 @@
                       [--analysis_path ANALYSIS_PATH]
                       plan_file
     
+    Check status and log files for DAP progress
+    
     positional arguments:
-      plan_file             parameter file with the MaNGA DAP execution plan to
-                            use instead of the default
+      plan_file             parameter file with the MaNGA DAP execution plan to use
+                            instead of the default
     
     optional arguments:
       -h, --help            show this help message and exit

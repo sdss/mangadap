@@ -5,6 +5,8 @@
                                     [-d DIRECTORY_PATH]
                                     plate ifudesign output_file
     
+    Calculate covariance in a MaNGA datacube
+    
     positional arguments:
       plate                 plate ID to process
       ifudesign             IFU design to process
@@ -14,8 +16,8 @@
       -h, --help            show this help message and exit
       -n NUMCHANNELS, --numchannels NUMCHANNELS
                             Number of channels spread across the wavelength range
-                            for which to compute the covariance matrix. A value of
-                            0 forces construction of the full covariance cube. The
+                            for which to compute the covariance matrix. A value of 0
+                            forces construction of the full covariance cube. The
                             default is to calculate the covariance matrix for a
                             single channel at the central wavelength (default: 1)
       -w WAVELENGTH, --wavelength WAVELENGTH
@@ -24,6 +26,6 @@
                             None)
       -d DIRECTORY_PATH, --directory_path DIRECTORY_PATH
                             Directory with the DRP produced RSS file; default uses
-                            environmental variables to define the default MaNGA
-                            DRP redux path (default: None)
+                            environmental variables to define the default MaNGA DRP
+                            redux path (default: None)
     

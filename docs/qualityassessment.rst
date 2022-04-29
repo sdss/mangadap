@@ -7,11 +7,17 @@
 Quality Assessment Plots
 ========================
 
-The DAP produces a number of quality assessment plots, ranging from
-those specific to the results of a given analysis module for a single
-observation to plots of global properties for all observations
-analyzed for a given MPL. The QA plots are limited in many ways, but
-the following is a description of the current QA plots produced.
+The DAP produces a number of quality assessment plots, ranging from those
+specific to the results of a given analysis module for a single observation to
+plots of global properties for all observations analyzed for a given MPL/DR. The
+QA plots are limited in many ways, but the following is a description of the
+current QA plots produced.
+
+.. warning::
+
+    The file location and description below is specific to the MaNGA data.
+    However, similar QA plots can be made for non-MaNGA data; see
+    :ref:`execution`.
 
 ----
 

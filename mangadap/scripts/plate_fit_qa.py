@@ -1,7 +1,10 @@
-import os
+
+from pathlib import Path
 import time
-import argparse
 import warnings
+
+from IPython import embed
+
 import numpy
 
 from matplotlib import pyplot, ticker, rc
@@ -9,12 +12,9 @@ from matplotlib import pyplot, ticker, rc
 from astropy.io import fits
 
 from mangadap.dapfits import DAPQualityBitMask
-from mangadap.config import defaults
-from mangadap.proc.util import growth_lim
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config import manga
+#from mangadap.proc.util import growth_lim
+from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.fileio import channel_dictionary
 
 from mangadap.scripts import scriptbase
@@ -40,13 +40,15 @@ def is_critical(dapver, analysis_path, daptype, plt):
     critical = numpy.zeros(len(ifus), dtype=bool)
 
     for i,ifu in enumerate(ifus):
-        apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
-        maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
+        # TODO: Change this to plan.method_path()
+        apath = analysis_path / daptype / str(plt) / str(ifu)
+        # TODO: Change this to construct_maps_file.defaults_paths()
+        maps_file = apath / f'manga-{plt}-{ifu}-MAPS-{daptype}.fits.gz'
 
-        if not os.path.isfile(maps_file):
+        if not maps_file.exists():
             continue
 
-        hdu = fits.open(maps_file)
+        hdu = fits.open(str(maps_file))
         critical[i] = dapqualbm.flagged(hdu[0].header['dapqual'], 'CRITICAL')
 
     return ifus, critical
@@ -68,13 +70,16 @@ def compile_data(dapver, analysis_path, daptype, plt):
     el_rchi = []
 
     for ifu in ifus:
-        apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
-        maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
 
-        if not os.path.isfile(maps_file):
+        # TODO: Change this to plan.method_path()
+        apath = analysis_path / daptype / str(plt) / str(ifu)
+        # TODO: Change this to construct_maps_file.defaults_paths()
+        maps_file = apath / f'manga-{plt}-{ifu}-MAPS-{daptype}.fits.gz'
+
+        if not maps_file.exists():
             continue
 
-        hdu = fits.open(maps_file)
+        hdu = fits.open(str(maps_file))
 
         # Get the stellar data
 #        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[1,:,:].ravel(),
@@ -117,16 +122,17 @@ def compile_data(dapver, analysis_path, daptype, plt):
 def plate_fit_qa(dapver, analysis_path, daptype, plt):
 
     # Make sure the output directory exists
-    plate_qa_dir = os.path.join(analysis_path, daptype, str(plt), 'qa')
-    if not os.path.isdir(plate_qa_dir):
-        os.makedirs(plate_qa_dir)
+    # TODO: HARDCODDED PATH (i.e., this won't work for non-MaNGA data)
+    plate_qa_dir = analysis_path / daptype / str(plt) / 'qa'
+    if not plate_qa_dir.exists():
+        plate_qa_dir.mkdir(parents=True)
 
-    ofile = os.path.join(plate_qa_dir, '{0}-fitqa.png'.format(plt))
+    ofile = plate_qa_dir / f'{plt}-fitqa.png'
 #    ofile = None
 
     # Determine if the analysis is a CRITICAL failure
     c_ifus, critical = is_critical(dapver, analysis_path, daptype, plt)
-    pltifu = ['{0}-{1}'.format(plt, ifu) for ifu in c_ifus]
+    pltifu = [f'{plt}-{ifu}' for ifu in c_ifus]
 
     # Grab the data
     d_ifus, sc_pltifu, sc_snrg, sc_frms, sc_rchi, el_pltifu, el_snrg, el_frms, el_rchi \
@@ -134,8 +140,7 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
 
     # Check if there's anything to plot
     if len(sc_pltifu) == 0 & len(el_pltifu) == 0:
-        warnings.warn('No PLATEIFU analysis complete for plate={0}, daptype={1}.'.format(
-                                                                                    plt, daptype))
+        warnings.warn(f'No PLATEIFU analysis complete for plate={plt}, daptype={daptype}.')
         return
 
     # Basic coding check
@@ -272,7 +277,7 @@ class PlateFitQA(scriptbase.ScriptBase):
         parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
                             "execution plan to use instead of the default" , default=None)
 
-        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+#        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
         parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
         return parser
@@ -284,27 +289,18 @@ class PlateFitQA(scriptbase.ScriptBase):
             pyplot.switch_backend('agg')
 
         # Set the paths
-        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
-                            if args.redux_path is None else args.redux_path
-        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                            if args.analysis_path is None else args.analysis_path
+        redux_path = manga.drp_redux_path(drpver=args.drpver) \
+                            if args.redux_path is None else Path(args.redux_path).resolve()
+        analysis_path = manga.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                            if args.analysis_path is None else Path(args.analysis_path).resolve()
 
-        daptypes = []
-        if args.daptype is None:
-            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                                else AnalysisPlanSet.from_par_file(args.plan_file)
-            for p in analysisplan:
-                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-                el_method = EmissionLineModel.define_method(p['elfit_key'])
-                daptypes += [defaults.dap_method(bin_method['key'],
-                                                 sc_method['fitpar']['template_library_key'],
-                                                 el_method['continuum_tpl_key'])]
-        else:
-            daptypes = [args.daptype]
+        plan = manga.MaNGAAnalysisPlan.default(analysis_path=analysis_path) \
+                    if args.plan_file is None \
+                    else manga.MaNGAAnalysisPlan.from_toml(args.plan_file,
+                                                           analysis_path=analysis_path)
 
-        for daptype in daptypes:
-            plate_fit_qa(args.dapver, analysis_path, daptype, args.plate)
+        for i, key in enumerate(plan.keys()):
+            plate_fit_qa(args.dapver, analysis_path, plan[key]['key'], args.plate)
 
         print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

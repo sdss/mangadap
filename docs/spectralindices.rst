@@ -8,11 +8,10 @@
 Spectral Indices
 ================
 
-The spectral indices to be measured by the DAP are divided into two
-groups: (1) absorption-line indices that measure the equivalent width
-of an absorption feature and (2) bandhead or color indices that
-measure the ratio of fluxes is in two passbands. Both sets of indices
-are measured using
+The spectral indices to be measured by the DAP are divided into two groups: (1)
+absorption-line indices that measure the equivalent width of an absorption
+feature and (2) bandhead or color indices that measure the ratio of fluxes is in
+two passbands. Both sets of indices are measured using
 :class:`~mangadap.proc.spectralindices.SpectralIndices`; see
 :ref:`spectral-index-measurements`.
 
@@ -130,11 +129,10 @@ measurements.
 Input Data Format
 ~~~~~~~~~~~~~~~~~
 
-The parameters that define the absorption-line-index calculations are
-provided via the
-:class:`~mangadap.par.absorptionindexdb.AbsorptionIndexDB` object,
-which is built using an `SDSS-style parameter file`_. The core level
-class that calculates the raw absorption-line indices is
+The parameters that define the absorption-line-index calculations are provided
+via the :class:`~mangadap.par.absorptionindexdb.AbsorptionIndexDB` object, which
+is built using an `SDSS-style parameter file`_. The core level class that
+calculates the raw absorption-line indices is
 :class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`.
 
 The columns of the parameter file are:
@@ -194,25 +192,28 @@ Changing the absorption-line index parameters
 
 The absorption-line indices are measured by
 :class:`~mangadap.proc.spectralindices.SpectralIndices`; see
-:ref:`spectral-index-measurements`.  A set of parameter files that
-define a list of absorption-line index sets are provided with the DAP
-source distribution and located at
-``$MANGADAP_DIR/mangadap/data/absorption_indices``.  There are a few
-methods that you can use to change the set of absorption-line index parameters
-used by :class:`~mangadap.proc.spectralindices.SpectralIndices`:
+:ref:`spectral-index-measurements`.  A set of parameter files that define a list
+of absorption-line index sets are provided with the DAP source distribution and
+located at ``$MANGADAP_DIR/mangadap/data/absorption_indices``.  The database you
+wish to use is selected by the ``absindex`` parameter in the relevant parameter
+block of the :ref:`plan` file.  The keyword is simply the capitalized name of
+the file without the ".par" extension.  For example, to use the `extindx.par
+<https://github.com/sdss/mangadap/blob/master/mangadap/data/absorption_indices/extindx.par>`__
+database, the plan file would include
 
-    #. To use one of the existing parameter databases, you can change
-       the ``absorption_indices`` keyword in the
-       :class:`~mangadap.proc.spectralindices.SpectralIndices`
-       configuration file. The keyword should be the capitalized root
-       of the parameter filename. E.g., to use
-       ``$MANGADAP_DIR/mangadap/data/absorption_indices/lickindx.par``,
-       set the keyword to ``LICKINDX``.
+.. code-block:: toml
 
-    #. To use a *new* parameter database, write the file and save it
-       in the ``$MANGADAP_DIR/mangadap/data/absorption_indices/``
-       directory, and then change the relevant configuration file in
-       the same way as described above.
+    [default.indices]
+     absindex = 'EXTINDX'
+
+To provide a user-defined database, simply replace the ``absindex`` keyword
+with the name of the local file defining the database (in the format given
+above).  For example, 
+
+.. code-block:: toml
+
+    [default.indices]
+     absindex = '/path/to/my/local/file/my_abs_database.par'
 
 ----
 
@@ -304,26 +305,28 @@ Changing the bandhead index parameters
 
 The bandhead and color indices are measured by
 :class:`~mangadap.proc.spectralindices.SpectralIndices`; see
-:ref:`spectral-index-measurements`. A set of parameter files that
-define a list of bandhead index sets are provided with the DAP source
-distribution and located at
-``$MANGADAP_DIR/mangadap/data/bandhead_indices``. There are a few
-methods that you can use to change the set of bandhead-index
-parameters used by
-:class:`~mangadap.proc.spectralindices.SpectralIndices`:
+:ref:`spectral-index-measurements`. A set of parameter files that define a list
+of bandhead index sets are provided with the DAP source distribution and located
+at ``$MANGADAP_DIR/mangadap/data/bandhead_indices``.  The database you wish to
+use is selected by the ``bandhead`` parameter in the relevant parameter block of
+the :ref:`plan` file.  The keyword is simply the capitalized name of the file
+without the ".par" extension.  For example, to use the `bhbasic.par
+<https://github.com/sdss/mangadap/blob/master/mangadap/data/bandhead_indices/bhbasic.par>`__
+database, the plan file would include
 
-    #. To use one of the existing parameter databases, you can change
-       the ``bandhead_indices`` keyword in the
-       :class:`~mangadap.proc.spectralindices.SpectralIndices`
-       configuration file. The keyword should be the capitalized root
-       of the parameter filename. E.g., to use
-       ``$MANGADAP_DIR/mangadap/data/bandhead_indices/bhbasic.par``,
-       set the keyword to ``BHBASIC``.
+.. code-block:: toml
 
-    #. To use a *new* parameter database, write the file and save it
-       in the ``$MANGADAP_DIR/mangadap/data/bandhead_indices/``
-       directory, and then change the relevant configuration file in
-       the same way as described above.
+    [default.indices]
+     bandhead = 'BHBASIC'
+
+To provide a user-defined database, simply replace the ``bandhead`` keyword
+with the name of the local file defining the database (in the format given
+above).  For example, 
+
+.. code-block:: toml
+
+    [default.indices]
+     bandhead = '/path/to/my/local/file/my_bhd_database.par'
 
 ----
 

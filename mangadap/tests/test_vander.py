@@ -1,12 +1,6 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
-
-from matplotlib import pyplot
 
 from mangadap.util.vander import Legendre1D
 
@@ -276,3 +270,5 @@ def test_ew_glbrej_1d_fit():
     # Fewer points should be rejected when accounting for errors
     assert numpy.sum(_rej) > numpy.sum(rej), \
             'Should not have rejected as many points when accounting for error'
+
+

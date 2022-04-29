@@ -6,26 +6,24 @@ from IPython import embed
 import numpy
 from astropy.io import fits
 
-from mangadap.proc.reductionassessments import available_reduction_assessments
+from mangadap.config.manga import MaNGAConfig
+from mangadap.proc.reductionassessments import ReductionAssessmentDef
 from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
 from mangadap.datacube import MUSEDataCube
 from mangadap.tests.util import data_test_file, remote_data_file, requires_remote
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 
 @requires_remote
 def test_sres_ext():
-    file = remote_data_file(filename=MaNGADataCube.build_file_name(7815, 3702, log=True))
+    cfg = MaNGAConfig(7815, 3702)
+    file = remote_data_file(filename=cfg.file_name)
     hdu = fits.open(file)
-    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'LSFPRE', \
+    assert MaNGAConfig.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
+    assert MaNGAConfig.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='junk') is None, \
+    assert MaNGAConfig.spectral_resolution_extension(hdu, ext='junk') is None, \
                 'Should return None for a bad extension name.'
 
 
@@ -33,8 +31,6 @@ def test_sres_ext():
 def test_read():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    assert cube.file_name == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign,
-                    log=cube.log), 'Name mismatch'
     assert cube.log, 'Should read the log-binned version by default.'
     assert cube.wcs is not None, 'WCS should be defined.'
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'
@@ -91,10 +87,11 @@ def test_copyto():
     assert flux.shape[1] == numpy.sum(indx), 'Wavelength range masking failed'
 
     # Find the spaxels with non-zero signal
-    methods = available_reduction_assessments()
-    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
-    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
-    sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    method = ReductionAssessmentDef()
+#    methods = available_reduction_assessments()
+#    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+#    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+    sig, var, snr = cube.flux_stats(response_func=method.response)
     indx = ((sig > 0) & numpy.invert(numpy.ma.getmaskarray(sig))).data.ravel()
     ngood = numpy.sum(indx)
 
@@ -125,7 +122,6 @@ def test_copyto():
     assert numpy.array_equal(cube.sres[numpy.unravel_index(i, cube.spatial_shape)],
                              sres[i].data), 'Did not pull sres data.'
 
-
 @requires_remote
 def test_stats():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
@@ -142,11 +138,12 @@ def test_stats():
     assert numpy.array_equal(bins, numpy.arange(cube.nspec/4)), 'Bad bin list'
     assert numpy.allclose(area, 1.), 'Bad area calculation'
 
-    methods = available_reduction_assessments()
-    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
-    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
-
-    cen_wave = cube.central_wavelength(response_func=methods[i[0]]['response_func'],
+    # Find the spaxels with non-zero signal
+    method = ReductionAssessmentDef()
+#    methods = available_reduction_assessments()
+#    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+#    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+    cen_wave = cube.central_wavelength(response_func=method.response,
                                        flag=cube.do_not_use_flags())
     assert numpy.isclose(cen_wave, 4638.0), 'Central wavelength changed.'
 
@@ -158,14 +155,14 @@ def test_stats():
                                        per_pixel=False)
     assert numpy.isclose(cen_wave, 6044.9), 'Central wavelength changed.'
 
-    sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    sig, var, snr = cube.flux_stats(response_func=method.response)
     assert sig.shape == cube.spatial_shape, 'Should be shaped as a map.'
     assert isinstance(sig, numpy.ma.MaskedArray), 'Expected masked arrays'
     assert numpy.ma.amax(snr) > 60, 'S/N changed'
 
     # Try it with the linear cube
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
-    _sig, _var, _snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    _sig, _var, _snr = cube.flux_stats(response_func=method.response)
     # TODO: Not sure why these are not closer.
     assert numpy.absolute(numpy.ma.median((sig-_sig)/_sig)) < 0.01, \
             'Signal should be the same to better than 1%.'

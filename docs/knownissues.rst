@@ -8,6 +8,15 @@ DAP Known Issues
 Persistent
 ==========
 
+Documentation
+-------------
+
+Although I try my best, some of the documentation has lagged changes in the
+code.  This is particularly true of the API/Module/Class/Function-level
+descriptions in the main source code.  If something does not act as expected,
+please look at the code directly and/or feel free to `Submit an issue`_ for a
+doc clarification or bug report.
+
 LSF limitations
 ---------------
 
@@ -68,7 +77,20 @@ of two of the statistical error. See the detailed assessments of the DAP
 uncertainties in the two main DAP papers: `Westfall et al. (2019, AJ, 158,
 231)`_ and `Belfiore et al. (2019, AJ, 158, 160)`_.
 
-MPL-11 (3.1.0)
+Version 4.0.0
+=============
+
+.. note::
+
+    This is the first major tag of the code that was *not* used in the run up to
+    a re-run and release of the MaNGA data.
+
+In addition to the general issues above, note that this tag focuses on enabling
+non-MaNGA cubes to be analyzed using the DAP.  Some MaNGA-specific functionality
+is still being updated for these changes.
+
+
+MPL-11 (3.1.1)
 ==============
 
 Faults

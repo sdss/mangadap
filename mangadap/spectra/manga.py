@@ -20,13 +20,14 @@ import numpy
 
 from astropy.io import fits
 
-from ..config import defaults
-from ..util.drpfits import DRPFits, DRPFitsBitMask
+from ..config.manga import MaNGAConfig
+from ..util.drpbitmask import DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
 
-class MaNGARSS(DRPFits, RowStackedSpectra):
+
+class MaNGARSS(MaNGAConfig, RowStackedSpectra):
     r"""
     Container class for MaNGA row-stacked spectra.
 
@@ -52,31 +53,25 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
     """
     def __init__(self, ifile, sres_ext=None, sres_fill=True):
 
-        if not os.path.isfile(ifile):
-            raise FileNotFoundError('File does not exist: {0}'.format(ifile))
+        # Use the configuration class method to construct the configuration
+        # based on the input data file
+        cfg = MaNGAConfig.from_file(ifile)
+        # and then use the parent class init to set it to self.  NOTE: This is
+        # round about, but the way I got it to work.  There must be a better way
+        # to do this...
+        MaNGAConfig.__init__(self, cfg.plate, cfg.ifudesign, mode=cfg.mode, log=cfg.log,
+                             drpver=cfg.drpver, redux_path=cfg.redux_path,
+                             chart_path=cfg.chart_path, directory_path=cfg.directory_path)
 
-        # Parse the relevant information from the filename
-        directory_path = os.path.split(os.path.abspath(ifile))[0]
-        plate, ifudesign, log = ifile.split('-')[1:4]
-        # Instantiate the DRPFits base
-        DRPFits.__init__(self, int(plate), int(ifudesign), 'RSS', log='LOG' in log,
-                         directory_path=directory_path)
-
-        # Try to define the BitMask object
-        try:
-            bitmask = DRPFitsBitMask(mode='RSS')
-        except:
-            warnings.warn('Unable to define bit mask for MaNGA row-stacked spectra.  Can only '
-                          'distinguish between masked (values greater than 0) and unmasked '
-                          '(values of 0).')
-            bitmask = None
+        # Define the relevant BitMask object
+        bitmask = DRPFitsBitMask(mode='RSS')
 
         # Open the file and initialize the base class
         with fits.open(ifile) as hdu:
             print('Reading MaNGA row-stacked spectra data ...', end='\r')
             prihdr = hdu[0].header
             fluxhdr = hdu['FLUX'].header
-            self.sres_ext, sres = DRPFits.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
+            self.sres_ext, sres = MaNGAConfig.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
 
@@ -89,90 +84,12 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                                        ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
                                        bitmask=bitmask, sres=sres, xpos=-hdu['XPOS'].data,
                                        ypos=hdu['YPOS'].data, area=numpy.pi,
-                                       log=self.samp == 'LOG', prihdr=prihdr, fluxhdr=fluxhdr)
+                                       log=self.log, prihdr=prihdr, fluxhdr=fluxhdr)
         print('Reading MaNGA row-stacked spectra data ... DONE')
-
-        # Try to use the header to set the DRP version
-        self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
-                        else defaults.drp_version()
-        # Reduction path is always set to the default. A warning is
-        # thrown if the default reduction path is not the same as the
-        # path expected for the file.
-        self.redux_path = defaults.drp_redux_path(drpver=self.drpver)
-        if self.directory_path != defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                              redux_path=self.redux_path):
-            warnings.warn('Default reduction path does not match file path.  May not be able to '
-                          'find paired RSS file if requested.')
-
-    @staticmethod
-    def build_file_name(plate, ifudesign, log=True):
-        """
-        Return the name of the DRP file with the row-stacked spectra.
-
-        This is a simple wrapper for
-        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
-        specific to the RSS.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-
-        Returns:
-            :obj:`str`: The relevant file name.
-        """
-        return DRPFits.build_file_name(plate, ifudesign, 'RSS', log=log)
-
-    @staticmethod
-    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None):
-        """
-        Construct the default path and file name with the MaNGA
-        row-stacked spectra.
-
-        This is a simple wrapper for
-        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
-        to the RSS files.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-            drpver (:obj:`str`, optional):
-                DRP version, which is used to define the default DRP
-                redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
-            redux_path (:obj:`str`, optional):
-                The path to the top level directory containing the
-                DRP output files for a given DRP version. Default is
-                defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
-                Providing this ignores anything provided for
-                ``drpver`` or ``redux_path``.
-
-        Returns:
-            :obj:`tuple`: Two strings with the default path to and
-            name of the DRP data file.
-        """
-        return DRPFits.default_paths(plate, ifudesign, 'RSS', log=log, drpver=drpver,
-                                     redux_path=redux_path, directory_path=directory_path)
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None, **kwargs):
+                      chart_path=None, directory_path=None, **kwargs):
         """
         Construct a :class:`mangadap.datacube.manga.MaNGARSS`
         object based on its plate-ifu designation.
@@ -192,15 +109,19 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
             drpver (:obj:`str`, optional):
                 DRP version, which is used to define the default DRP
                 redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
+                :func:`mangadap.config.manga.drp_version`
             redux_path (:obj:`str`, optional):
                 The path to the top level directory containing the
                 DRP output files for a given DRP version. Default is
                 defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
+                :func:`mangadap.config.manga.drp_redux_path`.
+            chart_path (:obj:`str`, optional):
+                The path to the directory containing the finding chart images
+                for this plate.  Default is defined by
+                :func:`mangadap.config.manga.drp_finding_chart_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
+                :func:`mangadap.config.manga.drp_directory_path`.
                 Providing this ignores anything provided for
                 ``drpver`` or ``redux_path``.
             **kwargs:
@@ -208,9 +129,64 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                 instantiation method; see
                 :class:`mangadap.spectra.manga.MaNGARSS`.
         """
-        path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
-                                            redux_path=redux_path, directory_path=directory_path)
-        return cls(os.path.join(path, file_name), **kwargs)
+        # Use the input to instantiate the configuration
+        cfg = MaNGAConfig(plate, ifudesign, mode='RSS', log=log, drpver=drpver,
+                          redux_path=redux_path, chart_path=chart_path,
+                          directory_path=directory_path)
+        # Then use the configuration to instantiate the object
+        return cls(str(cfg.file_path), **kwargs)
+
+    @classmethod
+    def from_config(cls, cfgfile):
+        """
+        Construct a :class:`mangadap.datacube.manga.MaNGADataCube` or
+        :class:`mangadap.spectra.manga.MaNGARSS` object from a
+        configuration file.
+
+        Using the data read from the configuration file, the method
+        instantiates the class using
+        :func:`mangadap.spectra.manga.MaNGARSS.from_plateifu` or
+        :func:`mangadap.datacube.manga.MaNGADataCube.from_plateifu`.
+        This method will therefore fault for this base class!
+
+        The format of the configuration file is:
+
+        .. todo::
+
+            Fill this in.
+
+        Args:
+            cfgfile (:obj:`str`):
+                Configuration file
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Overrides any value in the configuration
+                file.
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Overrides
+                any value in the configuration file.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Providing this
+                ignores anything provided for ``drpver`` or
+                ``redux_path``. Overrides any value in the
+                configuration file.
+        """
+        # First use the base class method to instantiate the configuration
+        cfg = MaNGAConfig.from_config(cfgfile, mode='RSS')
+
+        # Then read the file (again...) to get the relevant keyword arguments
+        full_cfg = DefaultConfig(cfgfile, interpolate=True)
+        kwargs = {}
+        kwargs['z'] = full_cfg.getfloat('z')
+        kwargs['vdisp'] = full_cfg.getfloat('vdisp')
+        kwargs['ell'] = full_cfg.getfloat('ell')
+        kwargs['pa'] = full_cfg.getfloat('pa')
+        kwargs['reff'] = full_cfg.getfloat('reff')
+        kwargs['sres_ext'] = full_cfg.get('sres_ext')
+        kwargs['sres_fill'] = full_cfg.getbool('sres_fill', default=True)
+        kwargs['covar_ext'] = full_cfg.get('covar_ext')
+        return cls(str(cfg.file_path), **kwargs)
 
     def pointing_offset(self):
         """
@@ -311,19 +287,18 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
         """
         Parse the datacube rectification parameters.
 
-        Values that are None are set to their default methods in
-        :mod:`mangadap.config.defaults`.
+        Values that are None are set to their defaults as set by
+        :class:`~mangadap.config.manga.MaNGAConfig`.
 
         Returns:
             :obj:`tuple`: The default or input values of arguments,
             in the same order.
-
         """
-        pixelscale = defaults.cube_pixelscale() if pixelscale is None else pixelscale
-        rlim = defaults.regrid_rlim() if rlim is None else rlim
-        sigma = defaults.regrid_sigma() if sigma is None else sigma
-        recenter = defaults.cube_recenter() if recenter is None else recenter
-        width_buffer = defaults.cube_width_buffer() if width_buffer is None else width_buffer
+        pixelscale = MaNGAConfig.cube_pixelscale() if pixelscale is None else pixelscale
+        rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
+        sigma = MaNGAConfig.regrid_sigma() if sigma is None else sigma
+        recenter = MaNGAConfig.cube_recenter() if recenter is None else recenter
+        width_buffer = MaNGAConfig.cube_width_buffer() if width_buffer is None else width_buffer
         return pixelscale, rlim, sigma, recenter, width_buffer
 
     def rectification_transfer_matrix(self, channel, pixelscale=None, rlim=None, sigma=None,

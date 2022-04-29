@@ -18,9 +18,8 @@ the MaNGA Data Analysis Pipeline (DAP).
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+from pathlib import Path
 import logging
-import time
-import os
 import warnings
 
 from IPython import embed
@@ -28,21 +27,17 @@ from IPython import embed
 import numpy
 
 from astropy.io import fits
-import astropy.constants
 import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
-from .datacube import DataCube
-#from .datacube import MaNGADataCube, MUSEDataCube
 from .util.constants import DAPConstants
-from .util.drpfits import DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
 from .util.log import log_output
-from .util.fileio import channel_dictionary
-from .util.geometry import SemiMajorAxisCoo
 from .util.covariance import Covariance
 from .config import defaults
+# TODO: These are only for type checking...
+from .datacube import DataCube
 from .proc.reductionassessments import ReductionAssessment
 from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .proc.stellarcontinuummodel import StellarContinuumModel
@@ -50,7 +45,6 @@ from .proc.emissionlinemoments import EmissionLineMoments
 from .proc.emissionlinemodel import EmissionLineModel
 from .proc.spectralindices import SpectralIndices
 
-from matplotlib import pyplot
 
 #-----------------------------------------------------------------------
 class DAPQualityBitMask(DAPBitMask):
@@ -541,11 +535,10 @@ class construct_maps_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, cube, metadata, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+    def __init__(self, cube, method=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
-                 redshift=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False,
-                 single_precision=False):
+                 redshift=None, output_path=None, output_file=None, overwrite=True, loggers=None,
+                 quiet=False, single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -556,18 +549,31 @@ class construct_maps_file:
 
         #---------------------------------------------------------------
         # Check input types
+        # TODO: Do we need this?
         confirm_dap_types(cube, rdxqa, binned_spectra, stellar_continuum, emission_line_moments,
                           emission_line_model, spectral_indices)
 
         #---------------------------------------------------------------
         # Set the output paths
         self.cube = cube
-        self.meta = metadata
-        self.method = None
-        self.directory_path = None
-        self.output_file = None
-        self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
-                        stellar_continuum, emission_line_model)
+        self.meta = cube.meta
+        self.method, self.directory_path, self.output_file \
+                = default_paths(cube, file_type='MAPS',
+                        rdxqa_method=None if rdxqa is None else rdxqa.method['key'],
+                        binning_method=None if binned_spectra is None 
+                                       else binned_spectra.method['key'],
+                        stelcont_method=None if stellar_continuum is None
+                                        else stellar_continuum.method['key'],
+                        elmom_method=None if emission_line_moments is None
+                                     else emission_line_moments.database['key'],
+                        elmodel_method=None if emission_line_model is None
+                                       else emission_line_model.method['key'],
+                        sindex_method=None if spectral_indices is None
+                                      else spectral_indices.database['key'],
+                        method=method, output_path=output_path, output_file=output_file)
+
+#        self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
+#                        stellar_continuum, emission_line_model)
 
         # Save input for reference
         self.spatial_shape = self.cube.spatial_shape
@@ -576,23 +582,20 @@ class construct_maps_file:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('CONSTRUCTING OUTPUT MAPS'))
+            log_output(loggers, 1, logging.INFO, f'{"CONSTRUCTING OUTPUT MAPS":^50}')
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO,
-                       'Output path: {0}'.format(self.directory_path))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Output file: {0}'.format(self.output_file))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Output maps have shape {0}'.format(self.spatial_shape))
-            log_output(self.loggers, 1, logging.INFO, 'Redshift: {0}'.format(self.redshift))
+            log_output(self.loggers, 1, logging.INFO, f'Output path: {self.directory_path}')
+            log_output(self.loggers, 1, logging.INFO, f'Output file: {self.output_file}')
+            log_output(self.loggers, 1, logging.INFO, f'Output map shape: {self.spatial_shape}')
+            log_output(self.loggers, 1, logging.INFO, f'Redshift: {self.redshift:.4f}')
 
         #---------------------------------------------------------------
         # Check if the file already exists
-        ofile = os.path.join(self.directory_path, self.output_file)
-        if os.path.isfile(ofile) and not clobber:
+        ofile = self.directory_path / self.output_file
+        if ofile.exists() and not overwrite:
             # TODO: Perform some checks to make sure the existing file
             # has the correct content?
-            warnings.warn('Output file exists!  Set clobber=True to overwrite.')
+            warnings.warn('Output file exists!  Set overwrite=True to overwrite.')
             return
 
         #---------------------------------------------------------------
@@ -600,11 +603,7 @@ class construct_maps_file:
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.cube, maskname='MANGA_DAPPIXMASK')
 
         # Add the DAP method
-        prihdr['DAPTYPE'] = (defaults.dap_method(binned_spectra.method['key'],
-                                    stellar_continuum.method['fitpar']['template_library_key'],
-                                    'None' if emission_line_model is None
-                                        else emission_line_model.method['continuum_tpl_key']),
-                             'DAP analysis method')
+        prihdr['DAPTYPE'] = (self.method, 'DAP analysis method')
         # Add the format of this file
         prihdr['DAPFRMT'] = ('MAPS', 'DAP data file format')
 
@@ -721,46 +720,15 @@ class construct_maps_file:
                     = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'DONOTUSE')
 
         #---------------------------------------------------------------
-
         # Check that the path exists
-        if not os.path.isdir(self.directory_path):
-            os.makedirs(self.directory_path)
+        if not self.directory_path.exists():
+            self.directory_path.mkdir(parents=True)
         # Write the maps file
-        DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-                          quiet=self.quiet)
+        DAPFitsUtil.write(self.hdu, str(ofile), overwrite=overwrite, checksum=True,
+                          loggers=self.loggers, quiet=self.quiet)
         # End
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-
-
-    def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
-                   stellar_continuum, emission_line_model):
-        """
-        Set the paths relevant to the map file.
-        """
-        # The output method directory is, for now, the combination of
-        # the binned_spectrum and stellar_continuum method keys
-        if directory_path is None and (binned_spectra is None or stellar_continuum is None):
-            raise ValueError('Could not define output directory path.')
-
-        # Set the output directory path
-        # TODO: Get DAP version from __version__ string
-
-        self.method = defaults.dap_method(binned_spectra.method['key'],
-                                    stellar_continuum.method['fitpar']['template_library_key'],
-                                    'None' if emission_line_model is None 
-                                        else emission_line_model.method['continuum_tpl_key']) \
-                                if directory_path is None else None
-        self.directory_path = defaults.dap_method_path(self.method, plate=self.cube.plate,
-                                                       ifudesign=self.cube.ifudesign,
-                                                       drpver=self.cube.drpver, dapver=dapver,
-                                                       analysis_path=analysis_path) \
-                                                if directory_path is None else str(directory_path)
-
-        # Set the output file
-        self.output_file = defaults.dap_file_name(self.cube.plate, self.cube.ifudesign,
-                                                  self.method, mode='MAPS') \
-                                    if output_file is None else str(output_file)
 
     def _consolidate_donotuse(self, mask):
         return self.bitmask.consolidate(mask, ['NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
@@ -1749,8 +1717,6 @@ class construct_maps_file:
 
         # Get the mask
         si_mask = self._spectral_index_mask_to_map_mask(spectral_indices, data[-1].copy())
-#        bf_si_mask = self._spectral_index_mask_to_map_mask(spectral_indices, data[-1].copy(),
-#                                                           abs_only=True)
 
         # Organize the extension data
         data = data[:2] + [si_mask] + data[2:6] + [si_mask] + data[6:10] + [si_mask] + data[10:-1]
@@ -1771,9 +1737,9 @@ class construct_cube_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, cube, metadata, binned_spectra=None, stellar_continuum=None,
-                 emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False,
+    def __init__(self, cube, method=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+                 emission_line_moments=None, emission_line_model=None, spectral_indices=None,
+                 output_path=None, output_file=None, overwrite=True, loggers=None, quiet=False,
                  single_precision=False):
 
         #---------------------------------------------------------------
@@ -1791,12 +1757,21 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Set the output paths
         self.cube = cube
-        self.meta = metadata
-        self.method = None
-        self.directory_path = None
-        self.output_file = None
-        self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
-                        stellar_continuum, emission_line_model)
+        self.meta = cube.meta
+        self.method, self.directory_path, self.output_file \
+                = default_paths(cube, file_type='LOGCUBE',
+                        rdxqa_method=None if rdxqa is None else rdxqa.method['key'],
+                        binning_method=None if binned_spectra is None 
+                                       else binned_spectra.method['key'],
+                        stelcont_method=None if stellar_continuum is None
+                                        else stellar_continuum.method['key'],
+                        elmom_method=None if emission_line_moments is None
+                                     else emission_line_moments.database['key'],
+                        elmodel_method=None if emission_line_model is None
+                                       else emission_line_model.method['key'],
+                        sindex_method=None if spectral_indices is None
+                                      else spectral_indices.database['key'],
+                        method=method, output_path=output_path, output_file=output_file)
 
         # Save input for reference
         self.shape = self.cube.shape
@@ -1816,11 +1791,11 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Check if the file already exists
-        ofile = os.path.join(self.directory_path, self.output_file)
-        if os.path.isfile(ofile) and not clobber:
+        ofile = self.directory_path / self.output_file
+        if ofile.exists() and not overwrite:
             # TODO: Perform some checks to make sure the existing file
             # has the correct content?
-            warnings.warn('Output file exists!  Set clobber=True to overwrite.')
+            warnings.warn('Output file exists!  Set overwrite=True to overwrite.')
             return
 
         #---------------------------------------------------------------
@@ -1836,11 +1811,7 @@ class construct_cube_file:
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.cube, maskname='MANGA_DAPSPECMASK')
         # Add the DAP method
-        prihdr['DAPTYPE'] = (defaults.dap_method(binned_spectra.method['key'],
-                                    stellar_continuum.method['fitpar']['template_library_key'],
-                                    'None' if emission_line_model is None
-                                        else emission_line_model.method['continuum_tpl_key']),
-                             'DAP analysis method')
+        prihdr['DAPTYPE'] = (self.method, 'DAP analysis method')
         # Add the format of this file
         prihdr['DAPFRMT'] = ('LOGCUBE', 'DAP data file format')
 
@@ -1883,42 +1854,15 @@ class construct_cube_file:
         #---------------------------------------------------------------
 
         # Check that the path exists
-        if not os.path.isdir(self.directory_path):
-            os.makedirs(self.directory_path)
+        if not self.directory_path.exists():
+            self.directory_path.mkdir(parents=True)
 
         # Write the model cube file
-        DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-                          quiet=self.quiet)
+        DAPFitsUtil.write(self.hdu, str(ofile), overwrite=overwrite, checksum=True,
+                          loggers=self.loggers, quiet=self.quiet)
         # End
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-
-    def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
-                   stellar_continuum, emission_line_model):
-        """
-        Set the paths relevant to the map file.
-        """
-        # The output method directory is, for now, the combination of
-        # the binned_spectrum and stellar_continuum method keys
-        if directory_path is None and (binned_spectra is None or stellar_continuum is None):
-            raise ValueError('Could not define output directory path.')
-
-        # Set the output directory path
-        self.method = defaults.dap_method(binned_spectra.method['key'],
-                                    stellar_continuum.method['fitpar']['template_library_key'],
-                                    'None' if emission_line_model is None
-                                        else emission_line_model.method['continuum_tpl_key']) \
-                                if directory_path is None else None
-        self.directory_path = defaults.dap_method_path(self.method, plate=self.cube.plate,
-                                                       ifudesign=self.cube.ifudesign,
-                                                       drpver=self.cube.drpver, dapver=dapver,
-                                                       analysis_path=analysis_path) \
-                                                if directory_path is None else str(directory_path)
-
-        # Set the output file
-        self.output_file = defaults.dap_file_name(self.cube.plate, self.cube.ifudesign,
-                                                          self.method, mode='LOGCUBE') \
-                                    if output_file is None else str(output_file)
 
     def _get_data_mask(self, binned_spectra, binned_spectra_3d_hdu):
         """
@@ -2184,6 +2128,81 @@ class construct_cube_file:
 
 
 #-----------------------------------------------------------------------
+def default_paths(cube, file_type='MAPS', rdxqa_method=None, binning_method=None,
+                  stelcont_method=None, elmom_method=None, elmodel_method=None, sindex_method=None,
+                  method=None, output_path=None, output_file=None):
+    """
+    Set the default directory and file name for the output file.
+
+    Args:
+        cube (:class:`mangadap.datacube.datacube.DataCube`):
+            Datacube to analyze.
+        file_type (:obj:`str`, optional):
+            The DAP output file type.  Should be 'MAPS' or 'LOGCUBE'.
+        rdxqa_method (:obj:`str`, optional):
+            The method key for the basic assessments of the datacube.
+        binning_method (:obj:`str`, optional):
+            The method key for the spatial binning.
+        stelcont_method (:obj:`str`, optional):
+            The method key for the stellar-continuum fitting method.  If
+            None, not included in output file name.
+        elmom_method (:obj:`str`, optional):
+            The method key for the emission-line moments method.  If None,
+            not included in the output file name.
+        elmodel_method (:obj:`str`, optional):
+            The method key for the emission-line modeling method.  If None,
+            not included in the output file name.
+        sindex_method (:obj:`str`, optional):
+            The method key for the spectral index measurements.  If None,
+            not included in the output file name.
+        method (:obj:`str`, optional):
+            The method to use instead of the default.  The default method is
+            to simply concatenate the list of methods used by eadch module.
+            The order of the keys is the order of operations (rdxqa,
+            binning, stellar continuum, emission-line model, spectral
+            indices).
+        output_path (:obj:`str`, `Path`_, optional):
+            The path for the output file.  If None, the current working
+            directory is used.
+        output_file (:obj:`str`, optional):
+            The name of the output file. The full path of the output file
+            will be :attr:`directory_path`/:attr:`output_file`.  If None,
+            the default is to combine ``cube.output_root`` and the method
+            (see ``method``).
+
+    Returns:
+        :obj:`tuple`: Returns a `Path`_ with the output directory and a
+        :obj:`str` with the output file name.
+    """
+    directory_path = Path('.').resolve() if output_path is None \
+                            else Path(output_path).resolve()
+    if method is not None:
+        _output_file = f'{cube.output_root}-{file_type}-{method}.fits.gz' \
+                            if output_file is None else output_file
+        return method, directory_path, _output_file
+
+    # TODO: This is ridiculous...
+    method = None
+    if rdxqa_method is not None:
+        method = f'{rdxqa_method}'
+    if binning_method is not None:
+        method = f'{binning_method}' if method is None else f'{method}-{binning_method}'
+    if stelcont_method is not None:
+        method = f'{stelcont_method}' if method is None else f'{method}-{stelcont_method}'
+    if elmom_method is not None and elmodel_method is not None:
+        method = f'{elmodel_method}-{elmom_method}' if method is None \
+                    else f'{method}-{elmodel_method}-{elmom_method}'
+    elif elmom_method is None and elmodel_method is not None:
+        method = f'{elmodel_method}' if method is None else f'{method}-{elmodel_method}'
+    elif elmom_method is not None and elmodel_method is None:
+        method = f'{elmom_method}' if method is None else f'{method}-{elmom_method}'
+    if sindex_method is not None:
+        method = f'{sindex_method}' if method is None else f'{method}-{sindex_method}'
+    _output_file = f'{cube.output_root}-{file_type}-{method}.fits.gz' \
+                        if output_file is None else output_file
+    return method, directory_path, _output_file
+
+
 def combine_binid_extensions(cube, binned_spectra, stellar_continuum, emission_line_moments,
                              emission_line_model, spectral_indices, dtype=None):
 
@@ -2257,11 +2276,9 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
 #                log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
 #            dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
     # TODO: Move this to the datacube base class?
-    if cube.redux_bitmask is not None and cube.redux_qual_key in cube.prihder \
-            and cube.redux_bitmask.flagged(cube.prihdr[cube.redux_qual_key],
-                                           flag=self.redux_qual_flag):
+    if cube.meta['drpcrit']:
         if not quiet:
-            log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
+            log_output(loggers, 1, logging.INFO, 'DRP file is flagged CRITICAL!')
         dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
 
     # Flag the file as CRITICAL if the stellar continuum fits are bad
@@ -2350,11 +2367,12 @@ def add_snr_metrics_to_header(hdr, cube, r_re):
         FileNotFoundError: Raised if any of the response function files
             cannot be found.
     """
-    filter_response_file = [os.path.join(defaults.dap_data_root(), 'filter_response', f) 
-                                for f in ['gunn_2001_g_response.db', 'gunn_2001_r_response.db',
-                                          'gunn_2001_i_response.db', 'gunn_2001_z_response.db']]
+    root = defaults.dap_data_root()
+    filter_response_file = [root / 'filter_response' / f 
+                            for f in ['gunn_2001_g_response.db', 'gunn_2001_r_response.db',
+                                      'gunn_2001_i_response.db', 'gunn_2001_z_response.db']]
     for f in filter_response_file:
-        if not os.path.isfile(f):
+        if not f.exists():
             raise FileNotFoundError('{0} does not exist!'.format(f))
 
     # Set the header keywords
@@ -2372,7 +2390,7 @@ def add_snr_metrics_to_header(hdr, cube, r_re):
     flags = cube.do_not_use_flags()
 #    flags = ['DONOTUSE', 'FORESTAR']
     for i in range(nfilter):
-        response_func = numpy.genfromtxt(filter_response_file[i])[:,:2]
+        response_func = numpy.genfromtxt(str(filter_response_file[i]))[:,:2]
         signal, variance, snr = [a.ravel() for a in 
                                  cube.flux_stats(response_func=response_func, flag=flags)]
         covar = None

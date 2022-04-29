@@ -1293,7 +1293,7 @@ class RowStackedSpectra:
         nc = len(_channels)
 
         # Build and return the covariance matrices
-        CovCube = numpy.empty(nc, dtype=sparse.csr.csr_matrix)
+        CovCube = numpy.empty(nc, dtype=sparse.csr_matrix)
         for i in range(nc):
             if not quiet:
                 print('Covariance Cube {0}/{1}'.format(i+1,nc), end='\r')

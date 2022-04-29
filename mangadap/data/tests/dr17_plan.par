@@ -1,0 +1,23 @@
+
+typedef struct {
+    char drpqa_key[8];
+    int drpqa_clobber;
+    char bin_key[8];
+    int bin_clobber;
+    char continuum_key[8];
+    int continuum_clobber;
+    char elmom_key[8];
+    int elmom_clobber;
+    char elfit_key[8];
+    int elfit_clobber;
+    char spindex_key[8];
+    int spindex_clobber;
+} DAPPLAN;
+
+#           DRP QA      BINNING            CONTINUUM      MOMENTS       LINEPROF     SPECINDEX
+#        ---------  -----------  -------------------  -----------  -------------  ------------
+DAPPLAN    SNRG  0       SPX  0      MILESHCMPL11  0  EMOMMPL11 0    EFITMPL11SSP 0     INDXEN  0
+DAPPLAN    SNRG  0     VOR10  0      MILESHCMPL11  0  EMOMMPL11 0    EFITMPL11SSP 0     INDXEN  0
+DAPPLAN    SNRG  0     HYB10  0      MILESHCMPL11  0  EMOMMPL11 0  EFITMPL11SSPDB 0     INDXEN  0
+DAPPLAN    SNRG  0     HYB10  0      MILESHCMPL11  0  EMOMMPL11 0  EFITMPL11HCDB 0     INDXEN  0
+

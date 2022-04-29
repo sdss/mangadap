@@ -16,7 +16,7 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
     # Access the DRP RSS file
     print('Attempting to open RSS file:')
     rss = MaNGARSS.from_plateifu(plate, ifudesign, directory_path=directory_path)
-    print('     FOUND: {0}'.format(rss.file_path()))
+    print(f'     FOUND: {rss.file_path}')
 
     if wave is not None:
         channel = numpy.argsort(numpy.absolute(rss.wave - wave))[0]
@@ -38,7 +38,7 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
             C = rss.covariance_cube(channels=channels)
 
     print('Writing data to {0}.'.format(ofile))
-    C.write(ofile, clobber=True)            # Write the data
+    C.write(ofile, overwrite=True)            # Write the data
 
 
 class CalculateCovariance(scriptbase.ScriptBase):
@@ -46,7 +46,8 @@ class CalculateCovariance(scriptbase.ScriptBase):
     @classmethod
     def get_parser(cls, width=None):
 
-        parser = super().get_parser(description='Calculate datacube covariance', width=width)
+        parser = super().get_parser(description='Calculate covariance in a MaNGA datacube',
+                                    width=width)
 
         parser.add_argument('plate', type=int, help='plate ID to process')
         parser.add_argument('ifudesign', type=int, help='IFU design to process')

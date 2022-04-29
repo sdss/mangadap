@@ -1,7 +1,3 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
@@ -11,9 +7,6 @@ from mangadap.par.bandheadindexdb import BandheadIndexDB
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.spectralindices import SpectralIndices, SpectralIndicesBitMask
 
-import warnings
-warnings.simplefilter('ignore', UserWarning)
-warnings.simplefilter('ignore', RuntimeWarning)
 
 def test_model_indices():
 

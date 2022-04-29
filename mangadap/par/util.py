@@ -52,14 +52,14 @@ def recursive_dict_evaluate(d):
         values replaced with the result of ``eval(d[k])`` for all ``k``
         in ``d.keys()``.
     """
-    ignore = _eval_ignore()
+    #ignore = _eval_ignore()
     for k in d.keys():
         if isinstance(d[k], dict):
            d[k] = recursive_dict_evaluate(d[k])
         elif isinstance(d[k], list):
             replacement = []
             for v in d[k]:
-                if v in ignore:
+                if v in _eval_ignore():
                     replacement += [ v ]
                 else:
                     try:
@@ -69,10 +69,37 @@ def recursive_dict_evaluate(d):
             d[k] = replacement
         else:
             try:
-                d[k] = eval(d[k]) if d[k] not in ignore else d[k]
+                d[k] = eval(d[k]) if d[k] not in _eval_ignore() else d[k]
             except:
                 pass
 
+    return d
+
+
+def recursive_dict_str_to_None(d):
+    """
+    Recursively run any string values of 'None' in a dictionary to be explicitly
+    None.
+
+    Args:
+        d (:obj:`dict`):
+            Dictionary of values to evaluate
+
+    Returns:
+        :obj:`dict`: Identical to input dictionary, but with all string values
+        of 'None' set to None explicitly.  **The input dictionary is altered
+        directly.**
+    """
+    for k in d.keys():
+        if isinstance(d[k], dict):
+           d[k] = recursive_dict_evaluate(d[k])
+        elif isinstance(d[k], list):
+            replacement = []
+            for v in d[k]:
+                replacement += [v if v != 'None' else None]
+            d[k] = replacement
+        elif d[k] == 'None':
+            d[k] = None
     return d
 
 
