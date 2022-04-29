@@ -1,5 +1,5 @@
 
-4.0.3 (11 Apr 2022)
+4.0.3 (29 Apr 2022)
 -------------------
 
  - Minor change to `manga_dap_inspector` to change initial spectral plotting
