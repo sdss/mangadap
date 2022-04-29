@@ -6,40 +6,16 @@ Emission-line Modeling
 
 *Analysis class*: :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`
 
-*Method definition*: :class:`~mangadap.proc.emissionlinemodel.EmissionLineModelDef`
+*Reference root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.method_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[METHOD]/[PLATE]/[IFUDESIGN]/ref`` for MaNGA
 
-*Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/ref``
+*Reference file*: see :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel.default_paths`;
+``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING]-[CONTINUUM]-[ELFIT].fits.gz`` for MaNGA
 
-*Reference file*: ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY]-[ELFIT_KEY].fits.gz``
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
+defined by :class:`~mangadap.proc.emissionlinemodel.EmissionLineModelDef`
 
-*Config files*: ``$MANGADAP_DIR/mangadap/config/emission_line_modeling``
-
-*Example config*: ``efitmpl9.ini``
-
-.. code-block:: ini
-
-    [default]
-    key                  = EFITMPL9
-    fit_method           = sasuke
-    minimum_snr          = 0.0
-    deconstruct_bins     = ignore
-    mom_vel_name         = Ha-6564
-    mom_disp_name
-    waverange
-    artifact_mask        = BADSKY
-    emission_lines       = ELPMPL9
-    etpl_line_sigma_mode = offset
-    etpl_line_sigma_min  = 10
-    baseline_order
-    window_buffer
-    reject_boxcar        = 101
-    continuum_templates  = MASTARHC
-    velscale_ratio       = 1
-    bias
-    moments
-    degree
-    mdegree              = 14
-    internal_reddening
+.. include:: ../tables/emissionlinemodeldef.rst
 
 *Important class dependencies*:
 

@@ -6,10 +6,10 @@
 MAPS Corrections
 ================
 
-The :ref:`datamodel-maps` provide values that *must be corrected by
-the user* using provided corrections. It's recommended that you take
-advantage of the convenience methods in `Marvin`_ to apply these
-corrections.
+The :ref:`datamodel-maps` provide values that *must be corrected by the user*
+using provided corrections. For MaNGA, it is recommended that you take advantage
+of the convenience methods in `Marvin`_ to apply these corrections.  Regardless,
+the required corrections and how to apply them are described below.
 
 ----
 

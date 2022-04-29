@@ -1,0 +1,50 @@
+
+[default]
+ key = 'ALL-MILESHC-MASTARHC2'
+
+[default.binning]
+ key                    = 'ALL'
+ spatial_method         = 'global'
+
+[default.binning.spectral]
+ covar_mode         = 'channels'
+ covar_par          = 11
+
+[default.continuum]
+ key                    = 'MILESHC'
+ minimum_snr            = 1.0
+ fit_method             = 'ppxf'
+
+[default.continuum.fit]
+ artifact_mask          = 'BADSKY'
+ emission_line_mask     = 'ELPSCMSK'
+ velscale_ratio         = 4
+
+[default.continuum.fit.templates]
+ key              = 'MILESHC'
+
+[default.eline_moments]
+ key                = 'EMOM'
+ artifact_mask      = 'BADSKY'
+
+[default.eline_fits]
+ key                  = 'EFITSSP'
+ fit_method           = 'sasuke'
+
+[default.eline_fits.fit]
+ emission_lines       = 'ELPMPL11'
+ etpl_line_sigma_mode = 'offset'
+ etpl_line_sigma_min  = 10
+ artifact_mask        = 'BADSKY'
+ deconstruct_bins     = 'ignore'
+ reject_boxcar        = 101
+ velscale_ratio       = 1
+ mdegree              = 14
+
+[default.eline_fits.fit.templates]
+ key              = 'MASTARHC2'
+
+[default.indices]
+ key                      = 'INDXEN'
+ artifact_mask            = 'BADSKY'
+

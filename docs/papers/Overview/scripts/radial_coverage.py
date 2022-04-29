@@ -8,6 +8,7 @@ from matplotlib import pyplot, ticker, rc
 
 from astropy.io import fits
 
+from mangdap.config import defaults
 from mangadap.proc.util import growth_lim
 from mangadap.util.bitmask import BitMask
 
@@ -31,8 +32,7 @@ def radial_coverage_histogram(dapall, plot_file=None):
     rore_rng = growth_lim(rore, 0.99, fac=1.1)
 
     # Determine the sample
-#    sdssMaskbits = os.path.join(os.environ['IDLUTILS_DIR'], 'data', 'sdss', 'sdssMaskbits.par')
-    sdssMaskbits = os.path.join(os.environ['MANGADAP_DIR'], 'data', 'sdss', 'sdssMaskbits.par')
+    sdssMaskbits = sdss_maskbits_file()
     targ1bm = BitMask.from_par_file(sdssMaskbits, 'MANGA_TARGET1')
 
     ancillary = dapall['MNGTARG3'] > 0

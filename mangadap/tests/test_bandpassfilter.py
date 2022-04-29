@@ -1,15 +1,10 @@
-import pytest
-
 import numpy
 from scipy import stats
 
 from mangadap.proc import bandpassfilter
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 #-----------------------------------------------------------------------------
+
 
 def test_passband_integral():
     x = numpy.arange(3)

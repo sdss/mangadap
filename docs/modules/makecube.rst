@@ -6,9 +6,11 @@ DAP LOGCUBE File Construction
 
 *Analysis class*: :class:`~mangadap.dapfits.construct_cube_file`
 
-*File Root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]``
+*File Root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.method_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[METHOD]/[PLATE]/[IFUDESIGN]`` for MaNGA
 
-*File Template*: ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
+*File Template*: see :class:`~mangadap.dapfits.construct_maps_file.default_paths`;
+``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[METHOD].fits.gz`` for MaNGA
 
 *Important class dependencies*:
 

@@ -7,7 +7,9 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   mangadap.config.analysisplan
    mangadap.config.defaults
+   mangadap.config.manga
 
 Module contents
 ---------------

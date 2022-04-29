@@ -1,9 +1,4 @@
-import pytest
-
 import os
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 from IPython import embed
 
@@ -11,8 +6,7 @@ import numpy
 
 from astropy.io import fits
 
-from matplotlib import pyplot
-
+from mangadap.config.manga import MaNGAConfig
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.covariance import Covariance
 from mangadap.util.constants import DAPConstants
@@ -159,8 +153,8 @@ def test_io():
 
 @requires_remote
 def test_read_drp():
-    drpfile = os.path.join(remote_data_file(), MaNGADataCube.build_file_name(7815, 3702))
-    
+    cfg = MaNGAConfig(7815, 3702)
+    drpfile = remote_data_file(cfg.file_name)
     assert os.path.isfile(drpfile), 'Did not find file'
 
     with fits.open(drpfile) as hdu:
@@ -181,7 +175,7 @@ def test_rectification_recovery():
                                        covar_ext='GCORREL')
     cube.load_rss()
 
-    hdu = fits.open(cube.file_path())
+    hdu = fits.open(str(cube.file_path))
     channel = hdu['GCORREL'].header['BBINDEX']
 
     gcorrel = numpy.zeros(eval(hdu['GCORREL'].header['COVSHAPE']), dtype=float)
@@ -214,6 +208,7 @@ def test_rectification_recovery():
     assert numpy.ma.median(cube.sres[...,channel].ravel() - sres) < 0.1, \
             'Bad spectral resolution rectification'
 
+#    from matplotlib import pyplot
 #    zoom = 12
 #    xs = int(C.shape[0]/2 - C.shape[0]/2/zoom)
 #    xe = xs + int(C.shape[0]/zoom) + 1

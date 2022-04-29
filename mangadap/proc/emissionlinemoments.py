@@ -1,5 +1,3 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-# -*- coding: utf-8 -*-
 """
 A class hierarchy that measures moments of the observed emission lines.
 
@@ -13,9 +11,8 @@ A class hierarchy that measures moments of the observed emission lines.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-
-import os
-import glob
+import inspect
+from pathlib import Path
 import logging
 
 import numpy
@@ -23,15 +20,12 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..config import defaults
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.datatable import DataTable
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
-from ..util.parser import DefaultConfig
 from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
@@ -41,13 +35,6 @@ from .bandpassfilter import passband_integral, passband_integrated_width
 from .bandpassfilter import passband_weighted_mean, passband_weighted_sdev, pseudocontinuum
 from .bandpassfilter import emission_line_equivalent_width
 from .spectralfitting import EmissionLineFit
-from .util import select_proc_method
-
-from matplotlib import pyplot
-#from memory_profiler import profile
-
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 
 class EmissionLineMomentsDef(KeywordParSet):
@@ -59,108 +46,74 @@ class EmissionLineMomentsDef(KeywordParSet):
 
     .. include:: ../tables/emissionlinemomentsdef.rst
     """
-    def __init__(self, key=None, minimum_snr=None, artifacts=None, passbands=None,
-                 redo_postmodeling=None, fit_vel_name=None):
-        in_fl = [ int, float ]
+    def __init__(self, key='EMOMMPL11', minimum_snr=0.0, pixelmask=None, passbands='ELBMPL9',
+                 redo_postmodeling=True, fit_vel_name='Ha-6564', overwrite=False):
 
-        pars =     [ 'key', 'minimum_snr', 'artifacts', 'passbands', 'redo_postmodeling',
-                     'fit_vel_name' ]
-        values =   [ key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name ]
-        dtypes =   [ str, in_fl, str, str, bool, str ]
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
 
+        # Remaining definitions done by hand
+        in_fl = [int, float]
+
+        values = [key, minimum_snr, pixelmask, passbands, redo_postmodeling, fit_vel_name,
+                  overwrite]
+        dtypes = [str, in_fl, SpectralPixelMask, str, bool, str, bool]
         descr = ['Keyword used to distinguish between different emission-line moment databases.',
-                 'Minimum S/N of spectrum to fit',
-                 'String identifying the artifact database to use',
-                 'String identifying the emission-line bandpass filter database to use',
+                 'Minimum S/N of spectrum to analyze',
+                 'Object used to mask spectral pixels',
+                 'Either a string identifying the emission-line bandpass filter database to ' \
+                    'use, or the direct path to the parameter file defining the database',
                  'Redo the moment measurements after the emission-line modeling has been ' \
                     'performed',
                  'The name of the emission line used to set the redshift of each spaxel used ' \
-                    'to set the observed wavelength of the bandpasses.']
+                    'to set the observed wavelength of the bandpasses.',
+                 'If the output file already exists, redo all the calculations and overwrite it.']
+        super().__init__(pars, values=values, defaults=defaults, dtypes=dtypes, descr=descr)
+        self.momdb = None
+        self._validate()
 
-        super(EmissionLineMomentsDef, self).__init__(pars, values=values, dtypes=dtypes,
-                                                     descr=descr)
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate from a dictionary.
+        """
+        # Copy over the primary keywords.
+        # TODO: Get these from inspection of the instatiation signature!
+        _d = {}
+        for key in ['key', 'minimum_snr', 'passbands', 'redo_postmodeling', 'fit_vel_name',
+                    'overwrite']:
+            if key in d.keys():
+                _d[key] = d[key]
 
+        artifacts = None if 'artifact_mask' not in d.keys() or d['artifact_mask'] is None \
+                        else ArtifactDB.from_key(d['artifact_mask'])
+        waverange = None if 'waverange' not in d.keys() or d['waverange'] is None \
+                        else d['waverange']
 
-def validate_emission_line_moments_config(cnfg):
-    """ 
-    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
-    emission-line moment measurement parameters.
+        if not all([a is None for a in [artifacts, waverange]]):
+            _d['pixelmask'] = SpectralPixelMask(artdb=artifacts, waverange=waverange)
 
-    Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
-            to contain defining parameters of the emission-line moments
-            as needed by :class:`EmissionLineMomentsDef`
+        # Return the instantiation
+        return super().from_dict(_d)
 
-    Raises:
-        KeyError: Raised if any required keywords do not exist.
-        ValueError: Raised if keys have unacceptable values.
-        FileNotFoundError: Raised if a file is specified but could not
-            be found.
-    """
-    # Check for required keywords
-    required_keywords = ['key', 'emission_passbands']
-    if not cnfg.all_required(required_keywords):
-        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
+    def _validate(self):
+        """
+        Validate the object and instantiate the passband database to use for the
+        emission-line moments.
+        """
+        if self['passbands'] is None:
+            raise ValueError('Must define a passband database.')
+        # Check if the provided string is a file
+        parfile = Path(self['passbands']).resolve()
+        if parfile.exists():
+            self.momdb = EmissionMomentsDB(str(parfile))
+            return
 
-
-def available_emission_line_moment_databases():
-    """
-    Return the list of available emission-line moment databases.
-
-    Available database combinations:
-
-    .. todo::
-        Fill in
-
-    Returns:
-        list: A list of :func:`EmissionLineMomentsDef` objects, each
-        defining an emission-line moment database to measure.
-
-    Raises:
-        IOError:
-            Raised if no emission-line moment configuration files
-            could be found.
-        KeyError:
-            Raised if the emission-line moment database keywords are
-            not all unique.
-
-    .. todo::
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-        
-    """
-    # Check the configuration files exist
-    search_dir = os.path.join(defaults.dap_config_root(), 'emission_line_moments')
-    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
-    if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
-
-    # Build the list of library definitions
-    moment_set_list = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = DefaultConfig(f)
-        # Ensure it has the necessary elements to define the template
-        # library
-        validate_emission_line_moments_config(cnfg)
-
-        moment_set_list += [ EmissionLineMomentsDef(key=cnfg['key'],
-                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
-                                            artifacts=cnfg.get('artifact_mask'),
-                                            passbands=cnfg['emission_passbands'],
-                                            redo_postmodeling=cnfg.getbool('redo_postmodeling',
-                                                                           default=False),
-                                            fit_vel_name=cnfg.get('fit_vel_name')) ]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \
-                != len(moment_set_list):
-        raise KeyError('Emission-line moment database keywords are not all unique!')
-
-    # Return the default list of assessment methods
-    return moment_set_list
+        # Otherwise, assume this is a keyword selecting a database distributed
+        # with the DAP has been chosen.
+        self.momdb = EmissionMomentsDB.from_key(self['passbands'])
 
 
 class EmissionLineMomentsBitMask(DAPBitMask):
@@ -270,24 +223,28 @@ class EmissionLineMoments:
 
     """
 #    @profile
-    def __init__(self, database_key, binned_spectra, stellar_continuum=None,
+    def __init__(self, database, binned_spectra, stellar_continuum=None,
                  emission_line_model=None, redshift=None, database_list=None, artifact_path=None,
-                 bandpass_path=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, hardcopy=True, clobber=False, checksum=False, loggers=None,
-                 quiet=False):
+                 bandpass_path=None, output_path=None, output_file=None, hardcopy=True,
+                 overwrite=None, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the database properties
-        self.database = None
-        self.pixelmask = None
-        self.artdb = None
-        self.momdb = None
-        self._define_databases(database_key, database_list=database_list,
-                               artifact_path=artifact_path, bandpass_path=bandpass_path)
+#        self.database = None
+#        self.pixelmask = None
+#        self.artdb = None
+#        self.momdb = None
 
-        self.nmom = self.momdb.size
+        self.database = database
+        if not isinstance(self.database, EmissionLineMomentsDef):
+            raise TypeError('Method must have type EmissionLineMomentsDef.')
+
+#        self._define_databases(database_key, database_list=database_list,
+#                               artifact_path=artifact_path, bandpass_path=bandpass_path)
+
+        self.nmom = self.database.momdb.size
 
         self.binned_spectra = None
         self.stellar_continuum = None
@@ -295,7 +252,7 @@ class EmissionLineMoments:
         self.redshift = None
 
         # Define the output directory and file
-        self.directory_path = None      # Set in _set_paths
+        self.directory_path = None      # Set in default_paths
         self.output_file = None
         self.hardcopy = None
 
@@ -315,83 +272,60 @@ class EmissionLineMoments:
 
         # Run the assessments of the DRP file
         self.measure(binned_spectra, stellar_continuum=stellar_continuum,
-                     emission_line_model=emission_line_model, redshift=redshift, dapver=dapver,
-                     analysis_path=analysis_path, directory_path=directory_path,
-                     output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
-                     quiet=quiet)
-
+                     emission_line_model=emission_line_model, redshift=redshift, 
+                     output_path=output_path, output_file=output_file, hardcopy=hardcopy,
+                     overwrite=overwrite, loggers=loggers, quiet=quiet)
 
     def __getitem__(self, key):
         return self.hdu[key]
 
-
-    def _define_databases(self, database_key, database_list=None, artifact_path=None,
-                          bandpass_path=None):
-        r"""
-        Select the database of bandpass filters.
+    @staticmethod
+    def default_paths(cube, method_key, rdxqa_method, binning_method, stelcont_method=None,
+                      elmodel_method=None, output_path=None, output_file=None):
         """
-        # Grab the specific database
-        self.database = select_proc_method(database_key, EmissionLineMomentsDef,
-                                           method_list=database_list,
-                                           available_func=available_emission_line_moment_databases)
-
-        # Instantiate the artifact and bandpass filter database
-        self.artdb = None if self.database['artifacts'] is None else \
-                    ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
-        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
-
-        self.momdb = None if self.database['passbands'] is None else \
-                EmissionMomentsDB.from_key(self.database['passbands'],
-                                           directory_path=bandpass_path)
-
-
-    def _set_paths(self, directory_path, dapver, analysis_path, output_file):
-        """
-        Set the :attr:`directory_path` and :attr:`output_file`.  If not
-        provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.dap_method_path` and
-        :func:`mangadap.config.defaults.dap_file_name`.
-
-        ..warning::
-
-            File name is different if an emission-line model is
-            provided!
+        Set the default directory and file name for the output file.
 
         Args:
-            directory_path (str): The exact path to the DAP
-                emission-line moments file.  See :attr:`directory_path`.
-            dapver (str): DAP version.
-            analysis_path (str): The path to the top-level directory
-                containing the DAP output files for a given DRP and DAP
-                version.
-            output_file (str): The name of the file with emission-line
-                moment measurements.  See :func:`measure`.
-        """
-        # Set the output directory path
-        continuum_templates = 'None' if self.stellar_continuum is None \
-                            else self.stellar_continuum.method['fitpar']['template_library_key']
-        eml_templates = 'None' if self.emission_line_model is None \
-                            else self.emission_line_model.method['continuum_tpl_key']
-        method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
-                                     eml_templates)
-        self.directory_path \
-                = defaults.dap_method_path(method, plate=self.binned_spectra.cube.plate,
-                                           ifudesign=self.binned_spectra.cube.ifudesign, ref=True,
-                                           drpver=self.binned_spectra.cube.drpver, dapver=dapver,
-                                           analysis_path=analysis_path) \
-                                if directory_path is None else str(directory_path)
+            cube (:class:`mangadap.datacube.datacube.DataCube`):
+                Datacube to analyze.
+            method_key (:obj:`str`):
+                Keyword designating the method used for the reduction
+                assessments.
+            rdxqa_method (:obj:`str`):
+                The method key for the basic assessments of the datacube.
+            binning_method (:obj:`str`):
+                The method key for the spatial binning.
+            stelcont_method (:obj:`str`, optional):
+                The method key for the stellar-continuum fitting method.  If
+                None, not included in output file name.
+            elmodel_method (:obj:`str`, optional):
+                The method key for the emission-line modeling method.  If None,
+                not included in the output file name.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
+            output_file (:obj:`str`, optional):
+                The name of the output "reference" file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                method keys.  The order of the keys is the order of operations
+                (rdxqa, binning, stellar continuum, emission-line model).
 
-        # Set the output file
-        ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
-                                      self.binned_spectra.method['key'])
-        if self.stellar_continuum is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
-        if self.emission_line_model is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
-        ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
-        self.output_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
-                                                  self.binned_spectra.cube.ifudesign, ref_method) \
-                                        if output_file is None else str(output_file)
+        Returns:
+            :obj:`tuple`: Returns a `Path`_ with the output directory and a
+            :obj:`str` with the output file name.
+        """
+        directory_path = Path('.').resolve() if output_path is None \
+                                else Path(output_path).resolve()
+        method = f'{rdxqa_method}-{binning_method}'
+        if stelcont_method is not None:
+            method = f'{method}-{stelcont_method}'
+        if elmodel_method is not None:
+            method = f'{method}-{elmodel_method}'
+        method = f'{method}-{method_key}'
+        _output_file = f'{cube.output_root}-{method}.fits.gz' if output_file is None \
+                            else output_file
+        return directory_path, _output_file
 
 
     def _initialize_primary_header(self, hdr=None, measurements_binid=None):
@@ -422,7 +356,7 @@ class EmissionLineMoments:
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['ELMKEY'] = (self.database['key'], 'Emission-line moments database keyword')
         hdr['ELMMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
-        hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
+#        hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
         hdr['MOMDB'] = (self.database['passbands'], 'Emission-line moments database keyword')
         if self.stellar_continuum is not None:
             hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
@@ -432,40 +366,6 @@ class EmissionLineMoments:
         hdr['NBINS'] = (self.nbins, 'Number of unique spectra for measurements')
         hdr['ELMREBIN'] = (measurements_binid is not None, 'Bin IDs disconnected from SC binning')
         return hdr
-
-
-#    def _moments_database_dtype(self, name_len):
-#        r"""
-#        Construct the record array data type for the output fits
-#        extension.
-#        """
-#        return [ ('ID',numpy.int),
-#                 ('NAME','<U{0:d}'.format(name_len)),
-#                 ('RESTWAVE', numpy.float),
-#                 ('PASSBAND', numpy.float, (2,)),
-#                 ('BLUEBAND', numpy.float, (2,)),
-#                 ('REDBAND', numpy.float, (2,))
-#               ]
-#
-#    def _compile_database(self):
-#        """
-#        Compile the database with the specifications of each index.
-#        """
-#        name_len = 0
-#        for n in self.momdb['name']:
-#            if name_len < len(n):
-#                name_len = len(n)
-#
-#        # Instatiate the table data that will be saved defining the set
-#        # of emission-line moments measured
-#        passband_database = init_record_array(self.nmom, self._moments_database_dtype(name_len))
-#
-#        hk = [ 'ID', 'NAME', 'RESTWAVE', 'PASSBAND', 'BLUEBAND', 'REDBAND' ]
-#        mk = [ 'index', 'name', 'restwave', 'primary', 'blueside', 'redside' ]
-#        for _hk, _mk in zip(hk,mk):
-#            passband_database[_hk] = self.momdb[_mk]
-#
-#        return passband_database
 
     def _assign_image_arrays(self):
         """
@@ -557,100 +457,10 @@ class EmissionLineMoments:
         self.redshift = numpy.full(nspec, redshift, dtype=float) \
                                 if len(_redshift) == 1 else _redshift.copy()
 
-
     def _flag_good_spectra(self, measure_on_unbinned_spaxels):
         if measure_on_unbinned_spaxels:
             return self.binned_spectra.check_fgoodpix()
-#            fgoodpix = self.binned_spectra.check_fgoodpix()
-#            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
-#                                > self.database['minimum_snr']
-#            return fgoodpix & good_snr
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-
-
-#    @staticmethod
-#    def output_dtype(nmom, bitmask=None):
-#        r"""
-#        Construct the record array data type for the output fits
-#        extension.
-#
-#        Returned columns are:
-#
-#        +-------------+--------------------------------------------+
-#        |      Column | Description                                |
-#        +=============+============================================+
-#        |       BINID | Bin ID of the fitted spectrum              |
-#        +-------------+--------------------------------------------+
-#        | BINID_INDEX | Index of the bin ID of the fitted spectrum |
-#        +-------------+--------------------------------------------+
-#        |    REDSHIFT | Redshift used for setting the passbands    |
-#        +-------------+--------------------------------------------+
-#        |        MASK | Bit mask value for the measurements        |
-#        +-------------+--------------------------------------------+
-#        |        BCEN | Blueband center for moments                |
-#        +-------------+--------------------------------------------+
-#        |       BCONT | Blueband pseudocontinuum for moments       |
-#        +-------------+--------------------------------------------+
-#        |    BCONTERR | Error in the above                         |
-#        +-------------+--------------------------------------------+
-#        |        RCEN | Redband center for moments                 |
-#        +-------------+--------------------------------------------+
-#        |       RCONT | Redband pseudocontinuum for moments        |
-#        +-------------+--------------------------------------------+
-#        |    RCONTERR | Error in the above                         |
-#        +-------------+--------------------------------------------+
-#        |    CNTSLOPE | Continuum slope used for the moments       |
-#        +-------------+--------------------------------------------+
-#        |        FLUX | Zeroth moment                              |
-#        +-------------+--------------------------------------------+
-#        |     FLUXERR | Zeroth moment error                        |
-#        +-------------+--------------------------------------------+
-#        |        MOM1 | First velocity moment                      |
-#        +-------------+--------------------------------------------+
-#        |     MOM1ERR | First velocity moment error                |
-#        +-------------+--------------------------------------------+
-#        |        MOM2 | Second velocity moment                     |
-#        +-------------+--------------------------------------------+
-#        |     MOM2ERR | Second velocity moment error               |
-#        +-------------+--------------------------------------------+
-#        |       SINST | Instrumental dispersion at mom1            |
-#        +-------------+--------------------------------------------+
-#        |        BMED | Median flux in the blue band used for EW   |
-#        +-------------+--------------------------------------------+
-#        |        RMED | Median flux in the red band used for EW    |
-#        +-------------+--------------------------------------------+
-#        |      EWCONT | Continuum value used for EW                |
-#        +-------------+--------------------------------------------+
-#        |          EW | Equivalenth width (FLUX/pseudo continuum)  |
-#        +-------------+--------------------------------------------+
-#        |       EWERR | Error in the above                         |
-#        +-------------+--------------------------------------------+
-#        """
-#        return [ ('BINID',numpy.int),
-#                 ('BINID_INDEX',numpy.int),
-#                 ('REDSHIFT', numpy.float),
-#                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nmom,)),
-#                 ('BCEN', numpy.float, (nmom,)), 
-#                 ('BCONT', numpy.float, (nmom,)), 
-#                 ('BCONTERR', numpy.float, (nmom,)),
-#                 ('RCEN', numpy.float, (nmom,)), 
-#                 ('RCONT', numpy.float, (nmom,)), 
-#                 ('RCONTERR', numpy.float, (nmom,)), 
-#                 ('CNTSLOPE', numpy.float, (nmom,)),
-#                 ('FLUX', numpy.float, (nmom,)), 
-#                 ('FLUXERR', numpy.float, (nmom,)),
-#                 ('MOM1', numpy.float, (nmom,)), 
-#                 ('MOM1ERR', numpy.float, (nmom,)),
-#                 ('MOM2', numpy.float, (nmom,)), 
-#                 ('MOM2ERR', numpy.float, (nmom,)),
-#                 ('SINST', numpy.float, (nmom,)),
-#                 ('BMED', numpy.float, (nmom,)), 
-#                 ('RMED', numpy.float, (nmom,)), 
-#                 ('EWCONT', numpy.float, (nmom,)), 
-#                 ('EW', numpy.float, (nmom,)), 
-#                 ('EWERR', numpy.float, (nmom,))
-#               ]
-
 
     @staticmethod
     def sideband_pseudocontinua(wave, spec, sidebands, spec_n=None, err=None, log=True):
@@ -706,7 +516,6 @@ class EmissionLineMoments:
             if err is not None:
                 continuum_error[indx] = _continuum_error
         return band_center, continuum, continuum_error, band_incomplete, band_empty
-
 
     @staticmethod
     def single_band_moments(wave, spec, passband, restwave, err=None):
@@ -794,7 +603,6 @@ class EmissionLineMoments:
 
         return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, \
                     undefined_mom1, undefined_mom2
-
 
     @staticmethod
     def continuum_subtracted_moments(wave, spec, mainbands, restwave, bcen, bcont, rcen, rcont,
@@ -899,8 +707,6 @@ class EmissionLineMoments:
         # Initialize the output data
         nspec = _flux.shape[0]
         nmom = momdb.size
-#        measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
-#                                                                                 bitmask=bitmask))
         measurements = EmissionLineMomentsDataTable(neml=nmom, bitmask=bitmask, shape=nspec)
 
         # Save the redshift used
@@ -1065,36 +871,22 @@ class EmissionLineMoments:
                         else bitmask.turn_on(measurements['MASK'][i,undefined_mom2],
                                              'UNDEFINED_MOM2')
 
-#        if len(spec.shape) > 1:
-#            pyplot.step(wave, spec[0], where='mid', color='k', lw=0.5, zorder=1)
-#            pyplot.step(wave, spec[1], where='mid', color='g', lw=0.5, zorder=2)
-#        else:
-#            pyplot.step(wave, spec, where='mid', color='k', lw=0.5, zorder=1)
-#        pyplot.scatter(measurements['BCEN'], measurements['BCONT'], marker='.', s=50,
-#                       color='b', lw=0, zorder=3)
-#        pyplot.scatter(measurements['RCEN'], measurements['RCONT'], marker='.', s=50,
-#                       color='r', lw=0, zorder=3)
-#        pyplot.show()
-
         print('Measuring emission-line moments in spectrum: {0}/{0}'.format(nspec))
         return measurements
         
-
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
-
 
     def file_path(self):
         """Return the full path to the output file."""
         if self.directory_path is None or self.output_file is None:
             return None
-        return os.path.join(self.directory_path, self.output_file)
-
+        return self.directory_path / self.output_file
 
     def measure(self, binned_spectra, stellar_continuum=None, emission_line_model=None,
-                redshift=None, dapver=None, analysis_path=None, directory_path=None,
-                output_file=None, hardcopy=True, clobber=False, loggers=None, quiet=False):
+                redshift=None, output_path=None, output_file=None, hardcopy=True, overwrite=None,
+                loggers=None, quiet=False):
         """
         Measure the emission-line moments using the binned spectra.
 
@@ -1139,6 +931,17 @@ class EmissionLineMoments:
 
             - The behavior is exactly as if the stellar-continuum model
               was not provided.
+
+        Args:
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
+            output_file (:obj:`str`, optional):
+                The name of the output "reference" file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                method keys.  The order of the keys is the order of operations
+                (rdxqa, binning, stellar continuum, emission-line model).
 
         """
         # Initialize the reporting
@@ -1186,7 +989,7 @@ class EmissionLineMoments:
         #  - The EmissionLineModel fits the binned spectra or unbinned
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
+                and self.emission_line_model.method['fitpar']['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.cube.nspec if measure_on_unbinned_spaxels \
@@ -1207,7 +1010,7 @@ class EmissionLineMoments:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('EMISSION-LINE MOMENTS'))
+            log_output(loggers, 1, logging.INFO, f'{"EMISSION-LINE MOMENTS":^50}')
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Measurements for {0}'.format(
@@ -1220,12 +1023,12 @@ class EmissionLineMoments:
             else:
                 log_output(self.loggers, 1, logging.INFO,
                            'Using stellar continuum from stellar-continuum model fit.')
-            log_output(self.loggers, 1, logging.INFO, 'Number of spectra: {0}'.format(self.nspec))
+            log_output(self.loggers, 1, logging.INFO, f'Number of spectra: {self.nspec}')
             if not measure_on_unbinned_spaxels and len(self.binned_spectra.missing_bins) > 0:
-                log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
-                                                            len(self.binned_spectra.missing_bins)))
-            log_output(self.loggers, 1, logging.INFO, 'With good S/N and to measure: {0}'.format(
-                                                            numpy.sum(good_snr)))
+                log_output(self.loggers, 1, logging.INFO,
+                           f'Missing bins: {len(self.binned_spectra.missing_bins)}')
+            log_output(self.loggers, 1, logging.INFO,
+                       f'With good S/N and to measure: {numpy.sum(good_snr)}')
 
         # Make sure there are good spectra
         if numpy.sum(good_snr) == 0:
@@ -1233,7 +1036,17 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # (Re)Set the output paths
-        self._set_paths(directory_path, dapver, analysis_path, output_file)
+        self.directory_path, self.output_file = \
+                EmissionLineMoments.default_paths(self.binned_spectra.cube, self.database['key'],
+                        self.binned_spectra.rdxqa.method['key'], self.binned_spectra.method['key'],
+                        stelcont_method=None if self.stellar_continuum is None 
+                                        else self.stellar_continuum.method['key'],
+                        elmodel_method=None if self.emission_line_model is None 
+                                       else self.emission_line_model.method['key'],
+                        output_path=output_path, output_file=output_file)
+#        self._set_paths(directory_path, dapver, analysis_path, output_file)
+
+        _overwrite = self.database['overwrite'] if overwrite is None else overwrite
 
         #---------------------------------------------------------------
         # Check that the file path is defined
@@ -1243,13 +1056,13 @@ class EmissionLineMoments:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers,1,logging.INFO, 'Output path: {0}'.format(self.directory_path))
-            log_output(self.loggers,1,logging.INFO, 'Output file: {0}'.format(self.output_file))
+            log_output(self.loggers,1,logging.INFO, f'Output path: {self.directory_path}')
+            log_output(self.loggers,1,logging.INFO, f'Output file: {self.output_file}')
         
         #---------------------------------------------------------------
-        # If the file already exists, and not clobbering, just read the
+        # If the file already exists, and not overwriting, just read the
         # file
-        if os.path.isfile(ofile) and not clobber:
+        if ofile.exists() and not _overwrite:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
@@ -1260,9 +1073,11 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
-        wave, flux, ivar, sres = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                    pixelmask=self.pixelmask, select=good_snr,
-                                                    original_spaxels=measure_on_unbinned_spaxels)
+        wave, flux, ivar, sres \
+                = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
+                                                     pixelmask=self.database['pixelmask'],
+                                                     select=good_snr,
+                                                     original_spaxels=measure_on_unbinned_spaxels)
 
         # Get the continuum if there is any
         if eml_stellar_continuum_available:
@@ -1281,23 +1096,25 @@ class EmissionLineMoments:
         #---------------------------------------------------------------
         # Perform the moment measurements
         _redshift = self.redshift[good_snr]
-        measurements = self.measure_moments(self.momdb, wave, flux, ivar=ivar, sres=sres,
+        measurements = self.measure_moments(self.database.momdb, wave, flux, ivar=ivar, sres=sres,
                                             continuum=continuum, redshift=_redshift,
                                             bitmask=self.bitmask)
 
         #---------------------------------------------------------------
         # Perform the equivalent width measurements
-        include_band = numpy.array([numpy.invert(self.momdb.dummy)]*self.nbins) \
+        include_band = numpy.array([numpy.invert(self.database.momdb.dummy)]*self.nbins) \
                         & numpy.invert(self.bitmask.flagged(measurements['MASK'],
                                                             flag=['BLUE_EMPTY', 'RED_EMPTY']))
 
         # Set the line center at the center of the primary passband
-        line_center = (1.0+_redshift)[:,None]*self.momdb['restwave'][None,:]
+        line_center = (1.0+_redshift)[:,None]*self.database.momdb['restwave'][None,:]
         measurements['BMED'], measurements['RMED'], pos, measurements['EWCONT'], \
                 measurements['EW'], measurements['EWERR'] \
-                        = emission_line_equivalent_width(wave, flux, self.momdb['blueside'],
-                                                         self.momdb['redside'], line_center,
-                                                         measurements['FLUX'], redshift=_redshift,
+                        = emission_line_equivalent_width(wave, flux,
+                                                         self.database.momdb['blueside'],
+                                                         self.database.momdb['redside'],
+                                                         line_center, measurements['FLUX'],
+                                                         redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
                                                          include_band=include_band)
 
@@ -1361,50 +1178,28 @@ class EmissionLineMoments:
             # Get the bin ids with fitted models
             bin_indx = measurements_binid
 
-#        # Add any spaxel not used because it was flagged by the binning
-#        # step
-#        indx = self.binned_spectra['MAPMASK'].data > 0
-#        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
-#        # Isolate any spaxels with foreground stars
-#        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
-#        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
-#        # Get the bins that were below the S/N limit
-#        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
-#                                                        self.binned_spectra['BINID'].data.ravel(),
-#                                                        good_snr, dtype='bool')) & (map_mask == 0)
-#        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
-#
-#        # Get the bin ids with measurements
-#        bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
-#                                               measurements['BINID'])
-
-#        # Compile the saved information on the suite of measured indices
-#        passband_database = self._compile_database()
-
         # Save the data to the hdu attribute
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
-                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  self.momdb.to_datatable().to_hdu(name='ELMBAND'),
-                                  measurements.to_hdu(name='ELMMNTS')])
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
+                                 fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
+                                 fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                 self.database.momdb.to_datatable().to_hdu(name='ELMBAND'),
+                                 measurements.to_hdu(name='ELMMNTS')])
 
         #---------------------------------------------------------------
         # Write the data, if requested
         if self.hardcopy:
-            if not os.path.isdir(self.directory_path):
-                os.makedirs(self.directory_path)
-            self.write(clobber=clobber)
+            if not self.directory_path.exists():
+                self.diretory_path.mkdir(parents=True)
+            self.write(overwrite=_overwrite)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-
-    def write(self, clobber=False):
+    def write(self, overwrite=False):
         """
         Write the hdu object to the file.
         """
-        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+        DAPFitsUtil.write(self.hdu, str(self.file_path()), overwrite=overwrite, checksum=True,
                           loggers=self.loggers, quiet=self.quiet)
-
 
     def read(self, ifile=None, strict=True, checksum=False):
         """
@@ -1412,16 +1207,14 @@ class EmissionLineMoments:
         Read an existing file with a previously binned set of spectra.
 
         """
-        if ifile is None:
-            ifile = self.file_path()
-        if not os.path.isfile(ifile):
+        _ifile = self.file_path() if ifile is None else Path(ifile).resolve()
+        if not _ifile.exists():
             raise FileNotFoundError('File does not exist!: {0}'.format(ifile))
 
         if self.hdu is not None:
             self.hdu.close()
 
-#        self.hdu = fits.open(ifile, checksum=checksum)
-        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(str(_ifile), checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
@@ -1434,15 +1227,10 @@ class EmissionLineMoments:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-#        if not self.quiet:
-#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
-
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         unique_bins = numpy.unique(self.hdu['BINID'].data.ravel()) \
                             if self.hdu['PRIMARY'].header['ELMREBIN'] else None
         self.missing_bins = self._get_missing_bins(unique_bins=unique_bins)
-
 
     # TODO: Use the EmissionMomentsDB.channel_names function!
     def channel_names(self):

@@ -1,13 +1,9 @@
-
-import os
-
 from IPython import embed
 
 import numpy
 
-from matplotlib import pyplot
-
 from mangadap.contrib import xjmc
+
 
 def test_component_select():
     comp = numpy.array([ 0,  1,  2,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 14,

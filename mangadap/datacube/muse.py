@@ -30,7 +30,6 @@ from pydl.goddard.astro import airtovac
 from ..util import sampling
 
 from ..config import defaults
-from ..util.drpfits import DRPFits, DRPFitsBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance

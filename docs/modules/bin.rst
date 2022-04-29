@@ -8,29 +8,16 @@ Spatial Binning
 
 *Analysis class*: :class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
 
-*Method definition*: :class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`
+*Reference root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.common_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]`` for MaNGA
 
-*Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common``
+*Reference file*: see :class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.default_paths`;
+``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING].fits.gz`` for MaNGA
 
-*Reference file*: ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY].fits.gz``
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
+defined by :class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`
 
-*Config files*: ``$MANGADAP_DIR/mangadap/config/spatial_binning``
-
-*Example config*: ``vor10.ini``
-
-.. code-block:: ini
-
-    [default]
-    key                    = VOR10
-    galactic_reddening     = ODonnell
-    galactic_rv            = 3.1
-    method                 = voronoi
-    minimum_snr            = 1.0
-    operation              = mean
-    velocity_register      = False
-    stack_covariance_mode  = channels
-    stack_covariance_par   = 11
-    target_snr             = 10
+.. include:: ../tables/spatiallybinnedspectradef.rst
 
 *Important class dependencies*:
 

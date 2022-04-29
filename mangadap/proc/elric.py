@@ -205,10 +205,10 @@ class LineProfileFit:
         _par = None if par is None else par.ravel()
         if _par is not None and len(_par) != self.npar:
             raise ValueError('Incorrect number of parameters provided')
-        self.par = numpy.zeros(self.npar, dtype=numpy.float) \
-                            if _par is None else _par.astype(numpy.float)
-        self.fixed = numpy.zeros(self.npar, dtype=numpy.bool) \
-                            if fixed is None else fixed.astype(numpy.bool)
+        self.par = numpy.zeros(self.npar, dtype=float) \
+                            if _par is None else _par.astype(float)
+        self.fixed = numpy.zeros(self.npar, dtype=bool) \
+                            if fixed is None else fixed.astype(bool)
         if not isinstance(bounds, tuple):
             raise ValueError('Bounds must have type tuple.')
         if len(bounds) != 2:
@@ -495,7 +495,7 @@ class ElricFittingWindow:
         """
 
         # Check that input is for a single line
-        if not isinstance(db_indx, int) or not isinstance(line_index, (int, numpy.int64)):
+        if not isinstance(db_indx, int) or not isinstance(line_index, (int, numpy.integer)):
             raise TypeError('Appended index must be a single integer.')
         if not isinstance(restwave, float):
             raise TypeError('Appended restwavelength must be a single float.')
@@ -608,23 +608,23 @@ class Elric(EmissionLineFit):
         extension.
         """
 
-        return [ ('BINID',numpy.int),
-                 ('BINID_INDEX',numpy.int),
+        return [ ('BINID',int),
+                 ('BINID_INDEX',int),
                  ('MASK', mask_dtype, (nwin,)),
-                 ('NPIXFIT',numpy.int,(nwin,)),
-                 ('PAR',numpy.float,(nwin,max_npar)),
-                 ('ERR',numpy.float,(nwin,max_npar)),
-                 ('LOBND',numpy.float,(nwin,max_npar)),
-                 ('UPBND',numpy.float,(nwin,max_npar)),
-                 ('FIXED',numpy.bool,(nwin,max_npar)),
-#                 ('TIED',numpy.int,(nwin,max_npar)),
-                 ('IGNORE',numpy.bool,(nwin,max_npar)),
-                 ('CHI2',numpy.float,(nwin,)),
-                 ('RCHI2',numpy.float,(nwin,)),
-                 ('RMS',numpy.float,(nwin,)),
-                 ('RESID',numpy.float,(nwin,7)),
-                 ('FRAC_RMS',numpy.float,(nwin,)),
-                 ('FRAC_RESID',numpy.float,(nwin,7))
+                 ('NPIXFIT',int,(nwin,)),
+                 ('PAR',float,(nwin,max_npar)),
+                 ('ERR',float,(nwin,max_npar)),
+                 ('LOBND',float,(nwin,max_npar)),
+                 ('UPBND',float,(nwin,max_npar)),
+                 ('FIXED',bool,(nwin,max_npar)),
+#                 ('TIED',int,(nwin,max_npar)),
+                 ('IGNORE',bool,(nwin,max_npar)),
+                 ('CHI2',float,(nwin,)),
+                 ('RCHI2',float,(nwin,)),
+                 ('RMS',float,(nwin,)),
+                 ('RESID',float,(nwin,7)),
+                 ('FRAC_RMS',float,(nwin,)),
+                 ('FRAC_RESID',float,(nwin,7))
                ]
 
 
@@ -767,7 +767,7 @@ class Elric(EmissionLineFit):
                 raise ValueError('DEBUG')
 
             # The order is important.  Start with the primary line:
-            tied = numpy.zeros(self.fitting_window[i].nlines, dtype=numpy.bool)
+            tied = numpy.zeros(self.fitting_window[i].nlines, dtype=bool)
             tied[0] = True              # Primary line already "tied" to the set
             # Iterate until all lines are tied
             while numpy.sum(tied) != self.fitting_window[i].nlines:
@@ -913,7 +913,7 @@ class Elric(EmissionLineFit):
 #        print('log bounded', logbounded)
 #        print('UL & log bounded', ulbounded & logbounded)
 #        print('UL & not log bounded', ulbounded & ~logbounded)
-        Dp = numpy.zeros(ulbounded.size, dtype=numpy.float)
+        Dp = numpy.zeros(ulbounded.size, dtype=float)
         indx = ulbounded & logbounded
         Dp[indx] = numpy.log10(ubnd[indx]) - numpy.log10(lbnd[indx])
         indx = ulbounded & numpy.invert(logbounded)
@@ -1046,7 +1046,7 @@ class Elric(EmissionLineFit):
         model_fit_par['PAR'][i,j,:npar] = par[:]
         model_fit_par['FIXED'][i,j,:npar] = self.bestfit[i,j].fixed
         model_fit_par['FIXED'][i,j,npar:] = True
-        model_fit_par['ERR'][i,j,:npar] = numpy.zeros(npar, dtype=numpy.float)
+        model_fit_par['ERR'][i,j,:npar] = numpy.zeros(npar, dtype=float)
         if self.error is not None:
             tmperr = numpy.diag(self.bestfit[i,j].cov)
             if not numpy.any(tmperr < 0):
@@ -1340,7 +1340,7 @@ class Elric(EmissionLineFit):
                                                                             self.continuum)
         # No continuum for any spaxel!
         if self.no_continuum is None:
-            self.no_continuum = numpy.ones(self.flux.shape, dtype=numpy.bool)
+            self.no_continuum = numpy.ones(self.flux.shape, dtype=bool)
 
 #        pyplot.step(self.wave, self.flux[0,:], where='mid', color='k', lw=0.5, linestyle='-')
 #        pyplot.step(self.wave, self.fluxnc[0,:], where='mid', color='g', lw=0.5, linestyle='-')
@@ -1358,8 +1358,8 @@ class Elric(EmissionLineFit):
 
         # Initialize the output arrays
         #  Model flux:
-        model_flux = numpy.zeros(self.flux.shape, dtype=numpy.float)
-        model_base = numpy.zeros(self.flux.shape, dtype=numpy.float)
+        model_flux = numpy.zeros(self.flux.shape, dtype=float)
+        model_base = numpy.zeros(self.flux.shape, dtype=float)
         #  Model mask:
         model_mask = numpy.zeros(self.flux.shape, dtype=self.bitmask.minimum_dtype())
         indx = numpy.ma.getmaskarray(self.flux)

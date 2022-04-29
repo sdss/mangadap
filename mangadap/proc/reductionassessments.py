@@ -1,9 +1,7 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-# -*- coding: utf-8 -*-
 """
-Class that performs a number of assessments of a DRP file needed for
-handling of the data by the DAP.  These assessments need only be done
-once per DRP data file.
+Class that performs basic assessments of the reduced data products needed for
+handling of the data by the DAP.  These assessments need only be done once per
+data file.
 
 ----
 
@@ -15,9 +13,8 @@ once per DRP data file.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
-import time
-import glob
+import inspect
+from pathlib import Path
 import warnings
 import logging
 
@@ -25,14 +22,11 @@ from IPython import embed
 
 import numpy
 
-from scipy import sparse
-from matplotlib import pyplot
-
 from astropy.io import fits
 
 from pydl.goddard.astro import airtovac
 
-from ..datacube import DataCube
+#from ..datacube import DataCube
 from ..par.parset import KeywordParSet
 
 from ..config import defaults
@@ -43,12 +37,6 @@ from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import create_symlink
 from ..util.log import log_output
-from ..util.parser import DefaultConfig
-from .util import select_proc_method
-
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 # TODO: Add center coordinates
 #            center_coo (:obj:`tuple`, optional):
@@ -58,171 +46,91 @@ from .util import select_proc_method
 
 # TODO: Fix the fact that if the correlation matrix is taken directly
 # from the datacube that the wavelength and channel won't be defined.
+# TODO: Change 'waverange' to 'pixelmask'?
 class ReductionAssessmentDef(KeywordParSet):
     """
     Define how to assess the reduced data.
-
-    At the moment this is just a set of parameters that define how
-    the S/N is calculated.
-
-    See :class:`mangadap.par.parset.ParSet` for attributes.
-
-    .. todo::
-
-        - Allow for different ways of calculating covariance?
 
     The defined parameters are:
 
     .. include:: ../tables/reductionassessmentdef.rst
 
     """
-    def __init__(self, key=None, waverange=None, response_func=None, covariance=False,
-                 minimum_frac=0.8):
-        # Perform some checks of the input
+    def __init__(self, key='SNRG', waverange=None, response_func_file='gunn_2001_g_response.db',
+                 in_vacuum=True, covariance=True, minimum_frac=0.8, overwrite=False):
+
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
         ar_like = [ numpy.ndarray, list ]
         in_fl = [ int, float ]
-        
-        pars =   ['key', 'waverange', 'response_func', 'covariance', 'minimum_frac']
-        values = [key, waverange, response_func, covariance, minimum_frac]
-        dtypes = [str, ar_like, ar_like, bool, in_fl]
+
+        values = [key, waverange, response_func_file, in_vacuum, covariance, minimum_frac,
+                  overwrite]
+        dtypes = [str, ar_like, str, bool, bool, in_fl, bool]
         descr = ['Keyword to distinguish the assessment method.',
-                 'A two-element vector with the starting and ending wavelength (angstroms ' \
-                    'in **vacuum**) within which to calculate the signal-to-noise',
-                 'A two-column array with a response function to use for the S/N calculation.  ' \
-                    'The columns must br the wavelength and amplitude of the response function, ' \
-                    'respectively.',
+                 'A two-element vector with the starting and ending wavelength within which to ' \
+                    'calculate the signal-to-noise.  Mutually exclusive with response_func_file',
+                 'The name of a file that defines a response function to use for the S/N ' \
+                    'calculation.  Must be a local file or distributed with the DAP source code.' \
+                    '  Expected to have two columns, with the wavelength and response ' \
+                    'efficiency.  Mutually exclusive with waverange.',
+                 'Boolean indicating that the wavelengths provided either using waverange or ' \
+                    'response_func_file are in vacuum (not air).',
                  'Provide the fiducial spatial covariance.  If this is False, no spatial ' \
                      'covariance will be available for calculations that use the results of the ' \
                      'reduction assessments.  If True and a covariance matrix is available ' \
                      'directly from the datacube, it will be used.  If True and the datacube ' \
                      'does not already provide a computed covariance matrix, one is calculated ' \
-                     'using :func:`mangadap.datacube.datacube.DataCube.covariance_matrix` ' \
-                     'method.  **WARNING**: If the latter fails either, the DAP will issue a ' \
+                     'using :func:`~mangadap.datacube.datacube.DataCube.covariance_matrix` ' \
+                     'method.  **WARNING**: If either of these fail, the DAP will issue a ' \
                      'warning and continue assuming no spatial covariance.',
                  'Minimum fraction of unmasked pixels in a spectrum required for inclusion in ' \
                      'the spatial covariance calculation.  Note this should match the value ' \
-                     'used for the spatial-binning module.']
+                     'used for the spatial-binning module.',
+                 'If the output file already exists, redo all the calculations and overwrite it.']
 
-        super(ReductionAssessmentDef, self).__init__(pars, values=values, dtypes=dtypes,
-                                                     descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, dtypes=dtypes, descr=descr)
+        self.response = None
+        self._validate()
 
+    def _validate(self):
+        """
+        Validate the parameters.
+        """
+        if self['waverange'] is not None and self['response_func_file'] is not None:
+            warnings.warn('You have defined both a wavelength range and a response function for '
+                          'the reduction assessments; the latter takes precedence, the former is '
+                          'ignored!')
+            self['waverange'] = None
+        if self['waverange'] is None and self['response_func_file'] is None:
+            raise ValueError('Reduction assessment method undefined.  Must provide either '
+                             '\'waverange\' or \'response_func_file\'.')
 
-def validate_reduction_assessment_config(cnfg):
-    """ 
-    Validate the :class:`mangadap.util.parser.DefaultConfig` object that
-    provides the reduction-assessment method parameters.
+        if self['waverange'] is not None:
+            if len(self['waverange']) != 2:
+                raise ValueError('Defined wavelength range must be a two-element list/array.')
+            # Wavelength range was defined
+            if not self['in_vacuum']:
+                # Convert it to vacuum
+                self['waverange'] = airtovac(self['waverange'])
+            return
 
-    Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`):
-            Object with the reduction-assessment method parameters
-            needed by
-            :class:`mangadap.proc.reductionassessments.ReductionAssessmentDef`.
+        response_file = Path(self['response_func_file']).resolve()
+        if not response_file.exists():
+            # File not found, so try to find it in the configuration directory
+            response_file = defaults.dap_data_root() / 'filter_response' \
+                                / self['response_func_file']
+        if not response_file.exists():
+            raise FileNotFoundError(f'Could not find {self["response_func_file"]} '
+                                    'in the local directory or the DAP source distribution.')
 
-    Returns:
-        :obj:`bool`: Booleans that specify how the reduction
-        assessment should be constructed. The flags specify to use
-        (1) the wavelength range, (2) a bandpass filter parameter
-        file, or (3) a file with a filter response function.
-
-    Raises:
-        KeyError:
-            Raised if required keyword does not exist.
-        ValueError:
-            Raised if keys have unacceptable values.
-        FileNotFoundError:
-            Raised if a file is specified but could not be found.
-    """
-    # Check for required keywords
-    required_keywords = ['key']
-    if not cnfg.all_required(required_keywords):
-        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
-
-    def_range = cnfg.keyword_specified('wave_limits')
-    def_response = cnfg.keyword_specified('response_function_file')
-
-    if numpy.sum([ def_range, def_response] ) != 1:
-        raise ValueError('Method undefined.  Must provide either \'waverange\' or '
-                         '\'response_function_file\'.')
-
-    if def_response and not os.path.isfile(cnfg['response_function_file']):
-        raise FileNotFoundError('response_function_file does not exist: {0}'.format(
-                                cnfg['response_function_file']))
-
-    return def_range, def_response
-
-
-def available_reduction_assessments():
-    r"""
-    Return the list of available reduction assessment methods.  To get a
-    list of default methods provided by the DAP do::
-
-        from mangadap.proc.reductionassessments import available_reduction_assessments
-        rdx_methods = available_reduction_assessments()
-        print(rdx_methods)
-
-    Each element in the `rdx_methods` list is an instance of
-    :class:`ReductionAssessmentDef`, which  is printed using the
-    :class:`ParSet` base class representation function.
-
-    New methods can be included by adding ini config files to
-    `$MANGADAP_DIR/mangadap/config/reduction_assessments`. See an
-    example file at
-    `$MANGADAP_DIR/example_ini/example_reduction_assessment_config.ini`.
-
-    Returns:
-        :obj:`list`: A list of :class:`ReductionAssessmentDef`
-        objects, each defining a separate assessment method.
-
-    Raises:
-        IOError:
-            Raised if no reduction assessment configuration files
-            could be found.
-        KeyError:
-            Raised if the assessment method keywords are not all
-            unique.
-        ValueError:
-            Raised if a wavelength range or a response function are
-            not defined by any of the methods.
-    """
-    # Check the configuration files exist
-    search_dir = os.path.join(defaults.dap_config_root(), 'reduction_assessments')
-    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
-    if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
-
-    # Build the list of library definitions
-    assessment_methods = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = DefaultConfig(f=f, interpolate=True)
-        # Ensure it has the necessary elements to define the template
-        # library
-        def_range, def_response = validate_reduction_assessment_config(cnfg)
-        in_vacuum = cnfg.getbool('in_vacuum', default=False)
-        if def_range:
-            waverange = cnfg.getlist('wave_limits', evaluate=True)
-            if not in_vacuum:
-                waverange = airtovac(waverange)
-            assessment_methods += [ReductionAssessmentDef(key=cnfg['key'], waverange=waverange,
-                                        covariance=cnfg.getbool('covariance', default=False),
-                                        minimum_frac=cnfg.getfloat('minimum_frac', default=0.8))]
-        elif def_response:
-            response = numpy.genfromtxt(cnfg['response_function_file'])[:,:2]
-            if not in_vacuum:
-                response[:,0] = airtovac(response[:,0])
-            assessment_methods += [ReductionAssessmentDef(key=cnfg['key'], response_func=response,
-                                        covariance=cnfg.getbool('covariance', default=False),
-                                        minimum_frac=cnfg.getfloat('minimum_frac', default=0.8))]
-        else:
-            raise ValueError('Must define a wavelength range or a response function.')
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique( numpy.array([ method['key'] for method in assessment_methods ]) )) \
-            != len(assessment_methods):
-        raise KeyError('Reduction assessment method keywords are not all unique!')
-
-    # Return the default list of assessment methods
-    return assessment_methods
+        self.response = numpy.genfromtxt(str(response_file))[:,:2]
+        if not self['in_vacuum']:
+            self.response[:,0] = airtovac(self.response[:,0])
 
 
 class ReductionAssessmentDataTable(DataTable):
@@ -282,8 +190,9 @@ class ReductionAssessment:
     See :func:`compute` for the provided data.
 
     Args:
-        method_key (:obj:`str`):
-            Keyword selecting the assessment method to use.
+        method (:class:`~mangadap.proc.reductionassessments.ReductionAssessmentDef`):
+            Object that defines the main parameters used for the assessment
+            method.
         cube (:class:`mangadap.datacube.datacube.DataCube`):
             Datacube to analyze.
         pa (:obj:`float`, optional):
@@ -295,38 +204,21 @@ class ReductionAssessment:
             on the semi-minor to semi-major axis ratio (:math:`b/a`)
             of the isophotal ellipse used to calculate elliptical,
             semi-major-axis coordinates.
-        method_list (:obj:`list`, optional):
-            List of :class:`ReductionAssessmentDef` objects that
-            define the parameters required to perform the assessments
-            of the DRP file. The ``method_key`` must select one of
-            these objects. Default is to construct the list using
-            :func:`available_reduction_assessments`.
-        dapver (:obj:`str`, optional):
-            DAP version, which is used to define the default DAP
-            analysis path. (This does **not** define the version of
-            the code to use.) Default is defined by
-            :func:`mangadap.config.defaults.dap_version`
-        analysis_path (:obj:`str`, optional):
-            The path to the top-level directory for the DAP output
-            files for a given DRP and DAP version. Default is defined
-            by :func:`mangadap.config.defaults.dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            The exact path for the output file. Default is defined by
-            :func:`mangadap.config.defaults.dap_common_path`.
+        reff (:obj:`float`, optional):
+            Effective radius of the galaxy.  If None, set to 1.
+        output_path (:obj:`str`, `Path`_, optional):
+            The path for the output file.  If None, the current working
+            directory is used.
         output_file (:obj:`str`, optional):
-            The name of the file for the computed assessments. The
-            full path of the output file will be
-            :attr:`directory_path`/:attr:`output_file`. Default is
-            defined by
-            :func:`mangadap.config.defaults.dap_file_name`.
+            The name of the output "reference" file. The full path of the output
+            file will be :attr:`directory_path`/:attr:`output_file`.  If None,
+            the default is to combine ``cube.output_root`` and the
+            ``method_key``.  See
+            :func:`~mangadap.proc.reductionassessments.ReductionAssessments.default_paths`.
         hardcopy (:obj:`bool`, optional):
             Flag to write the data to a fits file.
         symlink_dir (:obj:`str`, optional):
             Create a symlink to the file in this directory.
-        clobber (:obj:`bool`, optional):
-            If the output file already exists, this will force the
-            assessments to be redone and the output file to be
-            overwritten.
         checksum (:obj:`bool`, optional):
             Compare the checksum when reading the data.
         loggers (:obj:`list`, optional):
@@ -352,7 +244,9 @@ class ReductionAssessment:
             on the semi-minor to semi-major axis ratio (:math:`b/a`)
             of the isophotal ellipse used to calculate elliptical,
             semi-major-axis coordinates.
-        directory_path (:obj:`str`):
+        reff (:obj:`float`):
+            Effective radius of the galaxy.
+        output_path (:obj:`str`):
             The exact path for the output file.
         output_file (:obj:`str`):
             The name of the file for the computed assessments. The
@@ -386,22 +280,25 @@ class ReductionAssessment:
             Suppress terminal and logging output.
 
     """
-    def __init__(self, method_key, cube, pa=None, ell=None, method_list=None, dapver=None,
-                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
+    def __init__(self, method, cube, pa=None, ell=None, reff=None, output_path=None,
+                 output_file=None, hardcopy=True, symlink_dir=None, checksum=False, loggers=None,
+                 quiet=False):
                  
         self.loggers = None
         self.quiet = False
 
         # Define the method properties
-        self.method = None
-        self._define_method(method_key, method_list=method_list)
+#        self.method = None
+#        self._define_method(method_key, method_list=method_list)
+        self.method = method
+        if not isinstance(self.method, ReductionAssessmentDef):
+            raise TypeError('Method must have type ReductionAssessmentDef.')
 
         # Set in compute via _set_paths
         self.cube = None
 
-        # Define the output directory and file
-        self.directory_path = None      # Set in _set_paths
+        # Define the output directory and file.  Set by default_paths() in compute()
+        self.directory_path = None
         self.output_file = None
         self.hardcopy = None
         self.symlink_dir = None
@@ -409,6 +306,7 @@ class ReductionAssessment:
         # Initialize the objects used in the assessments
         self.pa = None
         self.ell = None
+        self.reff = None
         self.hdu = None
         self.checksum = checksum
         self.correlation = None
@@ -416,62 +314,12 @@ class ReductionAssessment:
         self.covar_channel = None
 
         # Run the assessments of the DRP file
-        self.compute(cube, pa=pa, ell=ell, dapver=dapver, analysis_path=analysis_path,
-                     directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                     symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
+        self.compute(cube, pa=pa, ell=ell, reff=reff, output_path=output_path,
+                     output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
+                     loggers=loggers, quiet=quiet)
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-    def _define_method(self, method_key, method_list=None):
-        """
-        Select the assessment method from the provided list.
-
-        Used to set :attr:`method`; see
-        :func:`mangadap.proc.util.select_proc_method`.
-
-        Args:
-            method_key (:obj:`str`):
-                Keyword of the selected method. Available methods are
-                provided by :func:`available_reduction_assessments`
-            method_list (:obj:`list`, optional):
-                List of :class:`ReductionAssessmentDef` objects that
-                define the parameters required to assess the reduced
-                data.
-        """
-        self.method = select_proc_method(method_key, ReductionAssessmentDef,
-                                         method_list=method_list,
-                                         available_func=available_reduction_assessments)
-
-    def _set_paths(self, directory_path, dapver, analysis_path, output_file):
-        """
-        Set the I/O paths.
-
-        Used to set :attr:`directory_path` and :attr:`output_file`.
-        If not provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.dap_common_path` and
-        :func:`mangadap.config.defaults.dap_file_name`.
-
-        Args:
-            directory_path (:obj:`str`):
-                The exact path to the DAP reduction assessments file.
-                See :attr:`directory_path`.
-            dapver (:obj:`str`):
-                DAP version.
-            analysis_path (:obj:`str`):
-                The path to the top-level directory containing the
-                DAP output files for a given DRP and DAP version.
-            output_file (:obj:`str`):
-                The name of the file with the reduction assessments.
-                See :func:`compute`.
-        """
-        self.directory_path, self.output_file \
-                = ReductionAssessment.default_paths(self.cube.plate, self.cube.ifudesign,
-                                                    self.method['key'],
-                                                    directory_path=directory_path,
-                                                    drpver=self.cube.drpver, dapver=dapver,
-                                                    analysis_path=analysis_path,
-                                                    output_file=output_file)
 
     def _initialize_primary_header(self, hdr=None):
         """
@@ -497,6 +345,8 @@ class ReductionAssessment:
             hdr['ECOOPA'] = (self.pa, 'Position angle for ellip. coo')
         if self.ell is not None:
             hdr['ECOOELL'] = (self.ell, 'Ellipticity (1-b/a) for ellip. coo')
+        if self.reff is not None:
+            hdr['ECOOREFF'] = (self.reff, 'Effective radius')
         if self.method['covariance']:
             hdr['BBWAVE'] = ('None' if self.covar_wave is None else self.covar_wave,
                              'Covariance channel wavelength')
@@ -505,67 +355,50 @@ class ReductionAssessment:
         return hdr
 
     @staticmethod
-    def default_paths(plate, ifudesign, method_key, directory_path=None, drpver=None, dapver=None,
-                      analysis_path=None, output_file=None):
+    def default_paths(cube, method_key, output_path=None, output_file=None):
         """
         Set the default directory and file name for the output file.
 
         Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design number
+            cube (:class:`mangadap.datacube.datacube.DataCube`):
+                Datacube to analyze.
             method_key (:obj:`str`):
                 Keyword designating the method used for the reduction
                 assessments.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DAP reduction assessments file.
-                Default set by
-                :func:`mangadap.config.defaults.dap_common_path`.
-            drpver (:obj:`str`, optional):
-                DRP version. Default set by
-                :func:`mangadap.config.defaults.drp_version`.
-            dapver (:obj:`str`, optional):
-                DAP version. Default set by
-                :func:`mangadap.config.defaults.dap_version`.
-            analysis_path (:obj:`str`, optional):
-                The path to the top-level directory containing the
-                DAP output files for a given DRP and DAP version.
-                Default set by
-                :func:`mangadap.config.defaults.dap_analysis_path`.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
             output_file (:obj:`str`, optional):
-                The name of the file with the reduction assessments.
-                Default set by
-                :func:`mangadap.config.defaults.dap_file_name`.
+                The name of the output "reference" file. The full path of the output
+                file will be :attr:`directory_path`/:attr:`output_file`.  If None,
+                the default is to combine ``cube.output_root`` and the
+                ``method_key``.
 
         Returns:
-            :obj:`tuple`: Returns two :obj:`str` objects with the
-            path for the output file and the name of the output file.
+            :obj:`tuple`: Returns a `Path`_ with the output directory and a
+            :obj:`str` with the output file name.
         """
-        _directory_path = defaults.dap_common_path(plate=plate, ifudesign=ifudesign,
-                                                   drpver=drpver, dapver=dapver,
-                                                   analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
-        _output_file = defaults.dap_file_name(plate, ifudesign, method_key) \
-                                        if output_file is None else str(output_file)
-        return _directory_path, _output_file
+        directory_path = Path('.').resolve() if output_path is None \
+                                else Path(output_path).resolve()
+        _output_file = f'{cube.output_root}-{method_key}.fits.gz' if output_file is None \
+                                else output_file
+        return directory_path, _output_file
 
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
 
     def file_path(self):
-        """Return the full path to the output file."""
+        """Return a `Path`_ object with the full path to the output file."""
         if self.directory_path is None or self.output_file is None:
             return None
-        return os.path.join(self.directory_path, self.output_file)
+        return self.directory_path / self.output_file
 
     def info(self):
         return self.hdu.info()
 
-    def compute(self, cube, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,
-                output_file=None, hardcopy=True, symlink_dir=None, clobber=False, loggers=None,
-                quiet=False):
+    def compute(self, cube, pa=None, ell=None, reff=None, output_path=None, output_file=None, hardcopy=True,
+                symlink_dir=None, overwrite=None, loggers=None, quiet=False):
         r"""
         Compute and output the main data products.  The list of HDUs
         are:
@@ -593,41 +426,25 @@ class ReductionAssessment:
                 based on the semi-minor to semi-major axis ratio
                 (:math:`b/a`) of the isophotal ellipse used to
                 calculate elliptical, semi-major-axis coordinates.
-            method_list (:obj:`list`, optional):
-                List of :class:`ReductionAssessmentDef` objects that
-                define the parameters required to perform the
-                assessments of the DRP file. The ``method_key`` must
-                select one of these objects. Default is to construct
-                the list using
-                :func:`available_reduction_assessments`.
-            dapver (:obj:`str`, optional):
-                DAP version, which is used to define the default DAP
-                analysis path. (This does **not** define the version
-                of the code to use.) Default is defined by
-                :func:`mangadap.config.defaults.dap_version`
-            analysis_path (:obj:`str`, optional):
-                The path to the top-level directory for the DAP
-                output files for a given DRP and DAP version. Default
-                is defined by
-                :func:`mangadap.config.defaults.dap_analysis_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path for the output file. Default is
-                defined by
-                :func:`mangadap.config.defaults.dap_common_path`.
+            reff (:obj:`float`, optional):
+                Effective radius of the galaxy.  If None, set to 1.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
             output_file (:obj:`str`, optional):
-                The name of the file for the computed assessments.
-                The full path of the output file will be
-                :attr:`directory_path`/:attr:`output_file`. Default
-                is defined by
-                :func:`mangadap.config.defaults.dap_file_name`.
+                The name of the output "reference" file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                ``method_key``.  See
+                :func:`~mangadap.proc.reductionassessments.ReductionAssessments.default_paths`.
             hardcopy (:obj:`bool`, optional):
                 Flag to write the data to a fits file.
             symlink_dir (:obj:`str`, optional):
                 Create a symlink to the file in this directory.
-            clobber (:obj:`bool`, optional):
+            overwrite (:obj:`bool`, optional):
                 If the output file already exists, this will force the
                 assessments to be redone and the output file to be
-                overwritten.
+                overwritten.  If None, uses the value in :attr:`method`.
             loggers (:obj:`list`, optional):
                 List of `logging.Logger`_ objects to log progress;
                 ignored if quiet=True. Logging is done using
@@ -650,8 +467,8 @@ class ReductionAssessment:
         self.quiet = quiet
 
         # Check the input cube
-        if not isinstance(cube, DataCube):
-            raise TypeError('Must provide a valid DataCube object!')
+#        if not isinstance(cube, DataCube):
+#            raise TypeError('Must provide a valid DataCube object!')
         self.cube = cube
 
         # Test if the RSS file exists; cannot compute covariance if not
@@ -662,7 +479,11 @@ class ReductionAssessment:
             self.method['covariance'] = False
 
         # Reset the output paths if necessary
-        self._set_paths(directory_path, dapver, analysis_path, output_file)
+        self.directory_path, self.output_file \
+                = ReductionAssessment.default_paths(cube, self.method['key'],
+                                                    output_path=output_path,
+                                                    output_file=output_file)
+
         # Check that the path for or to the file is defined
         ofile = self.file_path()
         if ofile is None:
@@ -671,24 +492,22 @@ class ReductionAssessment:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, '{0:^50}'.format('REDUCTION ASSESSMENT'
-                                                                       ' COMPUTATIONS'))
+            log_output(self.loggers, 1, logging.INFO, f'{"REDUCTION ASSESSMENT COMPUTATIONS":^50}')
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
-                                                                            self.output_file))
+            log_output(self.loggers, 1, logging.INFO, f'Output path: {self.directory_path}')
+            log_output(self.loggers, 1, logging.INFO, f'Output file: {self.output_file}')
 
-        # If the file already exists, and not clobbering, just read the
-        # file
+        _overwrite = self.method['overwrite'] if overwrite is None else overwrite
+
+        # If the file already exists, and not overwriting, just read the file
         self.symlink_dir = symlink_dir
-        if os.path.isfile(ofile) and not clobber:
+        if ofile.exists() and not _overwrite:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading exiting file')
 
             # Read the existing output file
-            self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
+            self.hdu = DAPFitsUtil.read(str(ofile), checksum=self.checksum)
 
             # Read the header data
             try:
@@ -699,7 +518,7 @@ class ReductionAssessment:
                 self.pa = None
             if not self.quiet and pa is not None and self.pa != pa:
                 warnings.warn('Provided position angle different from available file; set ' \
-                              'clobber=True to overwrite.')
+                              'overwrite=True to overwrite.')
 
             try:
                 self.ell = self.hdu['PRIMARY'].header['ECOOELL']
@@ -709,7 +528,17 @@ class ReductionAssessment:
                 self.ell = None
             if not self.quiet and ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
-                              'clobber=True to overwrite.')
+                              'overwrite=True to overwrite.')
+
+            try:
+                self.reff = self.hdu['PRIMARY'].header['ECOOREFF']
+            except:
+                if not self.quiet:
+                    warnings.warn('Unable to read effective radius from file header!')
+                self.reff = None
+            if not self.quiet and reff is not None and self.reff != reff:
+                warnings.warn('Provided effective radius different from available file; set ' \
+                              'overwrite=True to overwrite.')
 
             if self.method['covariance']:
                 # Construct the correlation matrix with the appropriate
@@ -730,7 +559,7 @@ class ReductionAssessment:
 
             # Make sure the symlink exists
             if self.symlink_dir is not None:
-                create_symlink(ofile, self.symlink_dir, clobber=clobber)
+                create_symlink(str(ofile), self.symlink_dir, overwrite=_overwrite)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
@@ -740,6 +569,8 @@ class ReductionAssessment:
             self.pa = pa
         if ell is not None:
             self.ell = ell
+        if reff is not None:
+            self.reff = reff
 
         # Initialize the record array for the SPECTRUM extension
 #        spectrum_data = init_record_array(self.cube.nspec, self._per_spectrum_dtype())
@@ -770,9 +601,9 @@ class ReductionAssessment:
         # function is used, only use the wavelength region where the
         # response function is provided.
         waverange = [self.cube.wave[0], self.cube.wave[-1]] \
-                    if self.method['waverange'] is None and self.method['response_func'] is None \
+                    if self.method['waverange'] is None and self.method.response is None \
                     else (self.method['waverange'] if self.method['waverange'] is not None else
-                        [ self.method['response_func'][0,0], self.method['response_func'][-1,0] ])
+                        [ self.method.response[0,0], self.method.response[-1,0] ])
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Wavelength range for S and N calculation: {0:.1f} -- {1:.1f}'.format(
@@ -792,9 +623,9 @@ class ReductionAssessment:
             self.covar_wave = None
             self.covar_channel = None
         elif self.method['covariance'] and self.cube.covar is None:
-            self.covar_wave = self.cube.central_wavelength(
-                                        waverange=self.method['waverange'],
-                                        response_func=self.method['response_func'], flag=flags)
+            self.covar_wave = self.cube.central_wavelength(waverange=self.method['waverange'],
+                                                           response_func=self.method.response,
+                                                           flag=flags)
             self.covar_channel = numpy.argsort(numpy.absolute(self.cube.wave-self.covar_wave))[0]
             goodfrac = spectrum_data['FGOODPIX'].reshape(self.cube.spatial_shape) \
                             > self.method['minimum_frac']
@@ -828,8 +659,7 @@ class ReductionAssessment:
         spectrum_data['SIGNAL'], spectrum_data['VARIANCE'], spectrum_data['SNR'] \
                 = (x.ravel() for x in 
                         self.cube.flux_stats(waverange=self.method['waverange'],
-                                             response_func=self.method['response_func'],
-                                             flag=flags))
+                                             response_func=self.method.response, flag=flags))
 
         # Force the covariance matrix to use the mean variance instead
         # of the variance in the single, specified channel.
@@ -852,12 +682,14 @@ class ReductionAssessment:
             self.hdu += [ covar_hdu ]
 
         # Write the file
-        if not os.path.isdir(self.directory_path):
-            os.makedirs(self.directory_path)
+        if not self.directory_path.exists():
+            self.directory_path.mkdir(parents=True)
         self.hardcopy = hardcopy
         if self.hardcopy:
-            DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True,
+            DAPFitsUtil.write(self.hdu, str(ofile), overwrite=_overwrite, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+
 

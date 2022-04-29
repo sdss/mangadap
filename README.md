@@ -1,101 +1,57 @@
 # The MaNGA Data Analysis Pipeline
 
-[![Build Status](https://travis-ci.org/sdss/mangadap.svg?branch=master)](https://travis-ci.org/sdss/mangadap)
-[![Coverage Status](https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master)](https://coveralls.io/github/sdss/mangadap?branch=master)
+[![Build Status](https://github.com/sdss/mangadap/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/sdss/mangadap/actions)
+[![Coverage Status](https://codecov.io/gh/sdss/mangadap/branch/master/graph/badge.svg?token=S4veEPJwS1)](https://codecov.io/gh/sdss/mangadap)
 [![Doc Status](https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest)](https://sdss-mangadap.readthedocs.io/en/latest/)
-[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 [![License](https://img.shields.io/github/license/sdss/mangadap)](https://github.com/sdss/mangadap/blob/master/LICENSE.md)
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
-The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
-package that analyzes the data produced by the MaNGA data-reduction
-pipeline (MaNGA DRP) to produced physical properties derived from the
-MaNGA spectroscopy.
+The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software package
+that has analyzed all galaxy data produced by the MaNGA data-reduction pipeline
+(MaNGA DRP).  Its goal is to produce high-level, science-ready data products
+derived from MaNGA spectra.  The products currently provided are:
 
-For full documentation, see: https://sdss-mangadap.readthedocs.io/en/latest/
+ - Spatially stacked spectra
+ - Stellar kinematics
+ - Nebular emission-line properties: fluxes, equivalent widths, and
+   kinematics
+ - Spectral indices: absorption-line (e.g., H-delta) and bandhead/color
+   (e.g., TiO, D4000) measurements
 
-**Note that the version of the DAP used for DR15 is [2.2.1](https://github.com/sdss/mangadap/releases/tag/2.2.1).**
+That is, the DAP currently focuses on "model-independent" properties.
+Higher-level, model-dependent properties, such as stellar-population parameters,
+are outside of the scope of the current pipeline.
+
+**See our full documentation at [sdss-mangadap.readthedocs.io](https://sdss-mangadap.readthedocs.io/en/latest/).**
+
+
+## SDSS Data Release Versions
+
+ - [SDSS-IV/MaNGA DR15](https://www.sdss.org/dr15/manga/) is based on version 2.2.1
+
+ - [SDSS-IV/MaNGA DR17](https://www.sdss.org/dr17/manga/) is based on version
+   3.1.2.  Note that the version of the code that produced the DR17 was version
+   3.1.0; version 3.1.1 and 3.1.2 only include documentation updates.
+
 
 ## Citation
 
-If you use the DAP software and/or its output products, please cite the following two papers:
+If you use the DAP software and/or its output products, please cite the
+following two papers:
 
  - *Overview*: [Westfall et al. (2019, AJ, 158, 231)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract)
  - *Emission-line Modeling*: [Belfiore et al. (2019, AJ, 158, 160)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract)
 
+Additionally, if you use SDSS-IV/MaNGA data, please see:
+
+ - [How to Cite SDSS](https://www.sdss.org/collaboration/citing-sdss/)
+ - [SDSS Technical Publications](https://www.sdss.org/science/technical_publications/)
+
+
 ## Installation
 
-To install, first clone the repository:
+`pip install sdss-mangadap`
 
-`git clone https://github.com/sdss/mangadap.git`
-
-We recommend using the most recent tag:
-
-```
-cd mangadap
-./checkout_current_tag
-```
-
-----
-
-To install, run:
-
-`python3 setup.py install`
-
-On MacOSX, you may need to add `CC=clang`, i.e.:
-   
-`CC=clang python3 setup.py install`
-
-----
-
-The DAP uses environmental variable to define the paths to specific data
-and other repositories.  If these are not defined, warnings will be
-issued everytime the DAP is installed or imported.  The relevant
-environmental variables, their default, and their usage are provided
-below.
-
-|                 Variable |                           Default |                                       Comments |
-|:------------------------ |:--------------------------------- |:---------------------------------------------- |
-| `MANGADRP_VER`           | `v2_4_3`                          | Version of the DRP, used for path construction |
-| `MANGA_SPECTRO_REDUX`    | `$HOME/MaNGA/redux`               | Root path for the reduced data                 |
-| `MANGADAP_VER`           | `mangadap.__version__`            | Version of the DAP, used for path construction |
-| `MANGA_SPECTRO_ANALYSIS` | `$HOME/MaNGA/analysis`            | Root path for the analysis data                |
-| `MANGACORE_VER`          | `v1_6_2`                          | Version of MaNGA core (survey-level meta data) |
-| `MANGACORE_DIR`          | `$HOME/MaNGA/core/$MANGACORE_VER` | Root path with the MaNGA core repository       |
-
-**Notes:**
- - `$MANGACORE_VER` and `$MANGACORE_DIR` are only needed to perform the
-   survey-level execution of the pipeline.
- - The DAP expects to find the DRP `LOGCUBE` files in
-   `$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[plate]/stack`, where `[plate]`
-   is the desired plate number.
- - The DAP expects to find/write data to
-   `$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER`.
- - `$MANGADAP_VER` is only used to set the path names, not to select the
-   specific version of the pipeline to use
-
-These environmental variables can be added to your `.bash_profile` file
-in your home directory or be included in a script that is sourced when
-you want to run the DAP.  The added lines to your `.bash_profile` file
-could look something like this:
-
-```
-export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
-export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
-
-export MANGADRP_VER=v2_4_3
-
-export MANGADAP_VER=2.2.1
-
-export MANGACORE_VER=v1_6_2
-export MANGACORE_DIR=$HOME/MaNGA/core/$MANGACORE_VER
-```
-
-**Note**: Some of these variables are also defined by Marvin; see
-[here](https://sdss-marvin.readthedocs.io/en/stable/installation.html).
-It's possible to have both Marvin and the DAP point to the same
-directory, but beware that this may mean that some of the files get
-overwritten.
-
-
+See https://sdss-mangadap.readthedocs.io/en/latest/installation.html
 
 

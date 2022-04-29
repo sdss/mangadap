@@ -1,25 +1,20 @@
 
-import pytest
-
 from IPython import embed
 
 import numpy
 from astropy.io import fits
 
-from mangadap.proc.reductionassessments import available_reduction_assessments
-from mangadap.util.covariance import Covariance
+from mangadap.config.manga import MaNGAConfig
+from mangadap.proc.reductionassessments import ReductionAssessmentDef
 from mangadap.datacube import MaNGADataCube
 from mangadap.spectra import MaNGARSS
 from mangadap.tests.util import remote_data_file, requires_remote
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 
 @requires_remote
 def test_sres_ext():
-    file = remote_data_file(filename=MaNGARSS.build_file_name(7815, 3702, log=True))
+    cfg = MaNGAConfig(7815, 3702, mode='RSS')
+    file = remote_data_file(filename=cfg.file_name)
     hdu = fits.open(file)
     assert MaNGARSS.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
@@ -33,8 +28,6 @@ def test_sres_ext():
 def test_read():
     rss = MaNGARSS.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    assert rss.file_name == MaNGARSS.build_file_name(rss.plate, rss.ifudesign, log=rss.log), \
-            'Name mismatch'
     assert rss.log, 'Should read the log-binned version by default.'
     assert len(rss.shape) == 2, 'Row-stacked spectra are 2D'
     assert rss.shape == (rss.nspec, rss.nwave), 'Shape mismatch'
@@ -62,10 +55,11 @@ def test_copyto():
     assert flux.shape[1] == numpy.sum(indx), 'Wavelength range masking failed'
 
     # Find the spaxels with non-zero signal
-    methods = available_reduction_assessments()
-    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
-    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
-    sig, var, snr = rss.flux_stats(response_func=methods[i[0]]['response_func'])
+    method = ReductionAssessmentDef()
+#    methods = available_reduction_assessments()
+#    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+#    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+    sig, var, snr = rss.flux_stats(response_func=method.response)
     indx = ((sig > 0) & numpy.invert(numpy.ma.getmaskarray(sig))).data.ravel()
     ngood = numpy.sum(indx)
 
@@ -100,11 +94,12 @@ def test_wcs():
     # Unrestricted
     x, y = rss.mean_sky_coordinates()
 
-    methods = available_reduction_assessments()
-    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
-    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+    method = ReductionAssessmentDef()
+#    methods = available_reduction_assessments()
+#    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+#    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
     # Weighted by the g-band
-    _x, _y = rss.mean_sky_coordinates(response_func=methods[i[0]]['response_func'])
+    _x, _y = rss.mean_sky_coordinates(response_func=method.response)
     assert numpy.ma.amax(x-_x) - numpy.ma.amin(x-_x) > 0, 'Should be different'
     assert numpy.ma.amax(y-_y) - numpy.ma.amin(y-_y) > 0, 'Should be different'
 
@@ -118,7 +113,7 @@ def test_wcs():
     bin_indx = numpy.full(rss.nspec, -1, dtype=int)
     bin_indx[indx] = 0
 
-    bins, area = rss.binned_on_sky_area(bin_indx, response_func=methods[i[0]]['response_func'])
+    bins, area = rss.binned_on_sky_area(bin_indx, response_func=method.response)
     assert numpy.array_equal(bins, [0]), 'Should only be one bin'
     try:
         import shapely
@@ -135,14 +130,15 @@ def test_wcs():
 def test_stats():
     rss = MaNGARSS.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    methods = available_reduction_assessments()
-    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
-    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+    method = ReductionAssessmentDef()
+#    methods = available_reduction_assessments()
+#    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+#    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
 
-    cenwave = rss.central_wavelength(response_func=methods[i[0]]['response_func'])
+    cenwave = rss.central_wavelength(response_func=method.response)
     assert numpy.isclose(cenwave, 4686.2), 'Central wavelength calculation changed'
 
-    sig, var, snr = rss.flux_stats(response_func=methods[i[0]]['response_func'])
+    sig, var, snr = rss.flux_stats(response_func=method.response)
 
     assert sig.shape == (rss.nspec,), 'Should be one measurement per spectrum.'
     assert isinstance(sig, numpy.ma.MaskedArray), 'Expected masked arrays'
@@ -151,7 +147,7 @@ def test_stats():
 
     # Try it with the linear rss
     rss = MaNGARSS.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
-    _sig, _var, _snr = rss.flux_stats(response_func=methods[i[0]]['response_func'])
+    _sig, _var, _snr = rss.flux_stats(response_func=method.response)
     # TODO: Not sure why these are not closer.
     assert numpy.absolute(numpy.ma.median((sig-_sig)/_sig)) < 0.01, \
             'Signal should be the same to better than 1%.'

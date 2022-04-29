@@ -1,20 +1,14 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
-from scipy import interpolate
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 
-from mangadap.util.drpfits import DRPFitsBitMask
+from mangadap.util.drpbitmask import DRPFitsBitMask
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.proc.templatelibrary import TemplateLibrary

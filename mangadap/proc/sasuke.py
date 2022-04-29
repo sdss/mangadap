@@ -13,43 +13,39 @@ Implements an emission-line fitting class that largely wraps pPXF.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-
+import inspect
+from pathlib import Path
 import time
 import warnings
 import logging
-import warnings
 
 from IPython import embed
 
 import numpy
-from scipy import interpolate, fftpack
+from scipy import interpolate
 
 import astropy.constants
 from ppxf import ppxf
 
+from ..par.artifactdb import ArtifactDB
 from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array
-from ..util.filter import interpolate_masked_vector
-from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
-from ..util.resolution import SpectralResolution
+from ..util.sampling import spectrum_velocity_scale
 from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util.constants import DAPConstants
-from ..util import lineprofiles
-from .templatelibrary import TemplateLibrary
+#from ..util import lineprofiles
+from .templatelibrary import TemplateLibraryDef, TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
-from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
+from .ppxffit import PPXFModel, PPXFFit
 from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
 
-# For debugging
-from matplotlib import pyplot
 
 class SasukePar(KeywordParSet):
     r"""
@@ -76,70 +72,189 @@ class SasukePar(KeywordParSet):
 
     .. include:: ../tables/sasukepar.rst
     """
-    def __init__(self, stellar_continuum=None, emission_lines=None, continuum_templates=None,
-                 etpl_line_sigma_mode=None, etpl_line_sigma_min=None, velscale_ratio=None,
-                 guess_redshift=None, guess_dispersion=None, minimum_snr=None,
-                 deconstruct_bins=None, pixelmask=None, reject_boxcar=None, bias=None,
-                 moments=None, degree=None, mdegree=None, reddening=None):
+#     stellar_continuum=None, emission_lines=None, template_library=None,
 
+    def __init__(self, guess_redshift=0., guess_dispersion=100., emission_lines='ELPMPL11',
+                 etpl_line_sigma_mode='default', etpl_line_sigma_min=0.0,
+                 deconstruct_bins='ignore', template_library='MASTARSSP', stellar_velocity=None,
+                 stellar_dispersion=None, pixelmask=None, reject_boxcar=101, velscale_ratio=1,
+                 degree=-1, mdegree=0, reddening=None):
+
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
         arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
         etpl_mode_options = Sasuke.etpl_line_sigma_options()
         deconstruct_options = Sasuke.deconstruct_bins_options()
 
-        pars =     [ 'stellar_continuum', 'emission_lines', 'continuum_templates',
-                     'etpl_line_sigma_mode', 'etpl_line_sigma_min', 'velscale_ratio',
-                     'guess_redshift', 'guess_dispersion', 'minimum_snr', 'deconstruct_bins',
-                     'pixelmask', 'reject_boxcar', 'bias', 'moments', 'degree', 'mdegree',
-                     'reddening' ]
-        values =   [ stellar_continuum, emission_lines, continuum_templates, etpl_line_sigma_mode,
-                     etpl_line_sigma_min, velscale_ratio, guess_redshift, guess_dispersion,
-                     minimum_snr, deconstruct_bins, pixelmask, reject_boxcar, bias, moments,
-                     degree, mdegree, reddening ]
-        defaults = [ None, None, None, 'default', 0.0, 1, None, None, 0.0, 'ignore', None, None,
-                     None, 2, -1, 0, None ]
-        options = [ None, None, None, etpl_mode_options, None, None, None, None, None,
-                    deconstruct_options, None, None, None, None, None, None, None ]
-        dtypes =   [ StellarContinuumModel, EmissionLineDB, [str, TemplateLibrary], str, in_fl,
-                     int, arr_in_fl, arr_in_fl, in_fl, str, SpectralPixelMask, int, in_fl, int,
-                     int, int, in_fl ]
-
-        descr = ['The result of the previous fit to the stellar continuum.',
-                 'Emission-line database with the details of the lines to be fit.',
-                 'The new continuum template library to use during the emission-line fit.',
+        values = [guess_redshift, guess_dispersion, emission_lines, etpl_line_sigma_mode,
+                  etpl_line_sigma_min, deconstruct_bins, template_library, stellar_velocity,
+                  stellar_dispersion, pixelmask, reject_boxcar, velscale_ratio, degree, mdegree,
+                  reddening]
+        options = [None, None, None, etpl_mode_options, None, deconstruct_options, None, None,
+                   None, None, None, None, None, None, None]
+        dtypes = [arr_in_fl, arr_in_fl, str, str, in_fl, str, [str, TemplateLibraryDef],
+                  arr_in_fl, arr_in_fl, SpectralPixelMask, int, int, int, int, in_fl]
+        descr = ['Single or per-binned-spectrum redshift to use as the initial velocity guess.',
+                 'Single or per-binned-spectrum velocity dispersion to use as the initial guess.',
+                 'Either a string identifying the database of emission lines to fit, ' \
+                    'or the direct path to the parameter file defining the database',
                  'Mode used to set the instrumental dispersion of the emission-line templates.  ' \
-                    'Mode options are explated by :func:`Sasuke.etpl_line_sigma_options`.  ' \
-                    'Default is ``default``.',
+                    'Mode options are explated by :func:`Sasuke.etpl_line_sigma_options`.',
                  'Impose a minimum emission-line sigma by offsetting the nominal trend, in ' \
-                    'quadrature, to have this minimum value.  Default is 0.',
-                 'Integer ratio between the width of the spectral pixels in the galaxy and ' \
-                    'template spectra.  If ``velscale_ratio = 2``, the template pixels are ' \
-                    'half as wide as the galaxy pixels.',
-                 'Single or per-spectrum redshift to use as the initial velocity guess.',
-                 'Single or per-spectrum velocity dispersion to use as the initial guess.',
-                 'Minimum S/N of spectrum to fit (ignored when deconstructing bins).',
+                    'quadrature, to have this minimum value.',
                  'Method to use for deconstructing binned spectra into individual spaxels ' \
                     'for emission-line fitting.  See :func:`Sasuke.deconstruct_bin_options`.',
-                 'Mask to apply to all spectra being fit.',
-                 'Size of the boxcar to use when rejecting fit outliers.',
-                 'pPXF bias parameter.  (Irrelevant because gas is currently always fit with ' \
-                    'moments=2.)',
-                 'pPXF moments parameter.  (Irrelevant because gas is currently always fit with ' \
-                    'moments=2.)',
+                 'Keyword identifier or definition object used to build the spectral template ' \
+                    'library used during the fit.',
+                 'Single or per-binned-spectrum redshift of the stellar component',
+                 'Single or per-binned-spectrum velocity dispersion of the stellar component',
+                 'Pixel mask to include during the fitting; see ' \
+                    ':func:`~mangadap.util.pixelmask.SpectralPixelMask`.',
+                 'Size of the boxcar to use when rejecting fit outliers (must be odd).',
+                 'The **integer** ratio between the velocity scale of the pixel in the galaxy ' \
+                    'data to that of the template data.',
                  'pPXF degree parameter setting the degree of the additive polynomials to use.',
                  'pPXF mdegree parameter setting the degree of the multiplicative polynomials ' \
                     'to use.',
                  r'pPXF reddening parameter setting the initial :math:`E(B-V)` to fit, based ' \
                     r'on a Calzetti law.']
 
-        super(SasukePar, self).__init__(pars, values=values, defaults=defaults, options=options,
-                                        dtypes=dtypes, descr=descr)
-        self._check()
+        super().__init__(pars, values=values, defaults=defaults, options=options, dtypes=dtypes,
+                         descr=descr)
+        self.templates = None
+        self.emldb = None
+        self._validate()
 
-    def _check(self):
+    def _validate(self):
         if self['mdegree'] > 0 and self['reddening'] is not None:
             raise ValueError('Cannot fit both multiplicative polynomials and an extinction curve.')
+
+        if self['emission_lines'] is None:
+            raise ValueError('Must define an emission-line database.')
+        # Check if the provided string is a file
+        parfile = Path(self['emission_lines']).resolve()
+        if parfile.exists():
+            self.emldb = EmissionLineDB(str(parfile))
+            return
+        # Otherwise, assume this is a keyword selecting a database distributed
+        # with the DAP has been chosen.
+        self.emldb = EmissionLineDB.from_key(self['emission_lines'])
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate the parameters based on the provided dictionary.
+        """
+        # Copy over the primary keywords
+        _d = {}
+        for key in ['guess_redshift', 'guess_dispersion', 'etpl_line_sigma_mode',
+                    'etpl_line_sigma_min', 'deconstruct_bins', 'reject_boxcar', 'velscale_ratio',
+                    'degree', 'mdegree', 'reddening']:
+            if key in d.keys():
+                _d[key] = d[key]
+
+        artifacts = None if 'artifact_mask' not in d.keys() or d['artifact_mask'] is None \
+                        else ArtifactDB.from_key(d['artifact_mask'])
+        waverange = None if 'waverange' not in d.keys() or d['waverange'] is None \
+                        else d['waverange']
+        ism_mask = None if 'ism_mask' not in d.keys() or d['ism_mask'] is None \
+                        else EmissionLineDB.from_key(d['ism_mask'])
+
+        if not all([a is None for a in [artifacts, waverange]]):
+            # nsig=2.0 is only used by the ISM mask; this is currently hardcoded!
+            _d['pixelmask'] = SpectralPixelMask(artdb=artifacts, emldb=ism_mask,
+                                                waverange=waverange, nsig=2.0)
+
+        if 'templates' in d.keys():
+            _d['template_library'] = TemplateLibraryDef.from_dict(d['templates'])
+            
+        # Return the instantiation
+        return super().from_dict(_d)
+
+    def fill(self, binned_spectra, stellar_continuum=None, guess_vel=None, guess_sig=None,
+             **kwargs):
+        """
+        Use the provided object to "fill" the parameters by constructing the
+        template library spectra used during the fit and to set the initial
+        guess kinematics for each spectrum.
+
+        kwargs are passed directly to the template library construction
+
+        """
+        # Fill the guess kinematics
+        c = astropy.constants.c.to('km/s').value
+        nbins = binned_spectra.nbins
+        if isinstance(guess_vel, (list, numpy.ndarray)):
+            _guess_vel = numpy.asarray(guess_vel)
+            if _guess_vel.size > 1 and _guess_vel.size != nbins:
+                raise ValueError('Incorrect number of guess velocities provided; expected '
+                                 f'{nbins}, found {_guess_vel.size}.')
+            self['guess_redshift'] = _guess_vel.copy()/c
+        elif guess_vel is not None:
+            self['guess_redshift'] = numpy.full(nbins, guess_vel/c, dtype=float)
+        else:
+            self['guess_redshift'] = numpy.zeros(nbins, dtype=float)
+
+        if isinstance(guess_sig, (list, numpy.ndarray)):
+            _guess_sig = numpy.asarray(guess_sig)
+            if _guess_sig.size > 1 and _guess_sig.size != nbins:
+                raise ValueError('Incorrect number of guess dispersions provided; expected '
+                                 f'{nbins}, found {_guess_sig.size}.')
+            self['guess_dispersion'] = _guess_sig.copy()
+        elif guess_sig is not None:
+            self['guess_dispersion'] = numpy.full(nbins, guess_sig, dtype=float)
+        else:
+            self['guess_dispersion'] = numpy.full(nbins, 100., dtype=float)
+
+        # Get the stellar continuum templates.
+        tpl_key = self['template_library']
+        if isinstance(tpl_key, TemplateLibraryDef):
+            tpl_key = tpl_key['key']
+
+        if stellar_continuum is not None and not hasattr(stellar_continuum.method['fitpar'], 'templates'):
+            warnings.warn('Unable to pull stellar continuum templates from provided '
+                          'StellarContinuumModel object.  Ignoring...')
+            _stellar_continuum = None
+        else:
+            _stellar_continuum = stellar_continuum
+
+        same_templates = _stellar_continuum is not None and (self['template_library'] is None 
+                or tpl_key == _stellar_continuum.method['fitpar'].templates.library['key'])
+
+        if _stellar_continuum is None:
+            self['stellar_velocity'] = self['guess_redshift']*c
+            self['stellar_dispersion'] = self['guess_dispersion']
+        else:
+            self['stellar_velocity'], self['stellar_dispersion'] \
+                    = _stellar_continuum.matched_kinematics(binned_spectra['BINID'].data, cz=True,
+                                                nearest=True, missing=binned_spectra.missing_bins,
+                                                corrected=not same_templates)
+
+        if same_templates:
+            self.templates = stellar_continuum.method['fitpar'].templates
+            self['template_library'] = stellar_continuum.method['fitpar'].templates.library
+            return
+
+        if self['template_library'] is not None and (_stellar_continuum is None
+                or tpl_key != _stellar_continuum.method['fitpar'].templates.library['key']):
+            velocity_offset = None if self['guess_redshift'] is None \
+                                else numpy.mean(c * self['guess_redshift'])
+            # NOTE: This forces the spectral resolution to be matched!
+            self.templates = TemplateLibrary(self['template_library'],
+                                             velocity_offset=velocity_offset,
+                                             cube=binned_spectra.cube, match_resolution=True,
+                                             velscale_ratio=self['velscale_ratio'],
+                                             **kwargs)
+            self['template_library'] = self.templates.library
+            return
+
+        raise ValueError('CODING ERROR: Should not reach here.')
 
 
 class SasukeFitDataTable(DataTable):
@@ -354,10 +469,6 @@ class Sasuke(EmissionLineFit):
         tpl_rfft (numpy.ndarray):
             The complex array with the real FFT of the template spectra.
             Shape is :math:`(N_{\rm tpl}, N_{\rm pad}/2 + 1)`.
-        matched_resolution (bool):
-            The spectral resolution of the templates is matched to that
-            of the galaxy data.  WARNING: This functionality needs to be
-            checked in relation to the gas templates!
         velscale_ratio (int):
             The **integer** ratio between the velocity scale of the
             pixel in the galaxy data to that of the template data.
@@ -412,9 +523,6 @@ class Sasuke(EmissionLineFit):
             The upper and lower limits on *all* higher order
             Gauss-Hermite moments imposed by pPXF.  See
             :func:`mangadap.proc.ppxffit.PPXFFit.losvd_limits`.
-        bias (float):
-            pPXF bias parameter.  (Currently irrelevant because gas is
-            currently always fit with moments=2.)
         degree (int):
             pPXF degree parameter setting the degree of the additive
             polynomials to use, :math:`o_{\rm add}`.
@@ -494,7 +602,6 @@ class Sasuke(EmissionLineFit):
         self.tpl_rfft = None
         self.gas_tpl = None
 
-        self.matched_resolution = None
         self.velscale_ratio = None
 
         self.emldb = None
@@ -518,7 +625,6 @@ class Sasuke(EmissionLineFit):
         self.sigma_limits = None
         self.gh_limits = None
 
-        self.bias = None
         self.degree = None
         self.mdegree = None
         self.reddening = None
@@ -529,11 +635,11 @@ class Sasuke(EmissionLineFit):
         self.spectrum_end = None
         self.dof = None
 
-    @staticmethod
-    def _copy_from_stellar_continuum(stellar_continuum):
-        return stellar_continuum.method['fitpar']['template_library'], \
-                stellar_continuum.method['fitpar']['match_resolution'], \
-                stellar_continuum.method['fitpar']['velscale_ratio']
+#    @staticmethod
+#    def _copy_from_stellar_continuum(stellar_continuum):
+#        return stellar_continuum.method['fitpar']['template_library'], \
+#                stellar_continuum.method['fitpar']['match_resolution'], \
+#                stellar_continuum.method['fitpar']['velscale_ratio']
 
     @staticmethod
     def etpl_line_sigma_options():
@@ -710,7 +816,7 @@ class Sasuke(EmissionLineFit):
         
         """
         _rng = numpy.square(rng)
-        _fit_eml = numpy.zeros(model_eml_par['SIGMACORR'].shape, dtype=numpy.bool)
+        _fit_eml = numpy.zeros(model_eml_par['SIGMACORR'].shape, dtype=bool)
         _fit_eml[:,self.fit_eml] = True
         sigcor = numpy.square(model_eml_par['KIN'][:,:,1]) \
                         - numpy.square(model_eml_par['SIGMACORR'][:,:])
@@ -1152,59 +1258,60 @@ class Sasuke(EmissionLineFit):
         #   emission line
         return model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par
 
-    def get_stellar_templates(self, par, cube, z=0., loggers=None, quiet=False):
-        """
-        Return the stellar template library.
+#    def get_stellar_templates(self, par, cube, z=0., loggers=None, quiet=False):
+#        """
+#        Return the stellar template library.
+#
+#        If fitting a different set of templates, the spectral resolution
+#        of the new templates must be matched to the galaxy data and the
+#        velocity dispersion used by the fit must be astrophysical
+#        (corrected for any resolution difference).
+#
+#        Returns:
+#            TemplateLibrary, bool, int: Returns the template library, a
+#            flag if the resolution of the templates has been matched to
+#            the galaxy data, and the velocity sampling compared to the
+#            galaxy data.
+#        """
+#        if par['continuum_templates'] is not None:
+#            if isinstance(par['continuum_templates'], TemplateLibrary):
+#                # The template library has already been instantiated so
+#                # just copy the object.  Assume this means that the
+#                # spectral resolution has been matched to the MaNGA data
+#                # because otherwise par['continuum_templates'] is None.
+#                # TODO: Instead test that the spectral resolution of the
+#                # template libary has been matched to the MaNGA data?
+#                return par['continuum_templates'], True, par['velscale_ratio']
+#
+#            # Otherwise it must be the keyword of the library that needs
+#            # to be constructed.
+#            if par['stellar_continuum'] is not None and par['continuum_templates'] \
+#                        == par['stellar_continuum'].method['fitpar']['template_library_key']:
+#                # The templates used are the same, so warn the user and
+#                # just copy over the existing template library.  This
+#                # maintains the resolution difference
+#                warnings.warn('Request emission-line continuum templates identical to those '
+#                              'used during the stellar continuum fitting.')
+#                return Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+#
+#            # The template library needs to be constructed based on the
+#            # provided keyword TODO: The TemplateLibrary object uses the
+#            # median spectral resolution vector when performing the
+#            # resolution match to the MaNGA data.
+#            return TemplateLibrary(par['continuum_templates'],
+#                                   velocity_offset=astropy.constants.c.to('km/s').value*z,
+#                                   cube=cube, match_resolution=True,
+#                                   velscale_ratio=par['velscale_ratio'], hardcopy=False,
+#                                   loggers=loggers, quiet=quiet), True, par['velscale_ratio']
+#
+#        if par['continuum_templates'] is None and par['stellar_continuum'] is not None:
+#            return Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+#
+#        # No stellar templates available
+#        return None, None, None
 
-        If fitting a different set of templates, the spectral resolution
-        of the new templates must be matched to the galaxy data and the
-        velocity dispersion used by the fit must be astrophysical
-        (corrected for any resolution difference).
-
-        Returns:
-            TemplateLibrary, bool, int: Returns the template library, a
-            flag if the resolution of the templates has been matched to
-            the galaxy data, and the velocity sampling compared to the
-            galaxy data.
-        """
-        if par['continuum_templates'] is not None:
-            if isinstance(par['continuum_templates'], TemplateLibrary):
-                # The template library has already been instantiated so
-                # just copy the object.  Assume this means that the
-                # spectral resolution has been matched to the MaNGA data
-                # because otherwise par['continuum_templates'] is None.
-                # TODO: Instead test that the spectral resolution of the
-                # template libary has been matched to the MaNGA data?
-                return par['continuum_templates'], True, par['velscale_ratio']
-
-            # Otherwise it must be the keyword of the library that needs
-            # to be constructed.
-            if par['stellar_continuum'] is not None and par['continuum_templates'] \
-                        == par['stellar_continuum'].method['fitpar']['template_library_key']:
-                # The templates used are the same, so warn the user and
-                # just copy over the existing template library.  This
-                # maintains the resolution difference
-                warnings.warn('Request emission-line continuum templates identical to those '
-                              'used during the stellar continuum fitting.')
-                return Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
-
-            # The template library needs to be constructed based on the
-            # provided keyword TODO: The TemplateLibrary object uses the
-            # median spectral resolution vector when performing the
-            # resolution match to the MaNGA data.
-            return TemplateLibrary(par['continuum_templates'],
-                                   velocity_offset=astropy.constants.c.to('km/s').value*z,
-                                   cube=cube, match_resolution=True,
-                                   velscale_ratio=par['velscale_ratio'], hardcopy=False,
-                                   loggers=loggers, quiet=quiet), True, par['velscale_ratio']
-
-        if par['continuum_templates'] is None and par['stellar_continuum'] is not None:
-            return Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
-
-        # No stellar templates available
-        return None, None, None
-
-    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False,
+    def fit_SpatiallyBinnedSpectra(self, binned_spectra, good_bins=None, good_spax=None,
+                                   stellar_continuum=None, par=None, loggers=None, quiet=False,
                                    debug=False):
         r"""
         This DAP-specific function interprets the DAP-specific classes
@@ -1303,10 +1410,12 @@ class Sasuke(EmissionLineFit):
                                                                     error=True)
 
         # Get the binned spectra that meet the S/N criterion
-        bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(binned_spectra,
-                                                                   minimum_snr=par['minimum_snr'],
-                                                        stellar_continuum=par['stellar_continuum'],
-                                                                   debug=debug)
+#        bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(binned_spectra,
+#                                                                   minimum_snr=par['minimum_snr'],
+#                                                        stellar_continuum=par['stellar_continuum'],
+#                                                                   debug=debug)
+        bins_to_fit = numpy.ones(flux.shape[0], dtype=bool) if good_bins is None else good_bins
+
         if numpy.sum(bins_to_fit) == 0:
             raise ValueError('No good spectra to fit!')
 
@@ -1318,10 +1427,13 @@ class Sasuke(EmissionLineFit):
         guess_dispersion = par['guess_dispersion'][bins_to_fit]
 
         # Get the stellar templates
-        stellar_templates, matched_resolution, velscale_ratio \
-                = self.get_stellar_templates(par, binned_spectra.cube,
-                                             z=numpy.mean(guess_redshift),
-                                             loggers=loggers, quiet=quiet)
+#        stellar_templates, matched_resolution, velscale_ratio \
+#                = self.get_stellar_templates(par, binned_spectra.cube,
+#                                             z=numpy.mean(guess_redshift),
+#                                             loggers=loggers, quiet=quiet)
+        stellar_templates = par.templates
+#        matched_resolution = par.templates.library['matched_resolution']
+        velscale_ratio = par['velscale_ratio']
 
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
         stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
@@ -1331,13 +1443,15 @@ class Sasuke(EmissionLineFit):
                         else numpy.mean(stellar_templates['SPECRES'].data, axis=0).ravel()
 
         # Get the stellar kinematics
-        stellar_velocity, stellar_dispersion = (None, None) if par['stellar_continuum'] is None \
-                        else par['stellar_continuum'].matched_kinematics(
-                                                binned_spectra['BINID'].data, cz=True,
-                                                nearest=True, missing=binned_spectra.missing_bins,
-                                                corrected=matched_resolution)
-        stellar_kinematics = None if stellar_velocity is None or stellar_dispersion is None \
-                                else numpy.array([ stellar_velocity, stellar_dispersion ]).T
+#        stellar_velocity, stellar_dispersion = (None, None) if par['stellar_continuum'] is None \
+#                        else par['stellar_continuum'].matched_kinematics(
+#                                                binned_spectra['BINID'].data, cz=True,
+#                                                nearest=True, missing=binned_spectra.missing_bins,
+#                                                corrected=matched_resolution)
+        stellar_kinematics = None if par['stellar_velocity'] is None \
+                                        or par['stellar_dispersion'] is None \
+                                else numpy.array([par['stellar_velocity'],
+                                                  par['stellar_dispersion']]).T
 
         # Set which stellar templates to use for each spectrum
         # TODO: Template modes:
@@ -1356,9 +1470,9 @@ class Sasuke(EmissionLineFit):
             stellar_kinematics = stellar_kinematics[bins_to_fit,:]
 
         # TODO: For now can only fit two moments
-        if par['moments'] != 2:
-            print(par['moments'])
-            raise NotImplementedError('Number of gas moments can only be two.')
+#        if par['moments'] != 2:
+#            print(par['moments'])
+#            raise NotImplementedError('Number of gas moments can only be two.')
 
         if par['deconstruct_bins'] != 'ignore':
             # Get the individual spaxel data; this returns all spaxels
@@ -1374,9 +1488,12 @@ class Sasuke(EmissionLineFit):
             # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
             # default
             # TODO: THIS IGNORES THE MINIMUM S/N!
-            spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(binned_spectra,
-                                                                  bins_to_fit=bins_to_fit,
-                                                                  debug=debug)
+#            spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(binned_spectra,
+#                                                                  bins_to_fit=bins_to_fit,
+#                                                                  debug=debug)
+
+            spaxel_to_fit = numpy.ones(spaxel_flux.shape[0], dtype=bool) if good_spax is None \
+                                else good_spax 
 
             if numpy.sum(spaxel_to_fit) == 0:
                 raise ValueError('No good spectra to fit!')
@@ -1428,7 +1545,7 @@ class Sasuke(EmissionLineFit):
 
             # Return the fits to the individual spaxel data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
-                    = self.fit(par['emission_lines'], wave, flux, obj_ferr=ferr,
+                    = self.fit(par.emldb, wave, flux, obj_ferr=ferr,
                                obj_mask=par['pixelmask'], obj_sres=sres,
                                guess_redshift=guess_redshift, guess_dispersion=guess_dispersion,
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
@@ -1440,7 +1557,6 @@ class Sasuke(EmissionLineFit):
                                remap_mask=par['pixelmask'], remap_sres=spaxel_sres,
                                remap_skyx=spaxel_x, remap_skyy=spaxel_y, obj_skyx=bin_x,
                                obj_skyy=bin_y, velscale_ratio=velscale_ratio,
-                               matched_resolution=matched_resolution, bias=par['bias'],
                                degree=par['degree'], mdegree=par['mdegree'],
                                reddening=par['reddening'], loggers=loggers, quiet=quiet, plot=plot)
 
@@ -1455,13 +1571,13 @@ class Sasuke(EmissionLineFit):
             # from the emission-line parameters object.
             # TODO: Emission-line equivalent-width measurements should
             # be put in EmissionLineModel...
-            EmissionLineFit.measure_equivalent_width(wave, spaxel_flux, par['emission_lines'],
+            EmissionLineFit.measure_equivalent_width(wave, spaxel_flux, par.emldb,
                                                      model_eml_par, bitmask=self.bitmask,
                                                      checkdb=False)
         else:
             # Return the fits to the binned data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
-                    = self.fit(par['emission_lines'], wave, flux, obj_ferr=ferr,
+                    = self.fit(par.emldb, wave, flux, obj_ferr=ferr,
                                obj_mask=par['pixelmask'], obj_sres=sres,
                                guess_redshift=guess_redshift, guess_dispersion=guess_dispersion,
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
@@ -1470,7 +1586,6 @@ class Sasuke(EmissionLineFit):
                                etpl_sinst_mode=par['etpl_line_sigma_mode'],
                                etpl_sinst_min=par['etpl_line_sigma_min'],
                                velscale_ratio=velscale_ratio,
-                               matched_resolution=matched_resolution, bias=par['bias'],
                                degree=par['degree'], mdegree=par['mdegree'],
                                reddening=par['reddening'], loggers=loggers, quiet=quiet, plot=plot)
 
@@ -1490,7 +1605,7 @@ class Sasuke(EmissionLineFit):
             # from the emission-line parameters object.
             # TODO: Emission-line equivalent-width measurements should
             # be put in EmissionLineModel...
-            EmissionLineFit.measure_equivalent_width(wave, flux, par['emission_lines'],
+            EmissionLineFit.measure_equivalent_width(wave, flux, par.emldb,
                                                      model_eml_par, bitmask=self.bitmask,
                                                      checkdb=False)
 
@@ -1507,13 +1622,15 @@ class Sasuke(EmissionLineFit):
         # between the stellar continuum model determined for the
         # kinematics and the one determined by the optimized
         # stellar-continuum + emission-line fit:
-        if par['stellar_continuum'] is not None:
+        # TODO: Change this so that the model is directly output instead of the
+        # baseline!!!!!
+        if stellar_continuum is not None:
 
             # Get the stellar continuum. The model extends over over
             # regions masked during the fit, but 0 outside the spectral
             # range of the fit.
-            sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra['BINID'].data,
-                                                            missing=binned_spectra.missing_bins)
+            sc_continuum = stellar_continuum.fill_to_match(binned_spectra['BINID'].data,
+                                                           missing=binned_spectra.missing_bins)
 
             # Get the stellar continuum fit during the emission-line
             # modeling. The masked arrays are reset to only mask
@@ -1548,8 +1665,8 @@ class Sasuke(EmissionLineFit):
             stpl_flux=None, stpl_sres=None, stpl_to_use=None, stellar_kinematics=None,
             etpl_sinst_mode='default', etpl_sinst_min=0, remapid=None, remap_flux=None,
             remap_ferr=None, remap_mask=None, remap_sres=None, remap_skyx=None, remap_skyy=None,
-            obj_skyx=None, obj_skyy=None, velscale_ratio=None, matched_resolution=True,
-            waverange=None, bias=None, degree=-1, mdegree=0, reddening=None,
+            obj_skyx=None, obj_skyy=None, velscale_ratio=None, 
+            waverange=None, degree=-1, mdegree=0, reddening=None,
             max_velocity_range=400., alias_window=None, dvtol=1e-10, loggers=None, quiet=False,
             plot=False, sigma_rej=3., ensemble=True):
             #moments=2,
@@ -1722,19 +1839,12 @@ class Sasuke(EmissionLineFit):
                 The **integer** ratio between the velocity scale of the
                 pixel in the galaxy data to that of the template data.
                 If None, set to unity.
-            matched_resolution (:obj:`bool`, optional):
-                The spectral resolution of the templates is matched to
-                that of the galaxy data.  WARNING: This functionality is
-                never used!
             waverange (array-like, optional):
                 Lower and upper wavelength limits to *include* in the
                 fit.  This can be a two-element vector to apply the same
                 limits to all spectra, or a N-spec x 2 array with
                 wavelength ranges for each spectrum to be fit.  Default
                 is to use as much of the spectrum as possible.
-            bias (:obj:`float`, optional):
-                pPXF bias parameter.  (Currently irrelevant because gas
-                is currently always fit with moments=2.)
             degree (:obj:`int`, optional):
                 pPXF degree parameter setting the degree of the additive
                 polynomials to use, :math:`o_{\rm add}`.  Default is no
@@ -1904,9 +2014,9 @@ class Sasuke(EmissionLineFit):
         # - Apply a quardrature offset if the dispersion dips below the
         #   imposed minimum or if the user requested to offset to the
         #   minimum.
-        self.matched_resolution = matched_resolution
+#        self.matched_resolution = matched_resolution
         if etpl_sinst is None and self.obj_sres is None:
-            self.matched_resolution = False
+#            self.matched_resolution = False
             etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,
                                     dtype=float)
 
@@ -1984,7 +2094,6 @@ class Sasuke(EmissionLineFit):
         # always moments=2!
         self.velocity_limits, self.sigma_limits, self.gh_limits \
                     = PPXFFit.losvd_limits(self.velscale)
-        self.bias = bias
         self.degree = max(degree,-1)
         self.mdegree = max(mdegree,0)
         self.reddening = reddening
@@ -2001,7 +2110,7 @@ class Sasuke(EmissionLineFit):
         if self.nstpl == 0:
             self.gas_tpl = numpy.ones(etpl.ntpl, dtype=bool)
             self.tpl_flux = etpl.flux
-            self.tpl_to_use = numpy.ones((self.nobj,etpl.ntpl), dtype=numpy.bool)
+            self.tpl_to_use = numpy.ones((self.nobj,etpl.ntpl), dtype=bool)
             self.tpl_comp = etpl.comp
             self.tpl_vgrp = etpl.vgrp
             self.tpl_sgrp = etpl.sgrp
@@ -2013,7 +2122,7 @@ class Sasuke(EmissionLineFit):
                                         numpy.ones(etpl.ntpl)).astype(bool)
             self.tpl_flux = numpy.append(self.tpl_flux, etpl.flux, axis=0)
             self.tpl_to_use = numpy.append(self.tpl_to_use,
-                                           numpy.ones((self.nobj,etpl.ntpl), dtype=numpy.bool),
+                                           numpy.ones((self.nobj,etpl.ntpl), dtype=bool),
                                            axis=1)
             self.tpl_comp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.comp+1)
             self.tpl_vgrp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.vgrp+1)
@@ -2031,7 +2140,6 @@ class Sasuke(EmissionLineFit):
 
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
         self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
-#        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
 
         # Total number of kinematics parameters (tied or otherwise)
@@ -2402,7 +2510,7 @@ class Sasuke(EmissionLineFit):
         skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
 
         # Instantiate the output model array
-        models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+        models = numpy.ma.zeros(_obj_flux.shape, dtype=float)
         # Initially mask everything
         models[:,:] = numpy.ma.masked
 

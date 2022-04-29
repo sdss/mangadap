@@ -1,5 +1,3 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-# -*- coding: utf-8 -*-
 """
 A class hierarchy that performs the spectral-index measurements.
 
@@ -57,9 +55,8 @@ spectra:
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-
-import glob
-import os
+import inspect
+from pathlib import Path
 import logging
 import warnings
 
@@ -67,31 +64,24 @@ from IPython import embed
 
 import numpy
 from astropy.io import fits
-import astropy.constants
 
 from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
-from ..config import defaults
 from ..util.datatable import DataTable
-from ..util.resolution import SpectralResolution, match_spectral_resolution
-from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
+from ..util.resolution import match_spectral_resolution
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.log import log_output
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
-from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
 from .bandpassfilter import passband_integral, passband_integrated_width, pseudocontinuum
 from . import util
-
-from matplotlib import pyplot
 
 
 class SpectralIndicesDef(KeywordParSet):
@@ -103,112 +93,96 @@ class SpectralIndicesDef(KeywordParSet):
 
     .. include:: ../tables/spectralindicesdef.rst
     """
-    def __init__(self, key=None, minimum_snr=None, fwhm=None, compute_corrections=None,
-                 artifacts=None, absindex=None, bandhead=None):
-        in_fl = [ int, float ]
+    def __init__(self, key='INDXEN', minimum_snr=0.0, pixelmask=None, fwhm=-1,
+                 compute_corrections=True, absindex='EXTINDX', bandhead='BHBASIC',
+                 overwrite=False):
 
-        pars =     [ 'key', 'minimum_snr', 'fwhm', 'compute_corrections', 'artifacts', 'absindex',
-                        'bandhead' ]
-        values =   [   key,   minimum_snr,   fwhm,   compute_corrections,   artifacts,   absindex,
-                          bandhead ]
-        dtypes =   [   str,         in_fl,  in_fl,                  bool,         str,        str,
-                               str ]
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
+        in_fl = [int, float]
+
+        values = [key, minimum_snr, pixelmask, fwhm, compute_corrections, absindex, bandhead,
+                  overwrite]
+        dtypes = [str, in_fl, SpectralPixelMask, in_fl, bool, str, str, bool]
         descr = ['Keyword used to distinguish between different spectral-index databases.',
                  'Minimum S/N of spectrum to fit',
-                 'Resolution FWHM in angstroms at which to make the measurements.',
-                 'Flag to compute dispersion corrections to indices.  Dispersion corrections ' \
-                    'are always calculated!',
-                 'String identifying the artifact database to use',
-                 'String identifying the absorption-index database to use',
-                 'String identifying the bandhead-index database to use']
+                 'Object used to mask spectral pixels',
+                 'Resolution FWHM in angstroms at which to make the measurements.  If -1, the ' \
+                    'measurements are taken at the native resolution of the observed spectra.  ' \
+                    'If >0, the resolution should be *larger* than the observed resolution, and ' \
+                    'the observed data are convolved with a wavelength dependent Gaussian to ' \
+                    'match it to the provided FWHM.',
+                 'Flag to compute velocity dispersion corrections to the measured indices, if ' \
+                    'possible.  This requires the stellar kinematics results from the stellar ' \
+                    'continuum fitting.',
+                 'Either a string identifying the absorption-line database to ' \
+                    'use, or the direct path to the parameter file defining the database',
+                 'Either a string identifying the bandhead/color database to ' \
+                    'use, or the direct path to the parameter file defining the database',
+                 'If the output file already exists, redo all the calculations and overwrite it.']
 
-        super(SpectralIndicesDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, dtypes=dtypes, descr=descr)
+        self.absdb = None
+        self.bhddb = None
+        self._validate()
 
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate from a dictionary.
+        """
+        # Copy over the primary keywords.
+        # TODO: Get these from inspection of the instatiation signature!
+        _d = {}
+        for key in ['key', 'minimum_snr', 'fwhm', 'compute_corrections', 'absindex', 'bandhead', 
+                    'overwrite']:
+            if key in d.keys():
+                _d[key] = d[key]
 
-def validate_spectral_indices_config(cnfg):
-    """ 
-    Validate :class:`~mangadap.util.parser.DefaultConfig` object with
-    spectral-index measurement parameters.
+        artifacts = None if 'artifact_mask' not in d.keys() or d['artifact_mask'] is None \
+                        else ArtifactDB.from_key(d['artifact_mask'])
+        waverange = None if 'waverange' not in d.keys() or d['waverange'] is None \
+                        else d['waverange']
 
-    Args:
-        cnfg (:class:`~mangadap.util.parser.DefaultConfig`):
-            Object with parameters to validate.
+        if not all([a is None for a in [artifacts, waverange]]):
+            _d['pixelmask'] = SpectralPixelMask(artdb=artifacts, waverange=waverange)
 
-    Raises:
-        KeyError: Raised if any required keywords do not exist.
-        ValueError: Raised if keys have unacceptable values.
-        FileNotFoundError: Raised if a file is specified but could not
-            be found.
-    """
-    # Check for required keywords
-    if not cnfg.keyword_specified('key'):
-        raise KeyError('Keyword \'key\' must be provided.')
+        # Return the instantiation
+        return super().from_dict(_d)
 
-    if not cnfg.keyword_specified('absorption_indices') \
-                and not cnfg.keyword_specified('bandhead_indices'):
-        raise ValueError('Must provide either an absorption-index database or a bandhead-index ' \
-                         'database, or both.')
+    def _validate(self):
+        """
+        Validate the object and instantiate the passband database to use for the
+        emission-line moments.
+        """
+        if self['absindex'] is None and self['bandhead'] is None:
+            raise ValueError('Must define either absindex or bandhead or both.')
 
+        if self['absindex'] is not None:
+            # Define the absorption-line database
+            parfile = Path(self['absindex']).resolve()
+            if parfile.exists():
+                # Use the existing file to set the database
+                self.absdb = AbsorptionIndexDB(str(parfile))
+            else:
+                # Otherwise, assume this is a keyword selecting a database distributed
+                # with the DAP has been chosen.
+                self.absdb = AbsorptionIndexDB.from_key(self['absindex'])
 
-def available_spectral_index_databases():
-    """
-    Return the list of available spectral index databases
-
-    Available database combinations:
-
-    .. todo::
-        Fill in
-
-    Returns:
-        list: A list of :func:`SpectralIndicesDef` objects, each
-        defining a spectral-index database to measure.
-
-    Raises:
-        IOError:
-            Raised if no spectral-index configuration files could be
-            found.
-        KeyError:
-            Raised if the spectral-index database keywords are not
-            all unique.
-
-    .. todo::
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-        
-    """
-    # Check the configuration files exist
-    search_dir = os.path.join(defaults.dap_config_root(), 'spectral_indices')
-    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
-    if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
-
-    # Build the list of library definitions
-    index_set_list = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = DefaultConfig(f=f)
-        # Ensure it has the necessary elements to define the template
-        # library
-        validate_spectral_indices_config(cnfg)
-
-        index_set_list += [ SpectralIndicesDef(key=cnfg['key'],
-                                               minimum_snr=cnfg.getfloat('minimum_snr', default=0.), 
-                                               fwhm=cnfg.getfloat('resolution_fwhm', default=-1),
-                                    compute_corrections=cnfg.getbool('compute_sigma_correction',
-                                                                     default=False),
-                                               artifacts=cnfg['artifact_mask'],
-                                               absindex=cnfg['absorption_indices'],
-                                               bandhead=cnfg['bandhead_indices']) ]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique(numpy.array([index['key'] for index in index_set_list]))) \
-                != len(index_set_list):
-        raise KeyError('Spectral-index set keywords are not all unique!')
-
-    # Return the default list of assessment methods
-    return index_set_list
+        if self['bandhead'] is not None:
+            # Define the absorption-line database
+            parfile = Path(self['bandhead']).resolve()
+            if parfile.exists():
+                # Use the existing file to set the database
+                self.bhddb = BandheadIndexDB(str(parfile))
+            else:
+                # Otherwise, assume this is a keyword selecting a database distributed
+                # with the DAP has been chosen.
+                self.bhddb = BandheadIndexDB.from_key(self['bandhead'])
 
 
 class SpectralIndicesBitMask(DAPBitMask):
@@ -850,9 +824,8 @@ class SpectralIndices:
         **Detail what should be provided in terms of the redshift.**
 
     Args:
-        database_key (str): Keyword used to select the specfic list of
-            indices to measure and how they should be measured;  see
-            :class:`SpectralIndicesDef`.
+        database (:class:`~mangadap.spectralindices.SpectralIndicesDef`):
+            Object defining the parameters and databases for the measurements.
         binned_spectra
             (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
             The binned spectra for the measurements.
@@ -886,9 +859,6 @@ class SpectralIndices:
             Path to the directory with bandhead index parameter files.
             If None, defined by
             :attr:`mangadap.par.bandheadindexdb.BandheadIndexDB.default_data_dir`.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.dap_version`.
@@ -907,7 +877,7 @@ class SpectralIndices:
         tpl_symlink_dir (str): (**Optional**) Create a symbolic link to
             the created template library file in the supplied directory.
             Default is to produce no symbolic link.
-        clobber (bool): (**Optional**) Overwrite any existing files.
+        overwrite (bool): (**Optional**) Overwrite any existing files.
             Default is to use any existing file instead of redoing the
             analysis and overwriting the existing output.
         checksum (bool): (**Optional**) Use the checksum in the fits
@@ -923,27 +893,31 @@ class SpectralIndices:
             output.  Default is False.
 
     """
-    def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
+    def __init__(self, database, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_path=None,
-                 absorption_index_path=None, bandhead_index_path=None, dapsrc=None, dapver=None,
-                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-                 tpl_symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
+                 absorption_index_path=None, bandhead_index_path=None, output_path=None,
+                 output_file=None, hardcopy=True, tpl_hardcopy=False, overwrite=None,
+                 checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the database properties
-        self.database = None
-        self.artdb = None
-        self.pixelmask = None
-        self.absdb = None
-        self.bhddb = None
-        self._define_databases(database_key, database_list=database_list,
-                               artifact_path=artifact_path,
-                               absorption_index_path=absorption_index_path,
-                               bandhead_index_path=bandhead_index_path)
+#        self.database = None
+#        self.artdb = None
+#        self.pixelmask = None
+#        self.absdb = None
+#        self.bhddb = None
+        self.database = database
+        if not isinstance(self.database, SpectralIndicesDef):
+            raise TypeError('Method must have type SpectralIndicesDef.')
 
-        self.nabs, self.nbhd = self.count_indices(self.absdb, self.bhddb)
+#        self._define_databases(database_key, database_list=database_list,
+#                               artifact_path=artifact_path,
+#                               absorption_index_path=absorption_index_path,
+#                               bandhead_index_path=bandhead_index_path)
+
+        self.nabs, self.nbhd = self.count_indices(self.database.absdb, self.database.bhddb)
         self.nindx = self.nabs + self.nbhd
         self.compute_corrections = False
         self.correct_indices = False            # !! HARDCODED !!
@@ -954,9 +928,10 @@ class SpectralIndices:
         self.emission_line_model = None
 
         # Define the output directory and file
-        self.directory_path = None              # Set in _set_paths
+        self.directory_path = None              # Set in define_paths
         self.output_file = None
         self.hardcopy = None
+        self.tpl_hardcopy = None
 
         # Initialize the objects used in the assessments
         self.bitmask = SpectralIndicesBitMask()
@@ -974,87 +949,87 @@ class SpectralIndices:
 
         # Run the assessments of the DRP file
         self.measure(binned_spectra, redshift=redshift, stellar_continuum=stellar_continuum,
-                     emission_line_model=emission_line_model, dapver=dapver,
-                     analysis_path=analysis_path, directory_path=directory_path,
-                     output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
-                     clobber=clobber, loggers=loggers, quiet=quiet)
+                     emission_line_model=emission_line_model, output_path=output_path,
+                     output_file=output_file, hardcopy=hardcopy, tpl_hardcopy=tpl_hardcopy,
+                     overwrite=overwrite, loggers=loggers, quiet=quiet)
 
     def __getitem__(self, key):
         return self.hdu[key]
 
-    def _define_databases(self, database_key, database_list=None, artifact_path=None,
-                          absorption_index_path=None, bandhead_index_path=None):
-        r"""
+#    def _define_databases(self, database_key, database_list=None, artifact_path=None,
+#                          absorption_index_path=None, bandhead_index_path=None):
+#        r"""
+#
+#        Select the database of indices
+#
+#        """
+#        # Grab the specific database
+#        self.database = util.select_proc_method(database_key, SpectralIndicesDef,
+#                                                method_list=database_list,
+#                                                available_func=available_spectral_index_databases)
+#
+#        # Instantiate the artifact, absorption-index, and bandhead-index
+#        # databases
+#        self.artdb = None if self.database['artifacts'] is None else \
+#                ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
+#        # TODO: Generalize the name of this object
+#        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
+#
+#        self.absdb = None if self.database['absindex'] is None else \
+#                AbsorptionIndexDB.from_key(self.database['absindex'],
+#                                           directory_path=absorption_index_path)
+#
+#        self.bhddb = None if self.database['bandhead'] is None else \
+#                BandheadIndexDB.from_key(self.database['bandhead'],
+#                                         directory_path=bandhead_index_path)
 
-        Select the database of indices
-
+    @staticmethod
+    def default_paths(cube, method_key, rdxqa_method, binning_method, stelcont_method=None,
+                      elmodel_method=None, output_path=None, output_file=None):
         """
-        # Grab the specific database
-        self.database = util.select_proc_method(database_key, SpectralIndicesDef,
-                                                method_list=database_list,
-                                                available_func=available_spectral_index_databases)
-
-        # Instantiate the artifact, absorption-index, and bandhead-index
-        # databases
-        self.artdb = None if self.database['artifacts'] is None else \
-                ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
-        # TODO: Generalize the name of this object
-        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
-
-        self.absdb = None if self.database['absindex'] is None else \
-                AbsorptionIndexDB.from_key(self.database['absindex'],
-                                           directory_path=absorption_index_path)
-
-        self.bhddb = None if self.database['bandhead'] is None else \
-                BandheadIndexDB.from_key(self.database['bandhead'],
-                                         directory_path=bandhead_index_path)
-
-    def _set_paths(self, directory_path, dapver, analysis_path, output_file):
-        """
-        Set the :attr:`directory_path` and :attr:`output_file`.  If not
-        provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.dap_common_path` and
-        :func:`mangadap.config.defaults.dap_file_name`.
+        Set the default directory and file name for the output file.
 
         Args:
-            directory_path (str): The exact path to the DAP
-                spectral-index file.  See :attr:`directory_path`.
-            dapver (str): DAP version.
-            analysis_path (str): The path to the top-level directory
-                containing the DAP output files for a given DRP and DAP
-                version.
-            output_file (str): The name of the file with spectral-index
-                moment measurements.  See :func:`measure`.
+            cube (:class:`mangadap.datacube.datacube.DataCube`):
+                Datacube to analyze.
+            method_key (:obj:`str`):
+                Keyword designating the method used for the reduction
+                assessments.
+            rdxqa_method (:obj:`str`):
+                The method key for the basic assessments of the datacube.
+            binning_method (:obj:`str`):
+                The method key for the spatial binning.
+            stelcont_method (:obj:`str`, optional):
+                The method key for the stellar-continuum fitting method.  If
+                None, not included in output file name.
+            elmodel_method (:obj:`str`, optional):
+                The method key for the emission-line modeling method.  If None,
+                not included in the output file name.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
+            output_file (:obj:`str`, optional):
+                The name of the output "reference" file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                method keys.  The order of the keys is the order of operations
+                (rdxqa, binning, stellar continuum, emission-line model).
+
+        Returns:
+            :obj:`tuple`: Returns a `Path`_ with the output directory and a
+            :obj:`str` with the output file name.
         """
-        # Set the output directory path
-        continuum_templates = 'None' if self.stellar_continuum is None \
-                            else self.stellar_continuum.method['fitpar']['template_library_key']
-        eml_templates = 'None' if self.emission_line_model is None \
-                            else self.emission_line_model.method['continuum_tpl_key']
-        method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
-                                     eml_templates)
-        self.analysis_path = defaults.dap_analysis_path(drpver=self.binned_spectra.cube.drpver,
-                                                        dapver=dapver) \
-                                    if analysis_path is None else str(analysis_path)
-        self.directory_path \
-                = defaults.dap_method_path(method, plate=self.binned_spectra.cube.plate,
-                                           ifudesign=self.binned_spectra.cube.ifudesign, ref=True,
-                                           drpver=self.binned_spectra.cube.drpver, dapver=dapver,
-                                           analysis_path=self.analysis_path) \
-                                    if directory_path is None else str(directory_path)
-
-        # Set the output file
-        ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
-                                      self.binned_spectra.method['key'])
-        if self.stellar_continuum is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
-        if self.emission_line_model is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
-        ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
-
-        self.output_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
-                                                  self.binned_spectra.cube.ifudesign, ref_method) \
-                                        if output_file is None else str(output_file)
+        directory_path = Path('.').resolve() if output_path is None \
+                                else Path(output_path).resolve()
+        method = f'{rdxqa_method}-{binning_method}'
+        if stelcont_method is not None:
+            method = f'{method}-{stelcont_method}'
+        if elmodel_method is not None:
+            method = f'{method}-{elmodel_method}'
+        method = f'{method}-{method_key}'
+        _output_file = f'{cube.output_root}-{method}.fits.gz' if output_file is None \
+                            else output_file
+        return directory_path, _output_file
 
     def _initialize_primary_header(self, hdr=None, measurements_binid=None):
         """
@@ -1085,7 +1060,7 @@ class SpectralIndices:
         hdr['SIKEY'] = (self.database['key'], 'Spectral-index database keyword')
         hdr['SIMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['SIFWHM'] = (self.database['fwhm'], 'FWHM of index system resolution (ang)')
-        hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
+#        hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
         hdr['ABSDB'] = (self.database['absindex'], 'Absorption-index database keyword')
         hdr['BHDDB'] = (self.database['bandhead'], 'Bandhead-index database keyword')
         if self.stellar_continuum is not None:
@@ -1104,11 +1079,11 @@ class SpectralIndices:
         extension.
         """
         return [ ('TYPE','<U10'),
-                 ('ID',numpy.int),
+                 ('ID',int),
                  ('NAME','<U{0:d}'.format(name_len)),
-                 ('PASSBAND', numpy.float, (2,)),
-                 ('BLUEBAND', numpy.float, (2,)),
-                 ('REDBAND', numpy.float, (2,)),
+                 ('PASSBAND', float, (2,)),
+                 ('BLUEBAND', float, (2,)),
+                 ('REDBAND', float, (2,)),
                  ('UNIT', '<U3'),
                  ('COMPONENT', numpy.uint8),
                  ('INTEGRAND', '<U7'),
@@ -1120,12 +1095,12 @@ class SpectralIndices:
         Compile the database with the specifications of each index.
         """
         name_len = 0
-        if self.absdb is not None:
-            for n in self.absdb['name']:
+        if self.database.absdb is not None:
+            for n in self.database.absdb['name']:
                 if name_len < len(n):
                     name_len = len(n)
-        if self.bhddb is not None:
-            for n in self.bhddb['name']:
+        if self.database.bhddb is not None:
+            for n in self.database.bhddb['name']:
                 if name_len < len(n):
                     name_len = len(n)
 
@@ -1133,19 +1108,19 @@ class SpectralIndices:
         # of indices measured
         passband_database = init_record_array(self.nindx, self._index_database_dtype(name_len))
 
-        t = 0 if self.absdb is None else self.absdb.size
-        if self.absdb is not None:
+        t = 0 if self.database.absdb is None else self.database.absdb.size
+        if self.database.absdb is not None:
             passband_database['TYPE'][:t] = 'absorption'
             hk = [ 'ID', 'NAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT', 'COMPONENT' ]
             ak = [ 'index', 'name', 'primary', 'blueside', 'redside', 'units', 'component' ]
             for _hk, _ak in zip(hk,ak):
-                passband_database[_hk][:t] = self.absdb[_ak]
-        if self.bhddb is not None:
+                passband_database[_hk][:t] = self.database.absdb[_ak]
+        if self.database.bhddb is not None:
             passband_database['TYPE'][t:] = 'bandhead'
             hk = [ 'ID', 'NAME', 'BLUEBAND', 'REDBAND', 'INTEGRAND', 'ORDER' ]
             ak = [ 'index', 'name', 'blueside', 'redside', 'integrand', 'order' ]
             for _hk, _ak in zip(hk,ak):
-                passband_database[_hk][t:] = self.bhddb[_ak]
+                passband_database[_hk][t:] = self.database.bhddb[_ak]
         return passband_database
 
     def _assign_image_arrays(self):
@@ -1316,7 +1291,7 @@ class SpectralIndices:
         # Check that the spectrum selection and emission-line model are
         # consistent
         if measure_on_unbinned_spaxels and emission_line_model is not None \
-                and emission_line_model.method['deconstruct_bins'] == 'ignore':
+                and emission_line_model.method['fitpar']['deconstruct_bins'] == 'ignore':
             raise ValueError('Cannot use this emission-line model with unbinned spaxels.')
 
         # Get the main data arrays
@@ -1353,17 +1328,10 @@ class SpectralIndices:
         # Remove the emission lines if provided        
 #        warnings.warn('DEBUG')
         if emission_line_model is not None:
-#            pyplot.imshow(flux, origin='lower', interpolation='nearest', aspect='auto')
-#            pyplot.show()
             eml_model = emission_line_model.fill_to_match(binid, missing=missing)
-#            pyplot.imshow(eml_model, origin='lower', interpolation='nearest', aspect='auto')
-#            pyplot.show()
             no_eml = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)
             flux -= eml_model
             flux.mask[no_eml] = False
-#            pyplot.imshow(flux, origin='lower', interpolation='nearest', aspect='auto')
-#            pyplot.show()
-#            exit()
 
         # Make sure ivar mask is identical to flux mask
         ivar.mask = flux.mask.copy()
@@ -1404,9 +1372,6 @@ class SpectralIndices:
             flux[i,mp] = numpy.interp(wave[mp], wave[up], flux[i,up])
             ivar[i,mp] = numpy.interp(wave[mp], wave[up], ivar[i,up])
 
-#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='r', lw=0.5)
-#        pyplot.show()
-
         # Use :func:`mangadap.util.resolution.match_spectral_resolution`
         # to match the spectral resolution of the binned spectra to the
         # spectral-index system
@@ -1415,19 +1380,6 @@ class SpectralIndices:
         _flux, _sres, sigoff, _mask, _ivar \
                 = match_spectral_resolution(wave, flux, sres, wave, new_sres, ivar=ivar,
                                             log10=True, new_log10=True)
-
-        # FOR DEBUGGING
-#        warnings.warn('NOT MATCHING SPECTRAL RESOLUTION!')
-#        new_flux = flux.copy()
-#        new_mask = mask.copy()
-
-#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5)
-#        pyplot.step(wave, new_flux[0,:], where='mid', linestyle='-', color='r', lw=2.5)
-#        pyplot.show()
-#        pyplot.step(wave, ivar[0,:]/numpy.mean(ivar[0,:]), where='mid', linestyle='-', color='k',
-#                    lw=0.5)
-#        pyplot.step(wave, new_ivar[0,:]/numpy.mean(new_ivar[0,:]), where='mid', linestyle='-', color='r', lw=2.5)
-#        pyplot.show()
 
         # From resolution.py:  "Any pixel that had a resolution that was
         # lower than the target resolution (up to some tolerance defined
@@ -1461,15 +1413,15 @@ class SpectralIndices:
 
         return ules, angu, magu
 
-    def _resolution_matched_templates(self, dapver=None, analysis_path=None, tpl_symlink_dir=None):
+    def _resolution_matched_templates(self):
         """
         Get a version of the template library that has had its
         resolution matched to that of the spectral-index database.
         """
         velocity_offset=self.stellar_continuum.method['fitpar']['template_library'].velocity_offset
-        return self.stellar_continuum.get_template_library(dapver=dapver,
-                                                           analysis_path=analysis_path,
-                                                           tpl_symlink_dir=tpl_symlink_dir,
+        return self.stellar_continuum.get_template_library(output_path=self.directory_path,
+                                                           hardcopy=self.tpl_hardcopy,
+                                                           symlink_dir=self.symlink_dir,
                                                            velocity_offset=velocity_offset,
                                                            resolution_fwhm=self.database['fwhm'])
 
@@ -1585,9 +1537,12 @@ class SpectralIndices:
 
         # Do not compute corrections if any of the bands were empty or
         # would have had to divide by zero
-        bad_flags = ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO']
-        bad_indx = bitmask.flagged(indx['MASK'], flag=bad_flags)
-        bad_indx |= bitmask.flagged(dcnvlv_indx['MASK'], flag=bad_flags)
+        if bitmask is not None:
+            bad_flags = ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO']
+            bad_indx = bitmask.flagged(indx['MASK'], flag=bad_flags)
+            bad_indx |= bitmask.flagged(dcnvlv_indx['MASK'], flag=bad_flags)
+        else:
+            bad_indx = indx['MASK'] | dcnvlv_indx['MASK']
 
         print('Number of indices: ', bad_indx.size)
         print('Bad indices: ', numpy.sum(bad_indx))
@@ -1723,44 +1678,6 @@ class SpectralIndices:
         Count the total number (absorption-line and bandhead) indices.
         """
         return 0 if absdb is None else absdb.size, 0 if bhddb is None else bhddb.size
-
-#    @staticmethod
-#    def output_dtype(nindx, bitmask=None):
-#        r"""
-#        Construct the record array data type for the output fits
-#        extension.
-#        """
-#        return [ ('BINID', numpy.int),
-#                 ('BINID_INDEX',numpy.int),
-#                 ('REDSHIFT', numpy.float),
-#                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nindx,)),
-#                 ('BCEN', numpy.float, (nindx,)), 
-#                 ('BCONT', numpy.float, (nindx,)), 
-#                 ('BCONT_ERR', numpy.float, (nindx,)),
-#                 ('BCONT_MOD', numpy.float, (nindx,)),
-#                 ('BCONT_CORR', numpy.float, (nindx,)),
-#                 ('RCEN', numpy.float, (nindx,)), 
-#                 ('RCONT', numpy.float, (nindx,)), 
-#                 ('RCONT_ERR', numpy.float, (nindx,)),
-#                 ('RCONT_MOD', numpy.float, (nindx,)),
-#                 ('RCONT_CORR', numpy.float, (nindx,)),
-#                 ('MCONT', numpy.float, (nindx,)), 
-#                 ('MCONT_ERR', numpy.float, (nindx,)),
-#                 ('MCONT_MOD', numpy.float, (nindx,)), 
-#                 ('MCONT_CORR', numpy.float, (nindx,)),
-#                 ('AWGT', numpy.float, (nindx,)), 
-#                 ('AWGT_ERR', numpy.float, (nindx,)),
-#                 ('AWGT_MOD', numpy.float, (nindx,)), 
-#                 ('AWGT_CORR', numpy.float, (nindx,)),
-#                 ('INDX', numpy.float, (nindx,)), 
-#                 ('INDX_ERR', numpy.float, (nindx,)),
-#                 ('INDX_MOD', numpy.float, (nindx,)), 
-#                 ('INDX_CORR', numpy.float, (nindx,)),
-#                 ('INDX_BF', numpy.float, (nindx,)), 
-#                 ('INDX_BF_ERR', numpy.float, (nindx,)),
-#                 ('INDX_BF_MOD', numpy.float, (nindx,)), 
-#                 ('INDX_BF_CORR', numpy.float, (nindx,))
-#               ]
 
     @staticmethod
     def check_and_prep_input(wave, flux, ivar=None, mask=None, redshift=None, bitmask=None):
@@ -2203,12 +2120,11 @@ class SpectralIndices:
         """Return the full path to the output file."""
         if self.directory_path is None or self.output_file is None:
             return None
-        return os.path.join(self.directory_path, self.output_file)
+        return self.directory_path / self.output_file
 
     def measure(self, binned_spectra, redshift=None, stellar_continuum=None,
-                emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
-                output_file=None, hardcopy=True, tpl_symlink_dir=None, clobber=False, loggers=None,
-                quiet=False):
+                emission_line_model=None, output_path=None, output_file=None, hardcopy=True,
+                tpl_hardcopy=False, overwrite=None, loggers=None, quiet=False):
         """
         Measure the spectral indices using the binned spectra and the
         internal spectral index database, and construct the internal
@@ -2306,7 +2222,7 @@ class SpectralIndices:
             tpl_symlink_dir (str): (**Optional**) Create a symbolic link
                 to the created template library file in the supplied
                 directory.  Default is to produce no symbolic link.
-            clobber (bool): (**Optional**) Overwrite any existing files.
+            overwrite (bool): (**Optional**) Overwrite any existing files.
                 Default is to use any existing file instead of redoing
                 the analysis and overwriting the existing output.
             loggers (list): (**Optional**) List of `logging.Logger`_
@@ -2374,7 +2290,7 @@ class SpectralIndices:
         #  - The EmissionLineModel fits the binned spectra or unbinned
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
+                and self.emission_line_model.method['fitpar']['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.cube.nspec if measure_on_unbinned_spaxels \
@@ -2412,7 +2328,17 @@ class SpectralIndices:
 
         #---------------------------------------------------------------
         # (Re)Set the output paths
-        self._set_paths(directory_path, dapver, analysis_path, output_file)
+        self.directory_path, self.output_file \
+                = SpectralIndices.default_paths(self.binned_spectra.cube, self.database['key'],
+                        self.binned_spectra.rdxqa.method['key'], self.binned_spectra.method['key'],
+                        stelcont_method=None if self.stellar_continuum is None
+                                        else self.stellar_continuum.method['key'],
+                        elmodel_method=None if self.emission_line_model is None
+                                        else self.emission_line_model.method['key'],
+                        output_path=output_path, output_file=output_file)
+        self.tpl_hardcopy = tpl_hardcopy
+
+        _overwrite = self.database['overwrite'] if overwrite is None else overwrite
 
         #---------------------------------------------------------------
         # Check that the file path is defined
@@ -2422,13 +2348,12 @@ class SpectralIndices:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers,1,logging.INFO,'Output path: {0}'.format(self.directory_path))
-            log_output(self.loggers,1,logging.INFO,'Output file: {0}'.format(self.output_file))
+            log_output(self.loggers, 1, logging.INFO, f'Output path: {self.directory_path}')
+            log_output(self.loggers, 1, logging.INFO, f'Output file: {self.output_file}')
         
         #---------------------------------------------------------------
-        # If the file already exists, and not clobbering, just read the
-        # file
-        if os.path.isfile(ofile) and not clobber:
+        # If the file already exists, and not overwriting, just read the file
+        if ofile.exists() and not _overwrite:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
@@ -2440,17 +2365,17 @@ class SpectralIndices:
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
         wave, flux, ivar = SpectralIndices.spectra_for_index_measurements(self.binned_spectra,
-                                        measure_on_unbinned_spaxels=measure_on_unbinned_spaxels,
-                                                    pixelmask=self.pixelmask, select=good_snr,
-                                                    resolution_fwhm=self.database['fwhm'],
-                                                    emission_line_model=self.emission_line_model)
+                                    measure_on_unbinned_spaxels=measure_on_unbinned_spaxels,
+                                    pixelmask=self.database['pixelmask'], select=good_snr,
+                                    resolution_fwhm=self.database['fwhm'],
+                                    emission_line_model=self.emission_line_model)
 
         #---------------------------------------------------------------
         # Perform the measurements on the galaxy spectra
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Measuring spectral indices in observed spectra...')
-        measurements = self.measure_indices(self.absdb, self.bhddb, wave, flux, ivar=ivar,
+        measurements = self.measure_indices(self.database.absdb, self.database.bhddb, wave, flux, ivar=ivar,
                                             redshift=self.redshift[good_snr], bitmask=self.bitmask)
 
         #---------------------------------------------------------------
@@ -2459,9 +2384,7 @@ class SpectralIndices:
 
             # Get the template spectra to use
             replacement_templates = None if self.database['fwhm'] < 0 \
-                    else self._resolution_matched_templates(dapver=dapver,
-                                                            analysis_path=self.analysis_path,
-                                                            tpl_symlink_dir=tpl_symlink_dir)
+                    else self._resolution_matched_templates()
             # Have to use the corrected velocity dispersion if templates
             # have been broadened to a new resolution; otherwise, the
             # corrections are to a zero dispersion model **at the
@@ -2481,8 +2404,8 @@ class SpectralIndices:
             # perform the measurements at rest wavelengths; not
             # currently possible though
             fill_to_match_f = self.emission_line_model.fill_continuum_to_match \
-                                if eml_stellar_continuum_available else \
-                                self.stellar_continuum.fill_to_match
+                                if eml_stellar_continuum_available \
+                                else self.stellar_continuum.fill_to_match
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Constructing models with LOSVD')
             continuum = fill_to_match_f(binid, replacement_templates=replacement_templates,
@@ -2490,28 +2413,7 @@ class SpectralIndices:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Constructing models without LOSVD')
             continuum_dcnvlv = fill_to_match_f(binid, replacement_templates=replacement_templates,
-                                               redshift_only=True) #, deredshift=True)
-
-#            pyplot.imshow(flux, origin='lower', interpolation='nearest', aspect='auto')
-#            pyplot.colorbar()
-#            pyplot.show()
-#
-#            pyplot.imshow(continuum[good_snr,:], origin='lower', interpolation='nearest',
-#                          aspect='auto')
-#            pyplot.colorbar()
-#            pyplot.show()
-#
-#            pyplot.imshow(continuum_dcnvlv[good_snr,:], origin='lower', interpolation='nearest',
-#                          aspect='auto')
-#            pyplot.colorbar()
-#            pyplot.show()
-#
-#            indx = numpy.argmax(numpy.ma.mean(flux, axis=1))
-#            print(indx)
-#            pyplot.plot(wave, flux[indx,:])
-#            pyplot.plot(wave, continuum[good_snr,:][indx,:])
-#            pyplot.plot(wave, continuum_dcnvlv[good_snr,:][indx,:])
-#            pyplot.show()
+                                               redshift_only=True)
 
             # Get the corrections by performing the measurements on the
             # best-fitting continuum models, with and without the
@@ -2526,7 +2428,7 @@ class SpectralIndices:
                 measurements['INDX_MOD'], measurements['INDX_CORR'], \
                 measurements['INDX_BF_MOD'], measurements['INDX_BF_CORR'], \
                 good_les, good_ang, good_mag, is_abs \
-                        = SpectralIndices.calculate_dispersion_corrections(self.absdb, self.bhddb,
+                        = SpectralIndices.calculate_dispersion_corrections(self.database.absdb, self.database.bhddb,
                                         wave, flux, continuum[good_snr,:],
                                         continuum_dcnvlv[good_snr,:],
                                         redshift=self.redshift[good_snr],
@@ -2737,17 +2639,17 @@ class SpectralIndices:
 
         # Write the data, if requested
         if self.hardcopy:
-            if not os.path.isdir(self.directory_path):
-                os.makedirs(self.directory_path)
-            self.write(clobber=clobber)
+            if not self.directory_path.exists():
+                self.directory_path.mkdir(parents=True)
+            self.write(overwrite=_overwrite)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-    def write(self, clobber=False):
+    def write(self, overwrite=False):
         """
         Write the hdu object to the file.
         """
-        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+        DAPFitsUtil.write(self.hdu, str(self.file_path()), overwrite=overwrite, checksum=True,
                           loggers=self.loggers, quiet=self.quiet)
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -2756,12 +2658,12 @@ class SpectralIndices:
         """
         if ifile is None:
             ifile = self.file_path()
-        if not os.path.isfile(ifile):
+        if not ifile.exists():
             raise FileNotFoundError('File does not exist!: {0}'.format(ifile))
 
         if self.hdu is not None:
             self.hdu.close()
-        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(str(ifile), checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file

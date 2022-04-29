@@ -1,35 +1,42 @@
 .. code-block:: console
 
     $ dap_ppxffit_qa -h
-    usage: dap_ppxffit_qa [-h] [--drpver DRPVER] [--redux_path REDUX_PATH]
-                          [--dapver DAPVER] [--dap_src DAP_SRC]
-                          [--analysis_path ANALYSIS_PATH] [--plan_file PLAN_FILE]
-                          [--normal_backend]
+    usage: dap_ppxffit_qa [-h] (-c CONFIG | -f CUBEFILE)
+                          [--cube_module [CUBE_MODULE ...]] [-p PLAN]
+                          [--plan_module [PLAN_MODULE ...]] [-o OUTPUT_PATH]
+                          [-b BEAM] [--normal_backend]
                           [--template_flux_file TEMPLATE_FLUX_FILE]
-                          plate ifudesign
     
-    positional arguments:
-      plate                 plate ID to process
-      ifudesign             IFU design to process
+    Construct QA plots for pPXF fit.
     
     optional arguments:
       -h, --help            show this help message and exit
-      --drpver DRPVER       DRP version (default: None)
-      --redux_path REDUX_PATH
-                            main DRP output path (default: None)
-      --dapver DAPVER       DAP version (default: None)
-      --dap_src DAP_SRC     Top-level directory with the DAP source code; defaults
-                            to $MANGADAP_DIR (default: None)
-      --analysis_path ANALYSIS_PATH
-                            main DAP output path (default: None)
-      --plan_file PLAN_FILE
-                            parameter file with the MaNGA DAP execution plan to
-                            use instead of the default (default: None)
+      -c CONFIG, --config CONFIG
+                            Configuration file used to instantiate the relevant
+                            DataCube derived class. (default: None)
+      -f CUBEFILE, --cubefile CUBEFILE
+                            Name of the file with the datacube data. Must be
+                            possible to instantiate the relevant DataCube derived
+                            class directly from the file only. (default: None)
+      --cube_module [CUBE_MODULE ...]
+                            The name of the module that contains the DataCube
+                            derived class used to read the data. (default:
+                            mangadap.datacube.MaNGADataCube)
+      -p PLAN, --plan PLAN  SDSS parameter file with analysis plan. If not provided,
+                            a default plan is used. (default: None)
+      --plan_module [PLAN_MODULE ...]
+                            The name of the module used to define the analysis plan
+                            and the output paths. (default:
+                            mangadap.config.manga.MaNGAAnalysisPlan)
+      -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                            Top-level directory for the DAP output files; default
+                            path is set by the provided analysis plan object (see
+                            plan_module). (default: None)
+      -b BEAM, --beam BEAM  Beam FWHM for plot. (default: None)
       --normal_backend
       --template_flux_file TEMPLATE_FLUX_FILE
-                            template renormalization flux file. Will attempt to
-                            read default if not provided. If no file is provided
-                            and the default file does not exist, no
-                            renormalization of the templates is performed.
-                            (default: None)
+                            template renormalization flux file. Will attempt to read
+                            default if not provided. If no file is provided and the
+                            default file does not exist, no renormalization of the
+                            templates is performed. (default: None)
     

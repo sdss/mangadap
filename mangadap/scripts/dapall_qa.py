@@ -1,7 +1,6 @@
-import os
+
+from pathlib import Path
 import time
-import argparse
-import warnings
 
 from IPython import embed
 
@@ -14,12 +13,9 @@ import astropy.constants
 
 from mangadap.util.bitmask import BitMask
 from mangadap.dapfits import DAPQualityBitMask
-from mangadap.config import defaults
+from mangadap.config import defaults, manga
 from mangadap.proc.util import growth_lim
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.fileio import channel_dictionary
 
 from mangadap.scripts import scriptbase
@@ -36,32 +32,31 @@ def init_ax(fig, pos, facecolor=None, grid=False):
 
 
 def dapall_qa(drpall, dapall, analysis_path, daptype, eml, spi):
-    oroot = os.path.join(analysis_path, daptype, 'qa')
-    if not os.path.isdir(oroot):
-        os.makedirs(oroot)
+    # TODO: HARDCODED!
+    oroot = analysis_path / daptype / 'qa'
+    if not oroot.exists():
+        oroot.mkdir(parents=True)
 
     # Plot H-delta A equivalent width versus D4000
-    ew_d4000(drpall, dapall, daptype, eml, spi, ofile=os.path.join(oroot, 'dapall_ew_d4000.png'))
+    ew_d4000(drpall, dapall, daptype, eml, spi, ofile=str(oroot / 'dapall_ew_d4000.png'))
 
     # Plot the star-formation, mass diagram
-    mass_lha(drpall, dapall, daptype, eml, ofile=os.path.join(oroot, 'dapall_mass_lha.png'))
+    mass_lha(drpall, dapall, daptype, eml, ofile=str(oroot / 'dapall_mass_lha.png'))
 
     # Plot the approximate Faber-Jackson relation
-    mass_sigma(drpall, dapall, daptype, ofile=os.path.join(oroot, 'dapall_mass_sigma.png'))
+    mass_sigma(drpall, dapall, daptype, ofile=str(oroot / 'dapall_mass_sigma.png'))
 
     # Plot the approximate Tully-Fisher relation
-    velocity_gradient(drpall, dapall, daptype, eml,
-                      ofile=os.path.join(oroot, 'dapall_mass_vel.png'))
+    velocity_gradient(drpall, dapall, daptype, eml, ofile=str(oroot / 'dapall_mass_vel.png'))
 
     # Plot the MgFe and Hbeta absorption indices
-    mgfe_hbeta(drpall, dapall, daptype, spi, ofile=os.path.join(oroot, 'dapall_mgfe_hbeta.png'))
+    mgfe_hbeta(drpall, dapall, daptype, spi, ofile=str(oroot / 'dapall_mgfe_hbeta.png'))
 
     # Plot the radial coverage of each cube
-    radial_coverage_histogram(dapall, daptype,
-                              ofile=os.path.join(oroot, 'dapall_radialcoverage.png'))
+    radial_coverage_histogram(dapall, daptype, ofile=str(oroot / 'dapall_radialcoverage.png'))
 
     # Plot the redshift differences
-    redshift_distribution(dapall, daptype, ofile=os.path.join(oroot, 'dapall_redshift_dist.png'))
+    redshift_distribution(dapall, daptype, ofile=str(oroot / 'dapall_redshift_dist.png'))
 
 
 def ew_d4000(drpall, dapall, daptype, eml, spi, ofile=None):
@@ -516,7 +511,7 @@ def radial_coverage_histogram(dapall, daptype, ofile=None):
 
     # Determine the sample
     sdssMaskbits = defaults.sdss_maskbits_file()
-    targ1bm = BitMask.from_par_file(sdssMaskbits, 'MANGA_TARGET1')
+    targ1bm = BitMask.from_par_file(str(sdssMaskbits), 'MANGA_TARGET1')
 
     ancillary = dapall['MNGTARG3'][indx] > 0
     primaryplus = targ1bm.flagged(dapall['MNGTARG1'][indx],
@@ -706,7 +701,7 @@ class DapAllQA(scriptbase.ScriptBase):
         parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
                             "execution plan to use instead of the default" , default=None)
 
-        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+#        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
         parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
         return parser
@@ -718,39 +713,29 @@ class DapAllQA(scriptbase.ScriptBase):
         if args.bgagg:
             pyplot.switch_backend('agg')
 
-        # Set the paths
-        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
-                            if args.redux_path is None else args.redux_path
-        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                                if args.analysis_path is None else args.analysis_path
+        redux_path = manga.drp_redux_path(drpver=args.drpver) \
+                            if args.redux_path is None else Path(args.redux_path).resolve()
+        analysis_path = manga.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                            if args.analysis_path is None else Path(args.analysis_path).resolve()
 
-        daptypes = []
-        if args.daptype is None:
-            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                                else AnalysisPlanSet.from_par_file(args.plan_file)
-            for p in analysisplan:
-                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-                el_method = EmissionLineModel.define_method(p['elfit_key'])
-                daptypes += [defaults.dap_method(bin_method['key'],
-                                                 sc_method['fitpar']['template_library_key'],
-                                                 el_method['continuum_tpl_key'])]
-        else:
-            daptypes = [args.daptype]
+        plan = manga.MaNGAAnalysisPlan.default(analysis_path=analysis_path) \
+                    if args.plan_file is None \
+                    else manga.MaNGAAnalysisPlan.from_toml(args.plan_file,
+                                                           analysis_path=analysis_path)
 
-        drpall_file = defaults.drpall_file(drpver=args.drpver, redux_path=redux_path)
-        dapall_file = defaults.dapall_file(drpver=args.drpver, dapver=args.dapver,
+        drpall_file = manga.drpall_file(drpver=args.drpver, redux_path=redux_path)
+        dapall_file = manga.dapall_file(drpver=args.drpver, dapver=args.dapver,
                                            analysis_path=analysis_path)
 
-        drpall_hdu = fits.open(drpall_file)
-        dapall_hdu = fits.open(dapall_file)
+        drpall_hdu = fits.open(str(drpall_file))
+        dapall_hdu = fits.open(str(dapall_file))
 
         eml = channel_dictionary(dapall_hdu, 0, prefix='ELG')
         spi = channel_dictionary(dapall_hdu, 0, prefix='SPI')
 
-        for daptype in daptypes:
-            dapall_qa(drpall_hdu['MANGA'].data, dapall_hdu[daptype].data, analysis_path,
-                      daptype, eml, spi)
+        for i, key in enumerate(plan.keys()):
+            dapall_qa(drpall_hdu['MANGA'].data, dapall_hdu[plan[key]['key']].data, analysis_path,
+                      plan[key]['key'], eml, spi)
 
         print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

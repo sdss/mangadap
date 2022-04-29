@@ -1,7 +1,3 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 from mangadap.par.emissionlinedb import EmissionLineDB

@@ -8,6 +8,7 @@ from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.util.parser import DefaultConfig
 from mangadap.tests.util import remote_data_file, drp_test_version, requires_drpcomplete
 
+
 @requires_drpcomplete
 def test_write_cfg():
     ofile = 'test.ini'

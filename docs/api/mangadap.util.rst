@@ -12,8 +12,7 @@ Submodules
    mangadap.util.covariance
    mangadap.util.dapbitmask
    mangadap.util.datatable
-   mangadap.util.drpfits
-   mangadap.util.exception_tools
+   mangadap.util.drpbitmask
    mangadap.util.extinction
    mangadap.util.fileio
    mangadap.util.filter
@@ -26,6 +25,7 @@ Submodules
    mangadap.util.modeling
    mangadap.util.parser
    mangadap.util.pixelmask
+   mangadap.util.pkg
    mangadap.util.resolution
    mangadap.util.sampling
    mangadap.util.trace

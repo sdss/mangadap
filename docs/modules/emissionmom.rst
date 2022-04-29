@@ -6,33 +6,24 @@ Emission-line Moments
 
 *Analysis class*: :class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`
 
-*Method definition*: :class:`~mangadap.proc.emissionlinemoments.EmissionLineMomentsDef`
+*Reference root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.method_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[METHOD]/[PLATE]/[IFUDESIGN]/ref`` for MaNGA
 
-*Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/ref``
-
-*Reference file*:
+*Reference file*: see :class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments.default_paths`;
+for MaNGA the files are:
 
     * Before Gaussian emission-line modeling:
 
-        * ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY]-[ELMOM_KEY].fits.gz``
+        * ``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING]-[CONTINUUM]-[ELMOM].fits.gz``
 
     * After Gaussian emission-line modeling:
 
-        * ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY]-[ELFIT_KEY]-[ELMOM_KEY].fits.gz``
+        * ``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING]-[CONTINUUM]-[ELFIT]-[ELMOM].fits.gz``
 
-*Config files*: ``$MANGADAP_DIR/mangadap/config/emission_line_moments``
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
+defined by :class:`~mangadap.proc.emissionlinemoments.EmissionLineMomentsDef`
 
-*Example config*: ``emomm.ini``
-
-.. code-block:: ini
-
-    [default]
-    key                = EMOMMPL9
-    minimum_snr        = 0.0
-    artifact_mask      = BADSKY
-    emission_passbands = ELBMPL9
-    redo_postmodeling  = True
-    fit_vel_name       = Ha-6564
+.. include:: ../tables/emissionlinemomentsdef.rst
 
 *Important class dependencies*:
 

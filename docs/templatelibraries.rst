@@ -85,39 +85,48 @@ templates is that they are read using
 Template Library Definition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Template libraries are defined for use in the DAP using the
-configuration files in
-``$MANGADAP_DIR/mangadap/config/spectral_templates``. These
-configuration files are parsed by
-:func:`~mangadap.proc.templatelibrary.available_template_libraries`,
-which provides a list of
-:class:`~mangadap.proc.templatelibrary.TemplateLibraryDef` instances
-that can be selected using a keyword.
+Template libraries are defined for use in the DAP using the configuration files
+in ``$MANGADAP_DIR/mangadap/config/spectral_templates`` or by defining the
+required parameters in the :ref:`plan`.  The required parameters are:
 
-The critical components to the definition of the template library are:
+.. include:: tables/templatelibrarydef.rst
 
-    * ``file_search``: the search string used by `glob.glob`_ to find
-      the fits files with the template library spectra and
-    * ``fwhm`` or ``sres_ext``: the FWHM of the (Gaussian)
-      line-spread function in angstroms or the name of the extension
-      in each template fits file with the spectral resolution,
-      :math:`R=\lambda/\delta\lambda`.
+For example, to define a new template library for use in the stellar-continuum
+fitting module, you could include the following in your :ref:`plan`:
+
+.. code-block:: toml
+
+    [default.continuum.fit.templates]
+     key = 'MYLIB'                              # Library keyword
+     file_search = '/path/to/library/*.fits'    # Search string
+     fwhm = 2.50                                # FWHM of resolution element
+     in_vacuum = false                          # Wavelength in vacuum?
+     wave_limit = [3575., 7400. ]               # Valid wavelength range
+     lower_flux_limit = 0.0                     # Lower limit for valid flux
+     log10 = False                              # Log binned?
+
+Whereas to use one of the existing template libraries, you only need to define
+the keyword of the library:
+
+.. code-block:: toml
+
+    [default.continuum.fit.templates]
+     key = 'MILESHC'
 
 Output
 ~~~~~~
 
-When instantiating a template library, the processed library will be
-written to disk, depending on the ``hardcopy`` argument; by default
-this argument is True. If the template library has already been
-processed and written to disk, the instantiation of the object will
-skip processing the library and just read the result of the previous
-instantiation.
+When instantiating a template library, the processed library will be written to
+disk, depending on the ``hardcopy`` argument; by default this argument is False.
+If the template library has already been processed and written to disk, the
+instantiation of the object will skip processing the library and just read the
+result of the previous instantiation.
 
-The path (``directory_path``) and name of the file
-(``processed_file``) can be defined upon instantiating the object. If
-not provided, the default path is set by
-:func:`~mangadap.config.defaults.dap_common_path`, and the output
-file name is set by :func:`~mangadap.config.defaults.dap_file_name`.
+The path (``output_path``) and name of the file (``output_file``) can be defined
+upon instantiating the object. If not provided, the default path is set to the
+current working directory and the output file name is set to the name of the
+library; see
+:func:`~mangadap.proc.templatelibrary.TemplateLibrary.default_paths`.
 
 The format of the output file is:
 
@@ -144,14 +153,9 @@ The format of the output file is:
 Adding new template libraries
 -----------------------------
 
-Adding new template libraries is relatively straight-forward. First,
-make sure the templates adhere to the :ref:`templatelibraries-input`.
-Then, you can either use the library by defining it programmatically,
-or by adding a new configuration file to the
-``$MANGADAP_DIR/mangadap/config/spectral_templates`` directory. See
-the TemplateLibrary :ref:`templatelibrary-usage` and the
-:ref:`templatelibrary-dev-example` provided by the DAP
-:ref:`development`.
+Adding new template libraries is straight-forward. First, make sure the
+templates adhere to the :ref:`templatelibraries-input`.  Then add the parameters
+for the templates to your :ref:`plan` file, as described above.
 
 ----
 

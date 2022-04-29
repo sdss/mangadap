@@ -8,16 +8,22 @@
 Metadata Model
 ==============
 
+.. warning::
+
+    The text below is flagged to identify cases where files/data are specific to
+    MaNGA or a MaNGA data release.  Anything that is not directly tied to the
+    MaNGA-specific execution of the DAP (e.g., the naming convention and
+    directory structure) will be relevant to analysis of non-MaNGA data.  If you
+    have questions or find problems, please `Submit an issue`_.
+
 .. _metadatamodel-maskbits:
 
 Maskbits
 --------
 
-The mask bits for the DAP output files are pulled from ``IDLUTILS``.
-A default file is provided with the ``mangadap`` distribution;
-however, the DAP ``setup.py`` file will also attempt to download the
-most relevant file from the public SDSS SVN repository using
-`requests`_.
+The mask bits for the DAP output files are pulled from last tagged version of
+``IDLUTILS`` for SDSS-IV.  These are distributed with the DAP and located in
+``$MANGADAP_DIR/mangadap/data/sdss``.
 
  * If you're unfamiliar with maskbits, see the description of `SDSS
    Bitmasks`_.
@@ -72,6 +78,12 @@ either the 2D RSS files and the 3D datacubes.  Below are the bits for
 the 3D datacubes:
 
 .. include:: tables/drpfitsbitmask.rst
+
+.. warning::
+
+    Because these flags are issued by the MaNGA data-reduction pipeline, they
+    are specific to analysis of the MaNGA data and are not relevant to non-MaNGA
+    applications.
 
 .. _metadatamodel-dapqual:
 
@@ -212,6 +224,12 @@ the DAP; the following is for its survey-level execution.
 AnalysisPlan file
 ~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+    Although generic to the DAP, this description of the analysis plan files is
+    specific to the DR17 and earlier version of the DAP.  See :ref:`plan` for
+    the current format and usage of these files.
+    
 For a general description the ``AnalysisPlan`` file, see
 the :ref:`execution-analysis-plan`.
 
@@ -230,6 +248,11 @@ MPL.  This file is created once by the person executing the DAP.
 DRPComplete database
 ~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+    This file is specific to the survey-level execution of the DAP on MaNGA
+    data.
+    
 *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common``
 
 *File name*: ``drpcomplete_$MANGADRP_VER.fits``
@@ -316,6 +339,11 @@ the table extension has the following columns:
 Redshift Fix File
 ~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+    This file is specific to the survey-level execution of the DAP on MaNGA
+    data.
+    
 *File root*: ``$MANGADAP_DIR/mangadap/data/fix``
 
 *File name*: ``redshift_fix.par``
@@ -347,6 +375,11 @@ This file is *only* used when constructing the
 Photometry Fix File
 ~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+    This file is specific to the survey-level execution of the DAP on MaNGA
+    data.
+    
 *File root*: ``$MANGADAP_DIR/mangadap/data/fix``
 
 *File name*: ``photometry_fix.par``
@@ -378,6 +411,11 @@ file is *only* used when constructing the
 Execution Script
 ~~~~~~~~~~~~~~~~
 
+.. warning::
+
+    This file is specific to the survey-level execution of the DAP on MaNGA
+    data.
+    
 *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]/[PLATE]/[IFUDESIGN]``
 
 *File name*: ``mangadap-[PLATE]-[IFUDESIGN]``
@@ -393,6 +431,11 @@ See :ref:`execution-rundap`.
 Datacube Configuration File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+    This file is specific to the survey-level execution of the DAP on MaNGA
+    data.
+    
 For a general description, see :ref:`execution-config`.
 
 *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]``
@@ -415,15 +458,19 @@ Atlas.
 DAPall database
 ---------------
 
+.. warning::
+
+    This file is specific to the survey-level execution of the DAP on MaNGA
+    data.
+    
 *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``
 
 *File name*: ``dapall-$MANGADRP_VER-$MANGADAP_VER.fits``
 
-The DAPall file has an empty primary extension and then one extension
-for each ``DAPTYPE`` performed by a given analysis plan. The name of
-the extension is identically the ``DAPTYPE`` and it contains one row
-per analyzed datacube. For example, in MPL-11, the list of extensions
-in the DAPall file are:
+The DAPall file has an empty primary extension and then one extension for each
+``DAPTYPE`` performed by a given analysis plan. The name of the extension is
+identically the ``DAPTYPE`` and it contains one row per analyzed datacube. For
+example, in DR17, the list of extensions in the DAPall file are:
 
 +-----------+-----------------------------+
 | Extension | Extension Name              |

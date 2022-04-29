@@ -6,26 +6,16 @@ Spectral-Index Measurements
 
 *Analysis class*: :class:`~mangadap.proc.spectralindices.SpectralIndices`
 
-*Method definition*: :class:`~mangadap.proc.spectralindices.SpectralIndicesDef`
+*Reference root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.method_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[METHOD]/[PLATE]/[IFUDESIGN]/ref`` for MaNGA
 
-*Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/ref``
+*Reference file*: see :class:`~mangadap.proc.spectralindices.SpectralIndices.default_paths`;
+``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING]-[CONTINUUM]-[ELFIT]-[INDICES].fits.gz`` for MaNGA
 
-*Reference file*: ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY]-[ELFIT_KEY]-[SPINDEX_KEY].fits.gz``
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
+defined by :class:`~mangadap.proc.spectralindices.SpectralIndicesDef`
 
-*Config files*: ``$MANGADAP_DIR/mangadap/config/spectral_indices``
-
-*Example config*: ``indxen.ini``
-
-.. code-block:: ini
-
-    [default]
-    key                      = INDXEN
-    minimum_snr              = 0.0
-    resolution_fwhm          = -1
-    compute_sigma_correction = True
-    artifact_mask            = BADSKY
-    absorption_indices       = EXTINDX
-    bandhead_indices         = BHBASIC
+.. include:: ../tables/spectralindicesdef.rst
 
 *Important class dependencies*:
 

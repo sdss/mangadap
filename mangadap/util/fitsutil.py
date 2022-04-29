@@ -166,10 +166,14 @@ class DAPFitsUtil:
 
         # KHRR made some changes here
         # Change header keywords to the default values for the third axis
+        # TODO: Should instead read the header into a wcs, manipulate the wcs
+        # object and then rewrite it to a header.
         if multichannel:
             hdr['NAXIS'] = 3
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
+            if 'CTYPE3' in hdr:
+                hdr.remove('CTYPE3')
+            if 'CUNIT3' in hdr:
+                hdr.remove('CUNIT3')
             hdr['CTYPE3'] = ' '
             hdr['CUNIT3'] = ' '
             hdr['CRPIX3'] = 1
@@ -178,25 +182,24 @@ class DAPFitsUtil:
             w = WCS(header=hdr)
 
         else:
-            #hdr['NAXIS'] = 2
-            #hdr.remove('NAXIS3')
-            #hdr.remove('CTYPE3')
-            #hdr.remove('CUNIT3')
-            #hdr.remove('CRPIX3')
-            #hdr.remove('CRVAL3')
-            #hdr.remove('CD3_3')
             w_tmp = WCS(header=hdr)
             w = w_tmp.dropaxis(2)
 
+            # TODO: Below is a change I made in the version 4.x of the code, but
+            # I think what you've added above is the better approach.  Let's
+            # make sure it passes on MaNGA data.
+#            for key in ['CTYPE3', 'CUNIT3', 'CRPIX3', 'CRVAL3', 'CD3_3', 'CDELT3']:
+#                if key in hdr:
+#                    hdr.remove(key)
 
         # Remove everything but the WCS information
         #w = WCS(header=hdr)
         hdr = w.to_header().copy()
 
-
-        # KHRR - the DATE-OBS keyword is not in MUSE
-        if('DATE-OBS' in hdr):
+        # Fix the DATE-OBS keyword:
+        if 'DATA-OBS' in hdr:
             hdr.comments['DATE-OBS'] = 'Date of median exposure'
+        if 'MJD-OBS' in hdr:
             hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values
@@ -245,11 +248,9 @@ class DAPFitsUtil:
         hdr = w.to_header().copy()
 
         # Fix the DATE-OBS keyword:
-        # KHRR added if
-        if ('DATE-OBS' in hdr):
+        if 'DATA-OBS' in hdr:
             hdr.comments['DATE-OBS'] = 'Date of median exposure'
-
-        if('MJD-OBS' in hdr):
+        if 'MJD-OBS' in hdr:
             hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values; BUNIT added during
@@ -572,7 +573,7 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def write(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
+    def write(hdu, ofile, overwrite=False, checksum=False, symlink_dir=None, relative_symlink=True,
               loggers=None, quiet=False):
         """
         Write an HDUList to an output file.  It is expected that the hdu
@@ -596,7 +597,7 @@ class DAPFitsUtil:
         # Write the data
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-        hdu.writeto(_ofile, overwrite=clobber, checksum=checksum)
+        hdu.writeto(_ofile, overwrite=overwrite, checksum=checksum)
 
         # Transpose it back
         hdu = DAPFitsUtil.transpose_image_data(hdu)
@@ -606,7 +607,7 @@ class DAPFitsUtil:
             if not quiet:
                 log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
             # And compress it
-            compress_file(_ofile, clobber=clobber)
+            compress_file(_ofile, overwrite=overwrite)
             os.remove(_ofile)
     
         # Create the symlink if requested
@@ -905,7 +906,7 @@ class DAPFitsUtil:
             return ('FLAG16BIT', '16-bit mask')
         if bit_type in [numpy.uint8, numpy.int8]:
             return ('FLAG8BIT', '8-bit mask')
-        if bit_type == numpy.bool:
+        if bit_type in [bool, numpy.bool_]:
             return ('MASKZERO', 'Binary mask; zero values are good/unmasked')
         raise ValueError('Invalid bit_type: {0}!'.format(str(bit_type)))
 

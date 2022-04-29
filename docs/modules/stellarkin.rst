@@ -6,40 +6,16 @@ Stellar Kinematics
 
 *Analysis class*: :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
 
-*Method definition*: :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
+*Reference root*: see :class:`~mangadap.config.analysisplan.AnalysisPlan.common_path`;
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]`` for MaNGA
 
-*Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common``
+*Reference file*: see :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel.default_paths`
+``manga-[PLATE]-[IFUDESIGN]-[RDXQA]-[BINNING]-[CONTINUUM].fits.gz`` for MaNGA
 
-*Reference file*: ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY].fits.gz``
+*Optional Parameters*: see :ref:`plan`.  The table below lists the parameters
+defined by :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
 
-*Config files*: ``$MANGADAP_DIR/mangadap/config/stellar_continuum_modeling``
-
-*Example config*: ``gau_mileshc.ini``
-
-.. code-block:: ini
-
-    [default]
-    key                    = MILESHCMPL9
-    fit_type               = stellar_kinematics
-    fit_method             = ppxf
-    fit_iter               = nonzero_templates
-    reject_boxcar          = 100
-    filter_boxcar
-    filter_op
-    filter_iter
-    filter_degree
-    filter_mdegree
-    minimum_snr            = 1.0
-    waverange
-    artifact_mask          = BADSKY
-    emission_line_mask     = ELPMPL8
-    template_library       = MILESHC
-    match_resolution       = False
-    velscale_ratio         = 4
-    moments                = 2
-    degree                 = 8
-    mdegree                = -1
-    bias
+.. include:: ../tables/reductionassessmentdef.rst
 
 *Important class dependencies*:
 

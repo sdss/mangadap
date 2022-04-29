@@ -13,6 +13,10 @@ Defines some utility routines used to map a provided set of quantities.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+import warnings
+
+from IPython import embed
+
 import numpy
 import warnings
 from scipy import ndimage
@@ -74,7 +78,7 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
     """
 
     # Image extent
-    ext = numpy.empty(4, dtype=numpy.float64)
+    ext = numpy.empty(4, dtype=float)
     ext[0], ext[1] = numpy.amin(x)-pixelscale/2., numpy.amax(x)+pixelscale/2.
     ext[2], ext[3] = numpy.amin(y)-pixelscale/2., numpy.amax(y)+pixelscale/2.
 
@@ -84,9 +88,9 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
 #    print('MAP: extent: {0}'.format(ext))
 
     # Image and mask values
-    img = numpy.full((nx,ny), fill_value, dtype=numpy.float64)
-    i = numpy.floor((x.ravel()-ext[0])/pixelscale).astype(numpy.int)
-    j = numpy.floor((y.ravel()-ext[2])/pixelscale).astype(numpy.int)
+    img = numpy.full((nx,ny), fill_value, dtype=float)
+    i = numpy.floor((x.ravel()-ext[0])/pixelscale).astype(int)
+    j = numpy.floor((y.ravel()-ext[2])/pixelscale).astype(int)
     i[i == nx] = nx-1
     j[j == ny] = ny-1
 #    print(i)
@@ -220,7 +224,7 @@ def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='co
 
     return cs
 
-
+# TODO: Move this into datacube?
 def map_extent(hdu, ext, offset=True):
     """
     Get the on-sky extent of a map using the provided WCS coordinates.
@@ -248,9 +252,9 @@ def map_extent(hdu, ext, offset=True):
             objdec = hdu['PRIMARY'].header['OBJDEC']
         except Exception as e:
             print(e)
-            warnings.warn('Cannot find OBJRA and/or OBJDEC in the header of extension PRIMARY.'
-                          '  No offset applied.')
-            offset = False
+            warnings.warn('OBJRA and/or OBJDEC in the header of the PRIMARY extension.  '
+                          'Offseting to the center pixel.')
+            objra, objdec = None, None
 
     # Does the extension contain a cube or a single map image
     cube = len(hdu[ext].data.shape) > 2
@@ -272,6 +276,9 @@ def map_extent(hdu, ext, offset=True):
 
     # Read the World Coordinate System information from the fits header
     wcs = WCS(header=hdu[ext].header, fix=False)
+    if wcs.naxis == 3 and not cube:
+        warnings.warn('WCS is for 3D, but provided data is 2D.  Attempting to drop the last axis.')
+        wcs = wcs.dropaxis(-1)
 
     # Convert the pixel coordinates into world coordinates
     XY = wcs.all_pix2world(xy, 1)
@@ -285,9 +292,12 @@ def map_extent(hdu, ext, offset=True):
     if not offset:
         return [ numpy.amax(x), numpy.amin(x), numpy.amin(y), numpy.amax(y) ]
 
+    if objra is None or objdec is None:
+        center = tuple([_n // 2 for _n in x.shape])
+        objra = x[center]
+        objdec = y[center]
+
     # Convert the world coordinates to offset from center in arcsec
-    objra = hdu['PRIMARY'].header['OBJRA']
-    objdec = hdu['PRIMARY'].header['OBJDEC']
     x = (x-objra)*numpy.cos(numpy.radians(objdec))*3600.
     y = (y-objdec)*3600.
 
@@ -397,7 +407,7 @@ def _match_map_arrays_sub_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=False
     newshape = tuple(numpy.array(arr2.shape) + add)
 
     # Pad and copy the array and its mask
-    _arr2 = numpy.ma.masked_all(newshape, dtype=numpy.float)
+    _arr2 = numpy.ma.masked_all(newshape, dtype=float)
     _arr2[add//2:add//2+arr2.shape[0],add//2:add//2+arr2.shape[1]] = arr2[:,:]
     _gpm = numpy.invert(numpy.ma.getmaskarray(_arr2)).astype(float)
     # Shifts are in pixels, so adjust given the new coordinates
@@ -412,10 +422,10 @@ def _match_map_arrays_sub_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=False
     indx = ~(incoo[0,:] < 0) & ~(incoo[1,:] < 0)
 
     # Shift the second array and set the mask
-    shifted_arr2 = numpy.ma.masked_all(newshape, dtype=numpy.float)
+    shifted_arr2 = numpy.ma.masked_all(newshape, dtype=float)
     shifted_arr2[outcoo[0,indx], outcoo[1,indx]] = \
         ndimage.map_coordinates(_arr2.filled(fill_value=0.0), incoo[:,indx], order=1)
-    shifted_gpm = numpy.zeros(newshape, dtype=numpy.float)
+    shifted_gpm = numpy.zeros(newshape, dtype=float)
     shifted_gpm[outcoo[0,indx], outcoo[1,indx]] = \
         ndimage.map_coordinates(_gpm, incoo[:,indx], order=1)
     shifted_arr2[ shifted_gpm < 0.8 ] = numpy.ma.masked
@@ -426,7 +436,7 @@ def _match_map_arrays_sub_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=False
         return (shifted_arr2, arr1, ext1) if swap else (arr1, shifted_arr2, ext1)
     # Pad the shifted array up to the shape of the first array
     if sub > 0:
-        _shifted_arr2 = numpy.ma.masked_all(arr1.shape, dtype=numpy.float)
+        _shifted_arr2 = numpy.ma.masked_all(arr1.shape, dtype=float)
         _shifted_arr2[:shifted_arr2.shape[0],:shifted_arr2.shape[1]] = shifted_arr2[:,:]
         return (_shifted_arr2, arr1, ext1) if swap else (arr1, _shifted_arr2, ext1)
 
@@ -435,12 +445,12 @@ def _match_map_arrays_sub_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=False
     # If truncation is requested, set the shifted 2nd array to the same
     # size as the first input array
     if truncate:
-        _shifted_arr2 = numpy.ma.masked_all(arr1.shape, dtype=numpy.float)
+        _shifted_arr2 = numpy.ma.masked_all(arr1.shape, dtype=float)
         _shifted_arr2[:,:] = shifted_arr2[:arr1.shape[0],:arr1.shape[1]]
         return (_shifted_arr2, arr1, ext1) if swap else (arr1, _shifted_arr2, ext1)
 
     # Pad the first array to the size of the shifted array
-    _arr1 = numpy.ma.masked_all(shifted_arr2.shape, dtype=numpy.float)
+    _arr1 = numpy.ma.masked_all(shifted_arr2.shape, dtype=float)
     _arr1[:arr1.shape[0],:arr1.shape[1]] = arr1[:,:]
     return (shifted_arr2, _arr1, newext2) if swap else (_arr1, shifted_arr2, newext2)
 
@@ -457,9 +467,9 @@ def _match_map_arrays_integer_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=F
     return (_arr, arr1, ext1) if swap else (arr1, _arr, ext1) 
 
 
-def map_beam_patch(extent, ax, pos=(0.1,0.1), **kwargs):
+def map_beam_patch(extent, ax, fwhm=2.5, pos=(0.1,0.1), **kwargs):
     width = extent[0]-extent[1]
-    return patches.Circle(pos, 2.5/width/2, transform=ax.transAxes, **kwargs)
+    return patches.Circle(pos, fwhm/width/2, transform=ax.transAxes, **kwargs)
 
 
 

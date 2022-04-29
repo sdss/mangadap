@@ -22,11 +22,15 @@ apirst:
 	python3 ./scripts/write_bitmask_tables.py
 	python3 ./scripts/write_parset_tables.py
 	python3 ./scripts/write_datatables.py
-	python3 ./scripts/write_defaultplan.py
 	python3 ./scripts/write_script_help.py
 
 html:
 	make apirst
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
+htmlonly:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
