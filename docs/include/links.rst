@@ -22,10 +22,6 @@
 .. _Path: https://docs.python.org/3/library/pathlib.html
 .. _Path.glob: https://docs.python.org/3/library/pathlib.html#pathlib.Path.glob
 
-.. configobj
-
-.. _configobj.ConfigObj: https://pypi.org/project/configobj/
-
 .. numpy
 
 .. _numpy.ndarray: https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html
@@ -79,15 +75,14 @@
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 
-.. shapely
-
-.. _shapely: https://pypi.python.org/pypi/Shapely
-
-.. misc
+.. misc packages
 
 .. _requests: https://pypi.org/project/requests/
 .. _IPython.embed: https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
+.. _configobj.ConfigObj: https://pypi.org/project/configobj/
+.. _cvxopt: https://cvxopt.org/index.html
 .. _ppxf: https://pypi.org/project/ppxf/
+.. _shapely: https://pypi.python.org/pypi/Shapely
 .. _vorbin: https://pypi.org/project/vorbin/
 .. _tomli: https://pypi.org/project/tomli/
 .. _spectres: https://pypi.org/project/spectres/
