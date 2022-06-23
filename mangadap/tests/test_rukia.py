@@ -92,7 +92,7 @@ def test_rukia_fit():
     r.fit(miles_wave, miles_flux, xsl_wave.data, xsl_flux.data, shift=0.0, fit_shift=True,
           rejiter=-1)
 
-    assert numpy.sum(r.gpm) == 2176, 'Change in the number of pixels rejected.'
+    assert numpy.sum(r.gpm) == 2175, 'Change in the number of pixels rejected.'
     assert numpy.sqrt(numpy.mean(numpy.square((r.flux-r.model(r.par))[r.gpm]))) < 0.01, \
             'Fit quality changed.'
 

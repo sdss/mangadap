@@ -389,7 +389,8 @@ The columns of the parameter file are:
 |                   |           | ``1.4`` for the velocity dispersion parameter means the velocity      |
 |                   |           | dispersion of this line should be within                              |
 |                   |           | :math:`\sigma_t/1.4 < \sigma < 1.4 \sigma_t`, where :math:`\sigma_t`  |
-|                   |           | is the velocity dispersion of the tied line.                          |
+|                   |           | is the velocity dispersion of the tied line.  When imposing these     |
+|                   |           | parameter inequalities, `ppxf`_ will require the `cvxopt`_ package.   |
 +-------------------+-----------+-----------------------------------------------------------------------+
 | ``blueside``      | float[2]  | A two-element vector with the starting and ending wavelength for a    |
 |                   |           | passband to the blue of the primary band.                             |
