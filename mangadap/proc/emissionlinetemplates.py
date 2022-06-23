@@ -284,7 +284,7 @@ class EmissionLineTemplates:
         # TODO: I'm sure there's a more robust way to do this...
         if numpy.any(numpy.all(tie_eq | tie_ineq, axis=0)):
             raise ValueError('There must be at least one line that has an independent velocity '
-                             'and another one that has an independent velocity dispsersion; '
+                             'and another one that has an independent velocity dispersion; '
                              'however, these do not have to be satisfied by a single line.')
 
         # Check that any tied line includes the index of the line it's tied to.

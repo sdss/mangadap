@@ -1,4 +1,11 @@
 
+4.0.4 (23 Jun 2022)
+-------------------
+ 
+ - Update required pPXF version to 8.1.0.  Previous version required (7.4.3) may
+   have had a bug when combining fixed and tied kinematic parameters with
+   parameter inequalities.
+
 4.0.3 (29 Apr 2022)
 -------------------
 
