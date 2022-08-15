@@ -598,10 +598,10 @@ class Covariance:
         
             {\mathbf T} \times {\mathbf X} = {\mathbf Y}
 
-        where :math:`{\mathbf T}` is a transfer matrix of size
-        :math:`N_y\times N_x`, :math:`{\mathbf X}` is a vector of
-        size :math:`N_x`, and :math:`{\mathbf Y}` is the vector of
-        length :math:`{N_y}` that results from the multiplication.
+        where :math:`{\mathbf T}` is a transfer matrix of size :math:`N_y\times
+        N_x`, :math:`{\mathbf X}` is a vector of size :math:`N_x`, and
+        :math:`{\mathbf Y}` is the vector of length :math:`{N_y}` that results
+        from the multiplication.
 
         The covariance matrix is then
         
@@ -610,13 +610,12 @@ class Covariance:
              {\mathbf C} = {\mathbf T} \times {\mathbf \Sigma} \times
              {\mathbf T}^{\rm T},
 
-        where :math:`{\mathbf \Sigma}` is the covariance matrix for
-        the elements of :math:`{\mathbf X}`. If `Sigma` is provided
-        as a vector of length :math:`N_x`, it is assumed that the
-        elements of :math:`{\mathbf X}` are independent and the
-        provided vector gives the variance in each element; i.e., the
-        provided data represent the diagonal of :math:`{\mathbf
-        \Sigma}`.
+        where :math:`{\mathbf \Sigma}` is the covariance matrix for the elements
+        of :math:`{\mathbf X}`. If `Sigma` is provided as a vector of length
+        :math:`N_x`, it is assumed that the elements of :math:`{\mathbf X}` are
+        independent and the provided vector gives the *variance* in each
+        element; i.e., the provided data represent the diagonal of
+        :math:`{\mathbf \Sigma}`.
 
         Args:
             T (`scipy.sparse.csr_matrix`_, `numpy.ndarray`_):
