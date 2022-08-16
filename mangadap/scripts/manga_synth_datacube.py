@@ -307,7 +307,6 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
                 draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
                                                size=args.nsim, method='svd')
             flux[:,gpm,j] += draw
-            break
         print(f'Wave: {nwave}/{nwave}')
 
         # Reshape the flux array
