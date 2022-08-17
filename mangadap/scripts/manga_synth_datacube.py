@@ -318,7 +318,7 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         for i in range(args.nsim):
             ofile = odir / f'{oroot}-{i+1:02}.fits'
             fits.HDUList([fits.PrimaryHDU(),
-                          fits.ImageHDU(data=obj_wave.astype(numpy.float32), name='WAVE'),
+                          fits.ImageHDU(data=obj_wave, name='WAVE'),
                           fits.ImageHDU(data=flux[i], name='FLUX', header=cube.wcs.to_header()),
                           fits.ImageHDU(data=ivar, name='IVAR'),
                           fits.ImageHDU(data=mask.astype(numpy.int16), name='MASK'),
