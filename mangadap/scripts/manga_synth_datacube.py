@@ -185,6 +185,8 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         odir = Path(args.oroot).resolve()
         oroot = odir.name
         odir = odir.parent
+        if not odir.exists():
+            odir.mkdir(parents=True)
 
         # Read the cube 
         plate, ifu = map(lambda x : int(x), args.plateifu.split('-'))
