@@ -281,9 +281,13 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         flux = numpy.tile(flux, (args.nsim,1,1))
 
         # The variance and mask arrays are identical for all simulations
-        var = numpy.zeros(cube_shape, dtype=numpy.float32).reshape(-1,4563)
+#        var = numpy.zeros(cube_shape, dtype=numpy.float32).reshape(-1,4563)
+        var = numpy.zeros(cube_shape, dtype=numpy.float32)
         mask = numpy.ma.getmaskarray(cube_flux).copy()
-        bad_draw = numpy.zeros(nwave, dtype=bool)
+#        bad_draw = numpy.zeros(nwave, dtype=bool)
+
+        draw = rng.normal(size=(args.nsim,) + cube.rss.shape)
+        draw *= obj_err[None,...]
 
         # Iterate over wavelength channels
         for j in range(nwave):
@@ -294,26 +298,38 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
             t = cube.rss.rectification_transfer_matrix(j, quiet=True)
             # Get the covariance in the cube for this channel
             covar = t.dot(sparse.diags(obj_err[:,j]**2).dot(t.T))
+
+            # ------------------------------------------------------------------
+            # NEW APPROACH
+            var[...,j] = covar.diagonal().reshape(spatial_shape)
+            for i in range(args.nsim):
+                flux[i,:,j] += t.dot(draw[i,:,j])
+            # ------------------------------------------------------------------
+
+            # ------------------------------------------------------------------
+            # OLD APPROACH
             # Get the good spaxels
-            gpm = numpy.logical_not(mask[...,j].ravel())
-            ngpm = numpy.sum(gpm)
-            # Force the covariance matrix to be positive definite
-            _covar = impose_positive_definite(covar[numpy.ix_(gpm,gpm)], maxiter=10, quiet=True)
-            var[gpm,j] = _covar.diagonal()
-            # Add multivariate normal deviates to add to this channel
-            try:
-                draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
-                                               size=args.nsim, method='cholesky')
-            except:
-                bad_draw[j] = True
-                draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
-                                               size=args.nsim, method='svd')
-            flux[:,gpm,j] += draw
+#            gpm = numpy.logical_not(mask[...,j].ravel())
+#            ngpm = numpy.sum(gpm)
+#            # Force the covariance matrix to be positive definite
+#            _covar = impose_positive_definite(covar[numpy.ix_(gpm,gpm)], maxiter=10, quiet=True)
+#            var[gpm,j] = _covar.diagonal()
+#            # Add multivariate normal deviates to add to this channel
+#            try:
+#                draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
+#                                               size=args.nsim, method='cholesky')
+#            except:
+#                bad_draw[j] = True
+#                draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
+#                                               size=args.nsim, method='svd')
+#            flux[:,gpm,j] += draw
+            # ------------------------------------------------------------------
         print(f'Wave: {nwave}/{nwave}')
 
         # Reshape the flux array
         flux = flux.reshape((args.nsim,) + cube_shape)
-        var = var.reshape(cube_shape)
+        flux[:,mask] = 0.
+#        var = var.reshape(cube_shape)
 
         # Copy the WCS, wave, sres
         ivar = numpy.ma.divide(1, var).filled(0.0)
@@ -325,7 +341,7 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
                           fits.ImageHDU(data=ivar, name='IVAR'),
                           fits.ImageHDU(data=mask.astype(numpy.int16), name='MASK'),
                           fits.ImageHDU(data=cube.sres.astype(numpy.float32), name='SRES'),
-                          fits.ImageHDU(data=bad_draw.astype(numpy.int16), name='DRAW'),
+#                          fits.ImageHDU(data=bad_draw.astype(numpy.int16), name='DRAW'),
                           fits.ImageHDU(data=flux_map.astype(numpy.float32), name='INP_WGT'),
                           fits.ImageHDU(data=v_map.astype(numpy.float32), name='INP_V'),
                           fits.ImageHDU(data=disp_map.astype(numpy.float32), name='INP_SIG')
