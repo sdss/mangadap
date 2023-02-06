@@ -286,7 +286,15 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         mask = numpy.ma.getmaskarray(cube_flux).copy()
 #        bad_draw = numpy.zeros(nwave, dtype=bool)
 
-        draw = rng.normal(size=(args.nsim,) + cube.rss.shape)
+        try:    
+            draw = rng.normal(size=(args.nsim,) + cube.rss.shape)
+        except MemoryError as e:
+            embed()
+            exit()
+        else:
+            embed()
+            exit()
+        exit()
         draw *= obj_err[None,...]
 
         # Iterate over wavelength channels
