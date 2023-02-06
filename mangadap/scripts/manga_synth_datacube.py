@@ -293,8 +293,8 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         # Size of a float64 in GiB
         float64_size = numpy.dtype(numpy.float64).itemsize/2**30
         while numpy.prod((nsim[0],) + cube.rss.shape) * float64_size > max_gib:
-            print(nsim[0])
             nsim = numpy.array([[n//2,n//2 + n%2] for n in nsim]).ravel()
+            print(nsim[0])
 
         embed()
         exit()
