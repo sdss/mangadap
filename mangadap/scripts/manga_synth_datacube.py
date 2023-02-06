@@ -189,7 +189,8 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
             odir.mkdir(parents=True)
 
         # Maximum size for the random draw array
-        max_gib = 100.
+#        max_gib = 50.
+        max_gib = 0.1
 
         # Read the cube 
         plate, ifu = map(lambda x : int(x), args.plateifu.split('-'))
@@ -281,7 +282,6 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         # One cube per simulations
 #        flux = numpy.zeros((args.nsim,)+cube_shape, dtype=numpy.float32)
         flux = cube_flux.filled(0.0).astype(numpy.float32).reshape(-1,4563)
-        flux = numpy.tile(flux, (args.nsim,1,1))
 
         # The variance and mask arrays are identical for all simulations
 #        var = numpy.zeros(cube_shape, dtype=numpy.float32).reshape(-1,4563)
@@ -294,79 +294,57 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         float64_size = numpy.dtype(numpy.float64).itemsize/2**30
         while numpy.prod((nsim[0],) + cube.rss.shape) * float64_size > max_gib:
             nsim = numpy.array([[n//2,n//2 + n%2] for n in nsim]).ravel()
-            print(nsim[0])
 
+        print(nsim)
         embed()
         exit()
 
-        try:    
-            draw = rng.normal(size=(args.nsim,) + cube.rss.shape)
-        except MemoryError as e:
-            embed()
-            exit()
-        else:
-            embed()
-            exit()
-        exit()
-        draw *= obj_err[None,...]
+        for k in range(nsim.size):
+            print(f'Working on subset {k+1} of {nsim.size}.')
 
-        # Iterate over wavelength channels
-        for j in range(nwave):
-            print(f'Wave: {j+1}/{nwave}', end='\r')
-            if numpy.all(mask[...,j]):
-                continue
-            # Get the rectification matrix
-            t = cube.rss.rectification_transfer_matrix(j, quiet=True)
-            # Get the covariance in the cube for this channel
-            covar = t.dot(sparse.diags(obj_err[:,j]**2).dot(t.T))
+            _flux = numpy.tile(flux, (nsim[k],1,1))
+            draw = rng.normal(size=(nsim[k],) + cube.rss.shape)
+            draw *= obj_err[None,...]
 
-            # ------------------------------------------------------------------
-            # NEW APPROACH
-            var[...,j] = covar.diagonal().reshape(spatial_shape)
-            for i in range(args.nsim):
-                flux[i,:,j] += t.dot(draw[i,:,j])
-            # ------------------------------------------------------------------
+            # Iterate over wavelength channels
+            for j in range(nwave):
+                print(f'Wave: {j+1}/{nwave}', end='\r')
+                if numpy.all(mask[...,j]):
+                    continue
+                # Get the rectification matrix
+                t = cube.rss.rectification_transfer_matrix(j, quiet=True)
+                # Get the covariance in the cube for this channel
+                covar = t.dot(sparse.diags(obj_err[:,j]**2).dot(t.T))
 
-            # ------------------------------------------------------------------
-            # OLD APPROACH
-            # Get the good spaxels
-#            gpm = numpy.logical_not(mask[...,j].ravel())
-#            ngpm = numpy.sum(gpm)
-#            # Force the covariance matrix to be positive definite
-#            _covar = impose_positive_definite(covar[numpy.ix_(gpm,gpm)], maxiter=10, quiet=True)
-#            var[gpm,j] = _covar.diagonal()
-#            # Add multivariate normal deviates to add to this channel
-#            try:
-#                draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
-#                                               size=args.nsim, method='cholesky')
-#            except:
-#                bad_draw[j] = True
-#                draw = rng.multivariate_normal(numpy.zeros(ngpm, dtype=float), _covar.toarray(),
-#                                               size=args.nsim, method='svd')
-#            flux[:,gpm,j] += draw
-            # ------------------------------------------------------------------
-        print(f'Wave: {nwave}/{nwave}')
+                # ------------------------------------------------------------------
+                # NEW APPROACH
+                var[...,j] = covar.diagonal().reshape(spatial_shape)
+                for i in range(nsim[k]):
+                    _flux[i,:,j] += t.dot(draw[i,:,j])
+                # ------------------------------------------------------------------
 
-        # Reshape the flux array
-        flux = flux.reshape((args.nsim,) + cube_shape)
-        flux[:,mask] = 0.
-#        var = var.reshape(cube_shape)
+            print(f'Wave: {nwave}/{nwave}')
 
-        # Copy the WCS, wave, sres
-        ivar = numpy.ma.divide(1, var).filled(0.0)
-        for i in range(args.nsim):
-            ofile = odir / f'{oroot}-{i+1:02}.fits'
-            fits.HDUList([fits.PrimaryHDU(),
-                          fits.ImageHDU(data=obj_wave, name='WAVE'),
-                          fits.ImageHDU(data=flux[i], name='FLUX', header=cube.wcs.to_header()),
-                          fits.ImageHDU(data=ivar, name='IVAR'),
-                          fits.ImageHDU(data=mask.astype(numpy.int16), name='MASK'),
-                          fits.ImageHDU(data=cube.sres.astype(numpy.float32), name='SRES'),
-#                          fits.ImageHDU(data=bad_draw.astype(numpy.int16), name='DRAW'),
-                          fits.ImageHDU(data=flux_map.astype(numpy.float32), name='INP_WGT'),
-                          fits.ImageHDU(data=v_map.astype(numpy.float32), name='INP_V'),
-                          fits.ImageHDU(data=disp_map.astype(numpy.float32), name='INP_SIG')
-                          ]).writeto(str(ofile), overwrite=True, checksum=True)
-            compress_file(str(ofile), overwrite=True, rm_original=True)            
+            # Reshape the flux array
+            _flux = _flux.reshape((nsim[k],) + cube_shape)
+            _flux[:,mask] = 0.
+    #        var = var.reshape(cube_shape)
+
+            # Copy the WCS, wave, sres
+            ivar = numpy.ma.divide(1, var).filled(0.0)
+            for i in range(nsim[k]):
+                ofile = odir / f'{oroot}-{i+1:02}.fits'
+                fits.HDUList([fits.PrimaryHDU(),
+                            fits.ImageHDU(data=obj_wave, name='WAVE'),
+                            fits.ImageHDU(data=_flux[i], name='FLUX', header=cube.wcs.to_header()),
+                            fits.ImageHDU(data=ivar, name='IVAR'),
+                            fits.ImageHDU(data=mask.astype(numpy.int16), name='MASK'),
+                            fits.ImageHDU(data=cube.sres.astype(numpy.float32), name='SRES'),
+    #                          fits.ImageHDU(data=bad_draw.astype(numpy.int16), name='DRAW'),
+                            fits.ImageHDU(data=flux_map.astype(numpy.float32), name='INP_WGT'),
+                            fits.ImageHDU(data=v_map.astype(numpy.float32), name='INP_V'),
+                            fits.ImageHDU(data=disp_map.astype(numpy.float32), name='INP_SIG')
+                            ]).writeto(str(ofile), overwrite=True, checksum=True)
+                compress_file(str(ofile), overwrite=True, rm_original=True)            
 
 
