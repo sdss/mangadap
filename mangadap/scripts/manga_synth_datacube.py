@@ -295,10 +295,7 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         while numpy.prod((nsim[0],) + cube.rss.shape) * float64_size > max_gib:
             nsim = numpy.array([[n//2,n//2 + n%2] for n in nsim]).ravel()
 
-        print(nsim)
-        embed()
-        exit()
-
+        n_written = 0
         for k in range(nsim.size):
             print(f'Working on subset {k+1} of {nsim.size}.')
 
@@ -333,7 +330,7 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
             # Copy the WCS, wave, sres
             ivar = numpy.ma.divide(1, var).filled(0.0)
             for i in range(nsim[k]):
-                ofile = odir / f'{oroot}-{i+1:02}.fits'
+                ofile = odir / f'{oroot}-{n_written+1:02}.fits'
                 fits.HDUList([fits.PrimaryHDU(),
                             fits.ImageHDU(data=obj_wave, name='WAVE'),
                             fits.ImageHDU(data=_flux[i], name='FLUX', header=cube.wcs.to_header()),
@@ -346,5 +343,6 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
                             fits.ImageHDU(data=disp_map.astype(numpy.float32), name='INP_SIG')
                             ]).writeto(str(ofile), overwrite=True, checksum=True)
                 compress_file(str(ofile), overwrite=True, rm_original=True)            
+                n_written += 1
 
 
