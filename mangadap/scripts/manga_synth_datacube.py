@@ -189,8 +189,8 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
             odir.mkdir(parents=True)
 
         # Maximum size for the random draw array
-#        max_gib = 50.
-        max_gib = 0.1
+        max_gib = 50.
+#        max_gib = 0.1
 
         # Read the cube 
         plate, ifu = map(lambda x : int(x), args.plateifu.split('-'))
