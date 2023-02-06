@@ -188,6 +188,9 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         if not odir.exists():
             odir.mkdir(parents=True)
 
+        # Maximum size for the random draw array
+        max_gib = 100.
+
         # Read the cube 
         plate, ifu = map(lambda x : int(x), args.plateifu.split('-'))
         cube = MaNGADataCube.from_plateifu(plate, ifu, directory_path=args.directory_path)
@@ -285,6 +288,15 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         var = numpy.zeros(cube_shape, dtype=numpy.float32)
         mask = numpy.ma.getmaskarray(cube_flux).copy()
 #        bad_draw = numpy.zeros(nwave, dtype=bool)
+
+        nsim = numpy.array([args.nsim])
+        # Size of a float64 in GiB
+        float64_size = numpy.dtype(numpy.float64).itemsize/2**30
+        while numpy.prod((nsim[0],) + cube.rss.shape) * float64_size > max_gib:
+            nsim = numpy.array([[n//2,n//2 + n%2] for n in nsim]).ravel()
+
+        embed()
+        exit()
 
         try:    
             draw = rng.normal(size=(args.nsim,) + cube.rss.shape)
