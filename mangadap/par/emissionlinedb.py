@@ -228,6 +228,14 @@ class EmissionLineDB(SpectralFeatureDB):
                                             airtovac(numpy.array(par['DAPEML']['redside'][i])))]
         return parlist
 
+    def _validate(self):
+        super()._validate()
+        # Ensure that no lines are tied to themselves
+        indx = self.data['index'] == self.data['tie_index']
+        if any(indx):
+            raise ValueError('Cannot tie lines to themselves!  Fix tying index for line '
+                             f'{",".join([str(x) for x in self.data["index"][indx]])}.')
+
     def channel_names(self, dicttype=True):
         """
         Return a dictionary with the channel names as the dictionary

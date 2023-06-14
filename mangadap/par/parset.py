@@ -1021,14 +1021,26 @@ class ParDatabase:
         self.npar = _inp[0].npar
         self.nsets = len(_inp)
         keys = _inp[0].keys()
-        for i in range(1,self.nsets):
+        dtypes = []
+        for i in range(self.nsets):
             if _inp[i].npar != self.npar:
                 raise ValueError('Not all ParSet objects have the same number of parameters.')
             if _inp[i].keys() != keys:
                 raise ValueError('Not all ParSet objects have the same keys.')
             # Other checks?
+            dtypes += [self._set_dtypes(_inp, i)]
 
-        record_dtypes = self._set_dtypes(_inp, 0)
+        for j in range(self.npar):
+            t = dtypes[0][j][1]
+            for i in range(1, self.nsets):
+                if len(dtypes[i][j]) != len(dtypes[0][j]):
+                    raise ValueError('Data types are inconsistent, mixing scalars, lists, arrays.')
+                if dtypes[i][j][1] != t:
+                    dtypes[0][j] = (dtypes[0][j][0], numpy.dtype(object), dtypes[0][j][2]) \
+                                    if len(dtypes[0][j]) == 3 \
+                                    else (dtypes[0][j][0], numpy.dtype(object))
+
+        record_dtypes = dtypes[0]
 
         data = []
         for i in range(self.nsets):
@@ -1036,7 +1048,7 @@ class ParDatabase:
 
         # WARNING: None values are converted to nan if data type is
         # float
-        self.data = numpy.array(data, dtype=record_dtypes ).view(numpy.recarray)
+        self.data = numpy.array(data, dtype=record_dtypes).view(numpy.recarray)
         self.options = inp[0].options.copy()
         self.dtype = inp[0].dtype.copy()
         self.can_call = inp[0].can_call.copy()

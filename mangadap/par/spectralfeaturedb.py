@@ -85,7 +85,9 @@ class SpectralFeatureDB(ParDatabase):
 
         # _parse_yanny() has to set `size` for each subclass.
         ParDatabase.__init__(self, self._parse_yanny())
+        self._validate()
 
+    def _validate(self):
         # Ensure that all indices are unique
         if len(numpy.unique(self.data['index'])) != self.size:
             raise ValueError(f'Database indices for {self.key} are not all unique!')

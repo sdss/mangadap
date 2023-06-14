@@ -48,6 +48,7 @@ import astropy.constants
 
 from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
 from ..util.log import log_output
+from ..util.misc import is_number
 from ..util import lineprofiles
 from .spectralfitting import EmissionLineFit
 
@@ -267,6 +268,8 @@ class EmissionLineTemplates:
             log_output(self.loggers, 1, logging.INFO,
                        'Lines ignored because of action or wavelength limits: {0}'.format(
                        ', '.join(self.emldb['name'][ignore_line])))
+        if numpy.all(ignore_line):
+            raise ValueError('No valid lines to fit!')
 
         # Determine which parameters are tied by equality:
         tie_eq = numpy.array([p is not None and '=' in p 
@@ -274,7 +277,7 @@ class EmissionLineTemplates:
                                   self.emldb['tie_par'].shape)
         tie_eq[ignore_line,:] = False
 
-        # Determine which parameters re tied by inequality:
+        # Determine which parameters are tied by inequality:
         tie_ineq = numpy.array([p is not None and '=' not in p
                                 for p in self.emldb['tie_par'].ravel()]).reshape(
                                   self.emldb['tie_par'].shape) & numpy.logical_not(tie_eq)
@@ -311,7 +314,7 @@ class EmissionLineTemplates:
         # Currently cannot deal with lines that have tied fluxes but
         # independent kinematics
         if numpy.any(tie_eq[:,0] & numpy.logical_not(numpy.all(tie_eq[:,1:], axis=1))):
-            raise NotImplementedError('DAP cannot currently accept lines with tied fluxes but '
+            raise NotImplementedError('DAP cannot currently handle lines with tied fluxes but '
                                       'independent kinematics.')
 
         # The total number of templates to construct is the number of lines in
@@ -328,7 +331,7 @@ class EmissionLineTemplates:
 
         # Reference lines are those that are:
         #   - *not* ignored (action != 'i'),
-        #   - completely unconstrained (emldb['tie_index'] is indefined;
+        #   - completely unconstrained (emldb['tie_index'] is undefined;
         #     i.e., less than 0), and/or
         #   - lines that are only tied by inequalities,
         # All reference lines are in separate templates, kinematic components,
@@ -350,8 +353,10 @@ class EmissionLineTemplates:
             for i in range(self.emldb.size):
                 if finished[i]:
                     continue
+                # Find the index of the tied line
                 indx = numpy.where(self.emldb['index'] == self.emldb['tie_index'][i])[0]
                 if not finished[indx]:
+                    # Tied line hasn't been ingested yet, so move on
                     continue
 
                 finished[i] = True
@@ -387,13 +392,15 @@ class EmissionLineTemplates:
             # that it started with, there must be an error in the
             # construction of the input database.
             if start_sum == numpy.sum(finished):
-                raise ValueError('Unable to parse the input database.  Check tying parameters.')
+                raise ValueError('Unable to parse the input database due to an error in the '
+                                 'database/file.  Check the tying parameters.')
 
         # All templates must have an assigned component, velocity group and
         # dispersion group. Otherwise, something has gone wrong or the input
         # database hasn't been constructed correctly.
         if numpy.any(self.comp < 0) or numpy.any(self.vgrp < 0) or numpy.any(self.sgrp < 0):
-            raise ValueError('Templates without an assigned component.  Check the input database.')
+            raise ValueError('One or more templates were not assigned to a kinematic component.  '
+                             'Check for errors in the input database/file.')
 
         # If there are no inequalities set in the database, we're done
         if not numpy.any(tie_ineq):
@@ -411,12 +418,17 @@ class EmissionLineTemplates:
             raise NotImplementedError('DAP currently does not allow inequality constraints on '
                                       'line fluxes.')
 
+        # Some definitions:
+        #   comp: The kinematic component of each template
+        #   tpli: The template with each line
+        #   compi: The kinematic component of each line
+
         # Check that lines in the same component do not have different
         # constraints.
         # TODO: I'm not actually sure that it's possible for this to fault, but
         # it's here just in case.
         ncomp = numpy.amax(self.comp)+1
-        # Component for each line
+        # The kinematic component assigned to each line
         compi = numpy.full(self.emldb.size, -1, dtype=int)
         indx = numpy.logical_not(ignore_line)
         compi[indx] = self.comp[self.tpli[indx]]
@@ -436,48 +448,55 @@ class EmissionLineTemplates:
                                  + 'must be identical because they are in the same '
                                  + 'kinematic component.')
 
-        # The number of constraints is twice the number of specified
-        # inequalities in the database
-        indx = compi != -1
-        nconstr = 2 * numpy.sum(tie_ineq[indx,1:])
+        # Inequality constraints can be upper or lower bounds or both.  Upper
+        # bounds are specified by, e.g., "<0.5", meaning the value must be less
+        # than half of that measured for the tied line.  Lower bounds are, e.g.,
+        # ">1.5".  For upper and lower bounds, values of "<" or ">" are
+        # equivalent to "<1" and ">1", respectively.  Applying upper and lower
+        # bounds is provided by a *single* number; e.g., "1.4" means the value
+        # most be > 1/1.4 and < 1.4 times the value of the tied line.  So, two
+        # constraints are added if the constraint string be converted to a
+        # number, and only one contraint is added if the string cannot be
+        # converted to a number.  
+        nconstr = numpy.sum([int(is_number(s))+1 for s in self.emldb['tie_par'][tie_ineq]])
 
         # Get the fractional constraint on each parameter
-        tie_comp_par = numpy.zeros((ncomp, 2), dtype=float)
+        tie_comp_lb = numpy.zeros((ncomp, 2), dtype=float)
+        tie_comp_ub = numpy.zeros((ncomp, 2), dtype=float)
+
         # NOTE: This loop is necessary because of recursive tying of lines. For
-        # example, in the OII doublet, one of the lines has its velocity tied
-        # to the H-alpha line and the other has its velocity and velocity
-        # dispersion tied to the first line. To make sure that the velocity
-        # dispersion of both OII lines is within some inequality constraint of
-        # the H-alpha dispersion, you need to pick the correct constraint. The
-        # checks above should catch if this recursion leads to, e.g., different
-        # constraints on the dispersion, so below I pick the correct constraint
-        # by picking the maximum value. This works because the `=` constraint
-        # is interpreted first as having a 0.0 fractional constraint.
+        # example, in the OII doublet, one of the lines could have its velocity
+        # tied to the H-alpha line and the other can have its velocity and
+        # velocity dispersion tied to the first line. To make sure that the
+        # velocity dispersion of both OII lines is within some inequality
+        # constraint of the H-alpha dispersion, you need to pick the correct
+        # constraint. The checks above should catch if this recursion leads to,
+        # e.g., different constraints on the dispersion, so below I pick the
+        # correct constraint by picking the maximum value. This works because
+        # the `=` constraint is interpreted first as having a 0.0 fractional
+        # constraint.
         for i in range(ncomp):
             indx = compi == i
-            _par = numpy.array([0.0 if f is None or len(f.strip('=')) == 0 else float(f.strip('='))
-                                for f in self.emldb['tie_par'][indx,1:].ravel()]).reshape(
-                                        numpy.sum(indx),2)
-            tie_comp_par[i,:] = numpy.amax(_par, axis=0)
-
-        # The definition of the fractional constraint is such that the value
-        # MUST be larger than one. Determine if any of the values don't meet
-        # this constraint and raise an exception if so.
-        # TODO: Do this when reading the EmissionLineDB...
-        if numpy.any(numpy.any((tie_comp_par < 0) 
-                               | ((tie_comp_par > 0) & numpy.logical_not(tie_comp_par > 1)),
-                               axis=1)):
-            raise ValueError('Any defined inequality constraints must be >1!')
-
-        # NOTE: For reference, this didn't work (compared to the explicit loop
-        # above) because it was just assigning the most recent parameter with
-        # the same component. Depending on the order of the line list, this
-        # meant that some fractional constraints were set to 0, leading to a
-        # singluar A_ineq array.
-#        tie_comp_par[compi[indx],:] = numpy.array([0.0 if f is None or len(f.strip('=')) == 0 
-#                                                 else float(f.strip('='))
-#                                            for f in self.emldb['tie_par'][indx,1:].ravel()
-#                                            ]).reshape(numpy.sum(indx),2)
+            _lb = []
+            _ub = []
+            for f in self.emldb['tie_par'][indx,1:].ravel():
+                if f in [None, '=']:
+                    _lb += [0.0]
+                    _ub += [0.0]
+                elif '>' in f:
+                    _lb += [1.0 if f == '>' else float(f.replace('>', ''))]
+                    _ub += [0.0]
+                elif '<' in f:
+                    _lb += [0.0]
+                    _ub += [1.0 if f == '<' else float(f.replace('<', ''))]
+                else:
+                    _ub += [float(f)]
+                    if _ub[-1] <= 1.:
+                        raise ValueError('Fractional constraints with lower and upper bounds '
+                                         'must be >1!')
+                    _lb += [1./_ub[-1]]
+            tie_comp_lb[i,:] = numpy.amax(numpy.asarray(_lb).reshape(numpy.sum(indx),2), axis=0)
+            tie_comp_ub[i,:] = numpy.amax(numpy.asarray(_ub).reshape(numpy.sum(indx),2), axis=0)
 
         # Set a vector indicating the ineq connections between components
         tie_comp = numpy.full(ncomp, -1, dtype=int)
@@ -495,11 +514,12 @@ class EmissionLineTemplates:
             if tie_comp[i] < 0:
                 continue
             for j in range(2):
-                if tie_comp_par[i,j] > 1:
-                    self.A_ineq[constr,2*tie_comp[i]+j] = 1/tie_comp_par[i,j]
+                if tie_comp_lb[i,j] > 0:
+                    self.A_ineq[constr,2*tie_comp[i]+j] = tie_comp_lb[i,j]
                     self.A_ineq[constr,2*i+j] = -1.
                     constr += 1
-                    self.A_ineq[constr,2*tie_comp[i]+j] = -tie_comp_par[i,j]
+                if tie_comp_ub[i,j] > 0:
+                    self.A_ineq[constr,2*tie_comp[i]+j] = -tie_comp_ub[i,j]
                     self.A_ineq[constr,2*i+j] = 1.
                     constr += 1
 
