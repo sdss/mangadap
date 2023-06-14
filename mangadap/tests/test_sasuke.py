@@ -260,7 +260,7 @@ def test_sasuke_mpl11():
             'H-alpha dispersions are too different'
 
 
-def test_multicomp():
+def test_multicomp_basic():
     """ Test a basic multicomponent fit."""
 
     # Instantiate the template libary
@@ -318,13 +318,12 @@ def test_multicomp():
 
 #    from matplotlib import pyplot
     pp = ppxf.ppxf(templates.T, flux, ferr, velscale, start_kin, moments=moments,
-                    degree=-1, mdegree=0,
-                    tied=tied,
-                    constr_kinem=constr_kinem,
+                    degree=-1, mdegree=0, tied=tied, constr_kinem=constr_kinem,
                     component=component, gas_component=gas_component, method='capfit',
                     quiet=True)
                     #, quiet=False, plot=True)
 #    pyplot.show()
+
     sol = numpy.array(pp.sol)
     assert numpy.allclose(sol[1,0], sol[2:,0]), 'All gas velocities should be the same'
     assert numpy.all(sol[broad,1] > sol[narrow,1]), 'Constraints not met'
@@ -334,4 +333,126 @@ def test_multicomp():
     assert numpy.all(numpy.absolute(sol[broad,1] - broad_sigma) < 1.), \
             'Broad dispersion too discrepant from input'
 
+
+def test_multicomp_manga():
+    # Read the data
+    specfile = data_test_file('MaNGA_multicomp_test_spectra.fits.gz')
+    hdu = fits.open(specfile)
+    drpbm = DRPFitsBitMask()
+    flux = numpy.ma.MaskedArray(hdu['FLUX'].data, mask=drpbm.flagged(hdu['MASK'].data,
+                                                                MaNGADataCube.do_not_fit_flags()))
+    ferr = numpy.ma.power(hdu['IVAR'].data, -0.5)
+    flux[ferr.mask] = numpy.ma.masked
+    ferr[flux.mask] = numpy.ma.masked
+    nspec = flux.shape[0]
+
+    # Instantiate the template libary
+    velscale_ratio = 4
+    tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=velscale_ratio,
+                          spectral_step=1e-4, log=True, hardcopy=False)
+    tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
+
+    # Get the pixel mask
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPSCMSK'))
+
+    # Instantiate the fitting class
+    ppxf = PPXFFit(StellarContinuumModelBitMask())
+
+    # Perform the fit
+    sc_wave, sc_flux, sc_mask, sc_par \
+        = ppxf.fit(tpl['WAVE'].data.copy(), tpl['FLUX'].data.copy(), hdu['WAVE'].data, flux, ferr,
+                   hdu['Z'].data, numpy.full(nspec, 100.), iteration_mode='no_global_wrej',
+                   reject_boxcar=100, ensemble=False, velscale_ratio=velscale_ratio,
+                   mask=pixelmask, matched_resolution=False, tpl_sres=tpl_sres,
+                   obj_sres=hdu['SRES'].data, degree=8, moments=2)
+
+    # Mask the 5577 sky line
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
+
+    # Read the emission line fitting database
+    emldb = EmissionLineDB(data_test_file('elp_ha_multicomp.par'))
+
+    # Instantiate the fitting class
+    emlfit = Sasuke(EmissionLineModelBitMask())
+
+    # Perform the fit
+    el_wave, model, el_flux, el_mask, el_fit, el_par \
+            = emlfit.fit(emldb, hdu['WAVE'].data, flux, obj_ferr=ferr, obj_mask=pixelmask,
+                         obj_sres=hdu['SRES'].data, guess_redshift=hdu['Z'].data,
+                         guess_dispersion=numpy.full(nspec, 100.), reject_boxcar=101,
+                         stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data,
+                         stpl_sres=tpl_sres, stellar_kinematics=sc_par['KIN'],
+                         etpl_sinst_mode='offset', etpl_sinst_min=10.,
+                         velscale_ratio=velscale_ratio, plot=True) #, matched_resolution=False
+
+    embed()
+    exit()
+
+    # Rejected pixels
+    assert numpy.sum(emlfit.bitmask.flagged(el_mask, flag='PPXF_REJECT')) == 261, \
+                'Different number of rejected pixels'
+
+    # Unable to fit
+    assert numpy.array_equal(emlfit.bitmask.flagged_bits(el_fit['MASK'][5]), ['NO_FIT']), \
+                'Expected NO_FIT in 6th spectrum'
+
+    # No *attempted* fits should fail
+    assert numpy.sum(emlfit.bitmask.flagged(el_fit['MASK'], flag='FIT_FAILED')) == 0, \
+                'Fits should not fail'
+
+    # Number of used templates
+    assert numpy.array_equal(numpy.sum(numpy.absolute(el_fit['TPLWGT']) > 1e-10, axis=1),
+                             [24, 22, 36, 35, 31,  0, 17, 23]), \
+                'Different number of templates with non-zero weights'
+
+    # No additive coefficients
+    assert numpy.all(el_fit['ADDCOEF'] == 0), \
+                'No additive coefficients should exist'
+
+    # No multiplicative coefficients
+    assert numpy.all(el_fit['MULTCOEF'] == 0), \
+                'No multiplicative coefficients should exist'
+
+    # Fit statistics
+    assert numpy.all(numpy.absolute(el_fit['RCHI2'] - 
+                                    numpy.array([2.33, 1.21, 1.51, 1.88, 3.15, 0., 1.04, 0.87]))
+                     < 0.02), 'Reduced chi-square are too different'
+
+    assert numpy.all(numpy.absolute(el_fit['RMS'] -
+                                    numpy.array([0.036, 0.019, 0.036, 0.024, 0.050, 0.000,
+                                                 0.012, 0.012])) < 0.001), 'RMS too different'
+
+    assert numpy.all(numpy.absolute(el_fit['FRMS'] -
+                                    numpy.array([0.020, 0.025, 0.025, 0.033, 0.018, 0.000,
+                                                 1.051, 0.101])) < 0.001), \
+            'Fractional RMS too different'
+
+    assert numpy.all(numpy.absolute(el_fit['RMSGRW'][:,2] - 
+                                    numpy.array([0.071, 0.037, 0.070, 0.047, 0.099, 0.000, 0.026,
+                                                 0.024])) < 0.001), \
+            'Median absolute residual too different'
+
+
+    # All (valid) lines should have the same velocity
+    masked = emlfit.bitmask.flagged(el_par['MASK'], flag='INSUFFICIENT_DATA')
+    assert numpy.all(numpy.all((el_par['KIN'][:,:,0] == el_par['KIN'][:,None,0,0]) | masked,
+                               axis=1)), 'All velocities should be the same'
+
+    # Test velocity values
+    # TODO: Need some better examples!  This skips over the 4th spectrum because
+    # of system-dependent variability in the result.
+    assert numpy.all(numpy.absolute(numpy.append(el_par['KIN'][:3,0,0], el_par['KIN'][4:,0,0]) -
+                                    numpy.array([14655.1, 14390.3, 14768.2, 9259.7, 0.0,
+                                                  5132.6,  5428.7])) < 0.1), \
+                'Velocities are too different'
+
+    # H-alpha dispersions
+    assert numpy.all(numpy.absolute(numpy.append(el_par['KIN'][:3,23,1], el_par['KIN'][4:,23,1]) -
+                                    numpy.array([1000.5, 679.4, 223.4, 171.2, 0.0, 81.2,
+                                                   51.9])) < 0.110), \
+            'H-alpha dispersions are too different'
+
+
+test_multicomp_manga()
 
