@@ -1196,8 +1196,8 @@ class SpatiallyBinnedSpectra:
 
         #---------------------------------------------------------------
         # Get the good spectra
-        #   - Must have valid pixels over more than 80% of the spectral
-        #   range 
+        #   - Must have valid pixels over more than the specificied fraction
+        #   (minimum_frac) of the spectral range.
         good_fgoodpix = self.check_fgoodpix()
         #   - Must have sufficienct S/N, as defined by the input par
         good_snr = self._check_snr()
@@ -1213,7 +1213,7 @@ class SpatiallyBinnedSpectra:
             log_output(self.loggers, 1, logging.INFO,
                        'Total spectra: {0}'.format(len(good_fgoodpix)))
             log_output(self.loggers, 1, logging.INFO,
-                       'With 80% spectral coverage: {0}'.format(numpy.sum(good_fgoodpix)))
+                       'With sufficient spectral coverage: {0}'.format(numpy.sum(good_fgoodpix)))
             log_output(self.loggers, 1, logging.INFO,
                        'With good S/N: {0}'.format(numpy.sum(good_snr)))
             log_output(self.loggers, 1, logging.INFO,
