@@ -1,6 +1,7 @@
 from IPython import embed
 
 import numpy
+from scipy import special
 from astropy.io import fits
 import astropy.constants
 
@@ -317,13 +318,13 @@ def test_multicomp_basic():
     constr_kinem = {'A_ineq': A_ineq, 'b_ineq': etpl.b_ineq}
     tied = ppxf_tied_parameters(component, vgrp, sgrp, moments)
 
-#    from matplotlib import pyplot
+    #from matplotlib import pyplot
     pp = ppxf.ppxf(templates.T, flux, ferr, velscale, start_kin, moments=moments,
                     degree=-1, mdegree=0, tied=tied, constr_kinem=constr_kinem,
                     component=component, gas_component=gas_component, method='capfit',
                     quiet=True)
                     #quiet=False, plot=True)
-#    pyplot.show()
+    #pyplot.show()
 
     sol = numpy.array(pp.sol)
     assert numpy.allclose(sol[1,0], sol[2:,0]), 'All gas velocities should be the same'
