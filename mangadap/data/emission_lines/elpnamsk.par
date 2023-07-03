@@ -17,11 +17,13 @@ typedef struct {
     double restwave;
     char waveref[3];
     char action;
-    char tie[4][10];
+    char tie_f[2][10];
+    char tie_v[2][10];
+    char tie_s[2][10];
     double blueside[2];
     double redside[2];
 } DAPEML;
 
-DAPEML  63  NaI     5891.583   vac  m  { None   None None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
-DAPEML  64  NaI     5897.558   vac  m  { None   None None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
+DAPEML  63  NaI     5891.583   vac  m  { None   None } { None None } { None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
+DAPEML  64  NaI     5897.558   vac  m  { None   None } { None None } { None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
 

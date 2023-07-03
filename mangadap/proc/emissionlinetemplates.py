@@ -292,10 +292,10 @@ class EmissionLineTemplates:
 
         # Check that any tied line includes the index of the line it's tied to.
         untied = self.emldb['tie_index'] < 0
-        indx = numpy.any(tie_eq | tie_ineq, axis=1) & untied
+        indx = (tie_eq | tie_ineq) & untied
         if numpy.any(indx):
-            raise ValueError('Index of reference line unspecified for {0}.'.format(
-                             ', '.join(self.emldb['name'][indx])))
+            raise ValueError('Index of reference line unspecified for '
+                             f'{", ".join(self.emldb["name"][numpy.any(indx, axis=1)])}.')
 
         # TODO: Need a check that the user hasn't input, e.g., '=0.3' for
         # anything other than the flux.
@@ -320,6 +320,8 @@ class EmissionLineTemplates:
         # The total number of templates to construct is the number of lines in
         # the database minus the number of lines to ignore and the number of
         # lines where all parameters are tied by equality
+        # TODO: Should also make sure that the tied indices for lines with True
+        # tied_all are also tied to the same line!
         tied_all = numpy.all(tie_eq, axis=1)
         self.ntpl = self.emldb.size - numpy.sum(ignore_line) - numpy.sum(tied_all)
 
@@ -336,7 +338,8 @@ class EmissionLineTemplates:
         #   - lines that are only tied by inequalities,
         # All reference lines are in separate templates, kinematic components,
         # velocity groups, and sigma groups
-        ref_line = (untied | (numpy.logical_not(untied)
+        all_untied = numpy.all(untied, axis=1)
+        ref_line = (all_untied | (numpy.logical_not(all_untied)
                               & numpy.logical_not(numpy.any(tie_eq[:,1:], axis=1)))) \
                     & numpy.logical_not(ignore_line)
         nref = numpy.sum(ref_line)
@@ -346,47 +349,57 @@ class EmissionLineTemplates:
         self.vgrp[:nref] = numpy.arange(nref)
         self.sgrp[:nref] = numpy.arange(nref)
 
-        finished = ref_line | ignore_line
-        while numpy.sum(finished) != self.emldb.size:
+        finished = numpy.tile(ref_line | ignore_line, (3,1)).T
+
+        tied_indx = self.emldb.tie_index_match()
+        while numpy.sum(finished) != 3*self.emldb.size:
             # Find the indices of lines that are tied to finished lines
             start_sum = numpy.sum(finished)
             for i in range(self.emldb.size):
-                if finished[i]:
-                    continue
-                # Find the index of the tied line
-                indx = numpy.where(self.emldb['index'] == self.emldb['tie_index'][i])[0]
-                if not finished[indx]:
-                    # Tied line hasn't been ingested yet, so move on
+                if numpy.all(finished[i]):
                     continue
 
-                finished[i] = True
+                # All properties of this line are to be equal to the same line
+                # such that the line will be part of an existing template
+                if numpy.all(tied_indx[i] == tied_indx[i,0]) and numpy.all(tie_eq[i]):
+                    if not numpy.all(finished[tied_indx[i,0]]):
+                        continue
+                    finished[i,:] = True
+                    self.tpli[i] = self.tpli[tied_indx[i,0]]
+                    continue
 
-                # All line properties are tied such that the line will be part
-                # of an existing template
-                if numpy.all(tie_eq[i]):
-                    self.tpli[i] = self.tpli[indx]
-                # Both kinematic parameters are tied such that the line is part
-                # of a different template but part of an existing kinematic
-                # component
-                elif numpy.all(tie_eq[i,1:]):
-                    self.tpli[i] = numpy.amax(self.tpli)+1
-                    self.comp[self.tpli[i]] = self.comp[self.tpli[indx]]
-                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[indx]]
-                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
-                # Line is part of a different template and kinematic component
-                # with an untied sigma, but tied to an existing velocity group
-                elif tie_eq[i,1]:
-                    self.tpli[i] = numpy.amax(self.tpli)+1
-                    self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
-                    self.sgrp[self.tpli[i]] = numpy.amax(self.sgrp)+1
-                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[indx]]
-                # Line is part of a different template and kinematic component
-                # with an untied velocity, but tied to an existing sigma group
-                elif tie_eq[i,2]:
-                    self.tpli[i] = numpy.amax(self.tpli)+1
-                    self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
+                # Otherwise, the line propertied are either tied to different
+                # lines or they're not all tied to be equal.  Get the indices of
+                # the tied lines.  Only need to do so for the velocity and
+                # velocity dispersion.
+
+                # Get the tied line indices for the velocity and velocity dispersion
+                if (tied_indx[i,1] >= 0 and not finished[tied_indx[i,1],1]) \
+                        or (tied_indx[i,2] >= 0 and not finished[tied_indx[i,2],2]):
+                    continue
+
+                finished[i,:] = True
+                self.tpli[i] = numpy.amax(self.tpli)+1
+
+                if numpy.all(tied_indx[i,1:] >= 0) and tied_indx[i,1] == tied_indx[i,2] \
+                        and numpy.all(tie_eq[i,1:]):
+                    # Line is part of a new template but uses existing kinematic components
+                    self.comp[self.tpli[i]] = self.comp[self.tpli[tied_indx[i,1]]]
+                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[tied_indx[i,1]]]
+                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[tied_indx[i,1]]]
+                    continue
+
+                self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
+
+                if tied_indx[i,1] >= 0 and tie_eq[i,1]:
+                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[tied_indx[i,1]]]
+                else:
                     self.vgrp[self.tpli[i]] = numpy.amax(self.vgrp)+1
-                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
+
+                if tied_indx[i,2] >= 0 and tie_eq[i,2]:
+                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[tied_indx[i,2]]]
+                else:
+                    self.sgrp[self.tpli[i]] = numpy.amax(self.sgrp)+1
 
             # If the loop ends up with the same number of parsed lines
             # that it started with, there must be an error in the
@@ -416,7 +429,7 @@ class EmissionLineTemplates:
         # inequalities:
         if numpy.any(tie_ineq[:,0]):
             raise NotImplementedError('DAP currently does not allow inequality constraints on '
-                                      'line fluxes.')
+                                      'line fluxes.  Make sure flux constraints start with an =.')
 
         # Some definitions:
         #   comp: The kinematic component of each template
@@ -498,11 +511,13 @@ class EmissionLineTemplates:
             tie_comp_lb[i,:] = numpy.amax(numpy.asarray(_lb).reshape(numpy.sum(indx),2), axis=0)
             tie_comp_ub[i,:] = numpy.amax(numpy.asarray(_ub).reshape(numpy.sum(indx),2), axis=0)
 
-        # Set a vector indicating the ineq connections between components
-        tie_comp = numpy.full(ncomp, -1, dtype=int)
-        indx_match = self.emldb.tie_index_match()
-        indx = (indx_match >= 0) & numpy.any(tie_ineq[:,1:], axis=1) & (compi != -1)
-        tie_comp[compi[indx]] = compi[indx_match[indx]]
+        # Set an array indicating the index of the components tied by inequality
+        # for the velocity and velocity dispersion.
+        tie_comp = numpy.full((ncomp, 2), -1, dtype=int)
+        for i in range(1,3):
+            indx = (tied_indx[:,i] >= 0) & tie_ineq[:,i] & (compi != -1)
+            if numpy.any(indx):
+                tie_comp[compi[indx],i-1] = compi[tied_indx[indx,i]]
 
         # Build the inequality for each component
         # NOTE: Inequality constraint is *always* defined with b_ineq=0 for
@@ -511,15 +526,15 @@ class EmissionLineTemplates:
         self.A_ineq = numpy.zeros((nconstr,2*ncomp), dtype=float)
         constr = 0
         for i in range(ncomp):
-            if tie_comp[i] < 0:
-                continue
             for j in range(2):
+                if tie_comp[i,j] < 0:
+                    continue
                 if tie_comp_lb[i,j] > 0:
-                    self.A_ineq[constr,2*tie_comp[i]+j] = tie_comp_lb[i,j]
+                    self.A_ineq[constr,2*tie_comp[i,j]+j] = tie_comp_lb[i,j]
                     self.A_ineq[constr,2*i+j] = -1.
                     constr += 1
                 if tie_comp_ub[i,j] > 0:
-                    self.A_ineq[constr,2*tie_comp[i]+j] = -tie_comp_ub[i,j]
+                    self.A_ineq[constr,2*tie_comp[i,j]+j] = -tie_comp_ub[i,j]
                     self.A_ineq[constr,2*i+j] = 1.
                     constr += 1
 
