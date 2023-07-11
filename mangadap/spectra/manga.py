@@ -91,7 +91,7 @@ class MaNGARSS(MaNGAConfig, RowStackedSpectra):
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
                       chart_path=None, directory_path=None, **kwargs):
         """
-        Construct a :class:`mangadap.datacube.manga.MaNGARSS`
+        Construct a :class:`mangadap.spectra.manga.MaNGARSS`
         object based on its plate-ifu designation.
 
         This is a simple wrapper function that calls

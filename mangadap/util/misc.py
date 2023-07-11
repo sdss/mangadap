@@ -92,4 +92,23 @@ def line_coeff(p1, p2):
 #    _v[numpy.invert(indx)] = 0.0
 #    return _v
 
+def is_number(s):
+    """
+    Check if the provided object is a number by trying to convert it to a
+    floating-point object.
+
+    Args:
+        s (:obj:`object`):
+            The object to convert
+
+    Returns:
+        :obj:`bool`: True if the object can be converted.
+    """
+    try:
+        float(s)
+    except (ValueError, TypeError):
+        return False
+    else:
+        return True
+
 

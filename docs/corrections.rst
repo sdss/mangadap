@@ -26,7 +26,7 @@ The corrected gas velocity dispersion is:
 
     \sigma_{\rm gas}^2 = \sigma_{\rm gas,obs}^2 - \sigma_{\rm inst}^2
 
-where :math:`\sigma_{\rm gas}` and :math:`\sigma_{\rm inst}` are
+where :math:`\sigma_{\rm gas,obs}` and :math:`\sigma_{\rm inst}` are
 provided in, respectively, the ``EMLINE_GSIGMA`` and
 ``EMLINE_INSTSIGMA`` extensions of the :ref:`datamodel-maps`.
 
@@ -34,9 +34,9 @@ The corrected stellar velocity dispersion is:
 
 .. math::
 
-    \sigma_\ast^2 = \sigma_{\rm obs}^2 - \delta\sigma_{\rm inst}^2
+    \sigma_\ast^2 = \sigma_{\ast,{\rm obs}}^2 - \delta\sigma_{\rm inst}^2
 
-where :math:`\sigma_{\rm obs}` and :math:`\delta\sigma_{\rm inst}` are
+where :math:`\sigma_{\ast,{\rm obs}}` and :math:`\delta\sigma_{\rm inst}` are
 provided in, respectively, the ``STELLAR_SIGMA`` and
 ``STELLAR_SIGMACORR`` extensions of the :ref:`datamodel-maps`.
 
