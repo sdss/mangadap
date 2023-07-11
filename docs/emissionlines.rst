@@ -374,23 +374,31 @@ The columns of the parameter file are:
 | ``action``        | str       | A single character setting how the line should be treated.  See       |
 |                   |           | :ref:`emission-line-modeling-action`.                                 |
 +-------------------+-----------+-----------------------------------------------------------------------+
-| ``tie``           | str[4]    | A sequence of 4 strings that indicate how the line should be tied to  |
-|                   |           | other lines.  The first element specifies the line to which to tie    |
-|                   |           | the line specified in this row, indicated by its line ``index``.  The |
-|                   |           | next three entries indicate how to tie each of the 3 Gaussian         |
-|                   |           | parameters: flux, velocity, and velocity dispersion.  To leave the    |
-|                   |           | parameter untied, this should be ``None``.  To force the parameter to |
-|                   |           | be identical to the parameter for the tied line, use ``=``.  For the  |
-|                   |           | flux, the flux can be specified to be a specific factor of the tied   |
-|                   |           | line; e.g., ``=0.30`` forces the flux of this line to be 0.3 times    |
-|                   |           | the flux of the tied line.  For the velocity and velocity dispersion, |
-|                   |           | a single value can be used to set a the tied parameter to be within   |
-|                   |           | the specified fraction of the tied parameter.  I.e., a value of       |
-|                   |           | ``1.4`` for the velocity dispersion parameter means the velocity      |
-|                   |           | dispersion of this line should be within                              |
-|                   |           | :math:`\sigma_t/1.4 < \sigma < 1.4 \sigma_t`, where :math:`\sigma_t`  |
-|                   |           | is the velocity dispersion of the tied line.  When imposing these     |
-|                   |           | parameter inequalities, `ppxf`_ will require the `cvxopt`_ package.   |
+| ``tie_f``         | str[2]    | A sequence of 2 10-character strings that indicate how the flux of    |
+|                   |           | the line should be tied to another line.  The first element gives the |
+|                   |           | index of the line to tie (see ``index`` above).  The second element   |
+|                   |           | provides the constraint.  Currently fluxes can only be tied by        |
+|                   |           | fixing the line flux ratio, and lines with tied fluxes must also have |
+|                   |           | their velocity and velocity dispersions tied by equality.  For        |
+|                   |           | example, to fix the ratio of the OIII 4959 line to the OIII 5007      |
+|                   |           | line, the entry for the OIII 4959 line should be ``{  14 =0.34 }``,   |
+|                   |           | where 14 is the index number of the OIII 5007 in the file and the     |
+|                   |           | flux in the OIII 4959 line is always 0.34 times the flux in the       |
+|                   |           | OIII 5007 line.                                                       |
++-------------------+-----------+-----------------------------------------------------------------------+
+| ``tie_v``         | str[2]    | A sequence of 2 10-character strings that indicate how the velocity   |
+|                   |           | of the line should be tied to another line.  The first element gives  |
+|                   |           | the index of the line to tie (see ``index`` above).  The second       |
+|                   |           | element provides the constraint.  Velocities can be tied by equality  |
+|                   |           | (using ``=``) or tied by inequality (see below); however, tying by    |
+|                   |           | inequality is not well tested.                                        |
++-------------------+-----------+-----------------------------------------------------------------------+
+| ``tie_s``         | str[2]    | A sequence of 2 10-character strings that indicate how the velocity   |
+|                   |           | dispersion of the line should be tied to another line.  The first     |
+|                   |           | element gives the index of the line to tie (see ``index`` above).     |
+|                   |           | The second element provides the constraint.  Velocity dispersions can |
+|                   |           | can be tied by equality (using ``=``) or tied by inequality (see      |
+|                   |           | below).                                                               |
 +-------------------+-----------+-----------------------------------------------------------------------+
 | ``blueside``      | float[2]  | A two-element vector with the starting and ending wavelength for a    |
 |                   |           | passband to the blue of the primary band.                             |
@@ -409,17 +417,19 @@ and an example file might look like this:
         double restwave;
         char waveref[3];
         char action;
-        char tie[4][10];
+        char tie_f[2][10];
+        char tie_v[2][10];
+        char tie_s[2][10];
         double blueside[2];
         double redside[2];
     } DAPEML;
 
-    DAPEML   2  OII     3727.092   vac  f  {   34   None    = None }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
-    DAPEML   3  OII     3729.875   vac  f  {    2   None    =    = }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
-    DAPEML  23  Hb      4862.6830  vac  f  {   34   None    =  1.4 }  {  4798.9  4838.9 }  {  4885.6  4925.6 }
-    DAPEML  33  NII     6549.86    vac  f  {   35  =0.34    =    = }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
-    DAPEML  34  Ha      6564.608   vac  f  { None   None None None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
-    DAPEML  35  NII     6585.27    vac  f  {   34   None    = None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+    DAPEML   2  OII     3727.092   vac  f  { None   None }  {   34      = }  { None   None }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+    DAPEML   3  OII     3729.875   vac  f  { None   None }  {    2      = }  {    2      = }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+    DAPEML  23  Hb      4862.6830  vac  f  { None   None }  {   34      = }  {   34    1.4 }  {  4798.9  4838.9 }  {  4885.6  4925.6 }
+    DAPEML  33  NII     6549.86    vac  f  {   35  =0.34 }  {   35      = }  {   35      = }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+    DAPEML  34  Ha      6564.608   vac  f  { None   None }  { None   None }  { None   None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+    DAPEML  35  NII     6585.27    vac  f  { None   None }  {   34      = }  { None   None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
 
 .. note::
 
@@ -429,9 +439,12 @@ and an example file might look like this:
       up to the person that writes the two parameter files to make sure
       that is true.
       
-    * The format of this file has changed in version 3.1.0 in a way that removes
-      many of the parameters used by the :class:`~mangadap.proc.elric.Elric`
-      fitter. That class is now deprecated.
+    * Format changes:
+        - version 3.1.0: Many parameters removed that were used by the
+          deprecated :class:`~mangadap.proc.elric.Elric` fitter.
+        - version 4.1.0: Added ability to tie the three parameters to different
+          lines; i.e., velocity can be tied to one line while dispersion is tied
+          to a different one.
 
 .. _emission-line-modeling-action:
 
@@ -441,6 +454,40 @@ Emission-Line "Actions"
 .. include:: include/emissionline-action.rst
 
 .. _emission-line-modeling-mode:
+
+Emission-Line Tying
++++++++++++++++++++
+
+Line tying in the DAP uses the functionality in `ppxf`_ in a limited and
+abstracted way.
+
+**Tying fluxes** effectively means that the lines are put in the same
+emission-line template.  This is why, currently, any lines with tied fluxes must
+also tie their velocity and velocity dispersion.  Also, the DAP currently does
+not allow tying fluxes using inequalities.
+
+**Tying kinematics** can be done with equality or inequality.  For equality, use
+the ``=`` character, as in the example file above.  Unlike the fluxes, the
+kinematics cannot be tied to be, e.g., a specific fraction of the value of the
+tied line.  (I.e., you can't tie the dispersion to be exactly half of the
+dispersion of the tied line).  For inequality, there are a couple of options:
+
+    #. Use ``>N`` or ``<N`` to force the value to be greater or less than the
+       provided fraction of the the value of the tied line.  E.g., to force the
+       dispersion of one component to be at least 1.5 times larger than the tied
+       line, use ``>1.5``.  Using ``>`` or ``<`` is equivalent to ``>1`` and
+       ``<``, respectively.
+
+    #. To bound the value between both upper and lower limits, you must use a
+       *single* fixed fractional bound.  For example, setting the tied value for
+       the dispersion to ``1.4`` means that the best-fitting dispersion must be
+       greater than 1/1.4 and less than 1.4 times the dispersion of the tied
+       line.
+
+.. warning::
+
+    Although line tying has been experimented with for MaNGA data, much of the
+    inequality tying is not well tested.
 
 Emission-Line "Modes"
 +++++++++++++++++++++
@@ -453,7 +500,6 @@ Emission-Line "Modes"
 
 Changing the modeling parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 The moment measurements are performed by
 :class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`; see
