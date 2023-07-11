@@ -584,109 +584,9 @@ class EmissionLineFit(SpectralFitting):
 
         return c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
 
-    @staticmethod
-    def check_emission_line_database(emldb, wave=None, check_par=True):
-        r"""
-        Check the emission-line database.  Modes are checked by
-        :class:`mangadap.par.emissionlinedb.EmissionLinePar`, and the
-        indices are checked to be unique by
-        :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
-
-            - The type of the object must be
-              :class:`mangadap.par.emissionlinedb.EmissionLineDB`
-            - The provided profile type of each line must be a defined
-              class.
-            - At least one line must have ``mode='f'``
-            - All tied lines must be tied to a line with a correctly
-              specified index.
-            - Warnings will be provided for any line with a centroid
-              that falls outside of the provided wavelength range.
-            - The database must provide at least one valid line.
-
-        Args:
-            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
-                Emission-line database.
-            wave (array-like):
-                Wavelength vector.
-            check_par (:obj:`bool`, optional):
-                Validate the provided parameters.
-
-        Raises:
-            TypeError:
-                Raised if the provided object is not an instance of
-                :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
-            ValueError:
-                Raised if any line has a mode of `x` or if the database
-                does not provide a valid definition for any templates.
-            NameError:
-                Raised if a defined profile type is not known.
-
-        """
-
-        # Check the object type
-        if not isinstance(emldb, EmissionLineDB):
-            raise TypeError('Emission lines must be defined using an EmissionLineDB object.')
-
-        # Check the profile type
-        unique_profiles = numpy.unique(emldb['profile'])
-        for u in unique_profiles:
-            try:
-                eval('lineprofiles.'+u)
-            except NameError as e:
-                raise NameError('Profile type {0} not defined in'
-                                'mangadap.util.lineprofiles!'.format(u))
-
-        # There must be one primary line
-        if not numpy.any([m[0] == 'f' for m in emldb['mode']]):
-            raise ValueError('At least one line in the database must have mode=f.')
-
-        # Check that there are lines to fit
-        lines_to_fit = emldb['action'] == 'f'
-        if numpy.sum(lines_to_fit) == 0:
-            raise ValueError('No lines to fit in the database!')
-        if wave is not None:
-            _wave = numpy.asarray(wave)
-            if len(_wave.shape) != 1:
-                raise ValueError('Provided wavelengths must be a single vector.')
-            lines_in_range = numpy.array([rw > _wave[0] and rw < _wave[-1] 
-                                                for rw in emldb['restwave']]) 
-            if numpy.sum(lines_to_fit & lines_in_range) == 0:
-                raise ValueError('No lines to fit in the provided spectral range!')
-
-        # Check that the tied line indices exist in the database
-        for m in emldb['mode']:
-            if m[0] == 'f':
-                continue
-            tied_index = int(m[1:])
-            if numpy.sum(emldb['index'] == tied_index) == 0:
-                raise ValueError('No line with index={0} to tie to!'.format(tied_index))
-
-        # Only check the provided parameters if requested
-        if not check_par:
-            return
-
-        # Check the provided parameters, fix flags, and bounds
-        for i in range(emldb.size):
-            profile = eval('lineprofiles.'+emldb['profile'][i])
-            npar = len(profile.param_names)
-            if emldb['par'][i].size != npar*emldb['ncomp'][i]:
-                raise ValueError('Provided {0} parameters, but expected {1}.'.format(
-                                  emldb['par'][i].size, npar*emldb['ncomp'][i]))
-            if emldb['fix'][i].size != npar*emldb['ncomp'][i]:
-                raise ValueError('Provided {0} fix flags, but expected {1}.'.format(
-                                  emldb['fix'][i].size, npar*emldb['ncomp'][i]))
-            if numpy.any([f not in [0, 1] for f in emldb['fix'][i] ]):
-                warnings.warn('Fix values should only be 0 or 1; non-zero values interpreted as 1.')
-            if emldb['lobnd'][i].size != npar*emldb['ncomp'][i]:
-                raise ValueError('Provided {0} lower bounds, but expected {1}.'.format(
-                                  emldb['lobnd'][i].size, npar*emldb['ncomp'][i]))
-            if emldb['hibnd'][i].size != npar*emldb['ncomp'][i]:
-                raise ValueError('Provided {0} upper bounds, but expected {1}.'.format(
-                                  emldb['hibnd'][i].size, npar*emldb['ncomp'][i]))
-            if emldb['log_bnd'][i].size != npar*emldb['ncomp'][i]:
-                raise ValueError('Provided {0} log boundaries designations, but expected '
-                                 '{1}.'.format(emldb['log_bnd'][i].size, npar*emldb['ncomp'][i]))
-
+    # NOTE: This is here because these constraints on the emission-line database
+    # are only relevant if it is being used to specify the lines to fit to a
+    # spectrum and how the lines should be tied to one another.
     @staticmethod
     def check_emission_line_database(emldb, wave=None):
         r"""
@@ -725,10 +625,21 @@ class EmissionLineFit(SpectralFitting):
         if not isinstance(emldb, EmissionLineDB):
             raise TypeError('Emission lines must be defined using an EmissionLineDB object.')
 
-        # There must be one primary line
-        if numpy.all(emldb['tie_index'] > 0):
+        # TODO: There may be some point when no individual line has to have all
+        # its parameters untied, but for now require that *none* of the
+        # parameters are tied for at least one line.
+#        all_tied = numpy.all(emldb['tie_index'] > 0, axis=0)
+#        if any(all_tied):
+#            p = numpy.array(['flux', 'velocity', 'dispersion'])
+#            raise ValueError('At least one line in the database must be independent of all '
+#                             'other lines for each of the three Gaussian parameters.  The '
+#                             'parameters that are not free for any line are: '
+#                             f'{", ".join(p[all_tied])}.')
+
+        untied = numpy.all(emldb['tie_index'] < 0, axis=1)
+        if not any(untied):
             raise ValueError('At least one line in the database must be independent of all '
-                             'other lines.  I.e., the tied index must be None.')
+                             'other lines for *all* the three Gaussian parameters.')
 
         # Check that there are lines to fit
         lines_to_fit = emldb['action'] == 'f'
@@ -744,11 +655,25 @@ class EmissionLineFit(SpectralFitting):
                 raise ValueError('No lines to fit in the provided spectral range!')
 
         # Check that the tied line indices exist in the database
-        for i in emldb['tie_index']:
+        for i in emldb['tie_index'].flat:
             if i <= 0:
                 continue
             if numpy.sum(emldb['index'] == i) == 0:
-                raise ValueError('No line with index={0} to tie to!'.format(tied_index))
+                raise ValueError(f'No line with index={i} to tie to!  Fix emission-line database.')
+
+        # If a tied index is given, the tied constraint cannot be None!
+        for i in range(emldb.size):
+            for j in range(3):
+                if emldb['tie_index'][i,j] < 0 and emldb['tie_par'][i,j] is not None:
+                    warnings.warn(f'Parameter {j+1} for line {emldb["index"][i]} cannot have a '
+                                  'tying constraint without the index of the tied line. Ignoring '
+                                  'tied constraint.')
+                    emldb['tie_par'][i,j] = None
+                if emldb['tie_index'][i,j] > 0 and emldb['tie_par'][i,j] is None:
+                    warnings.warn(f'Parameter {j+1} for line {emldb["index"][i]} has a tying '
+                                  'constraint but the index of the tied line was not provided.  '
+                                  'Ignoring tied constraint.')
+                    emldb['tie_index'][i,j] = -1
 
     @staticmethod
     def measure_equivalent_width(wave, flux, emission_lines, model_eml_par, mask=None,

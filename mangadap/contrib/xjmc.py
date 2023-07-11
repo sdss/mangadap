@@ -880,11 +880,18 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
             # emission lines
             reject_pixels = list(set(pp.goodpixels)
                                     & set(np.arange(len(resid))[pp.gas_bestfit < 1e-6]))
+            if len(reject_pixels) == 0:
+                warnings.warn('Unable to find *good* pixels in the spectrum to use for rejection.'
+                              '  This is likely because a hardcoded threshold could not find '
+                              'pixels that were fit but not part of a fitted emission line.  '
+                              'Please submit a GitHub Issue.  Logging fault and continuing.')
+                fault[i] = True
+                continue
             # - Calculate the 1-sigma confidence interval
             rms = calculate_noise(resid[reject_pixels], width=reject_boxcar)
             # - Reject pixels with > 3-sigma residuals
             model_mask[i,reject_pixels+ps[i]] &= (np.absolute(resid[reject_pixels]) < sigma_rej*rms)
-        
+
             # Reorder the output; sets any omitted components to have
             # the starting values from the original input
             sol, err = _reorder_solution(pp.sol, pp.error, component_map, moments, start=start[i])

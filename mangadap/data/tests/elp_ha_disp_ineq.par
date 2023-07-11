@@ -1,0 +1,31 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 13 Jun 2023
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double restwave;
+    char waveref[3];
+    char action;
+    char tie_f[2][10];
+    char tie_v[2][10];
+    char tie_s[2][10]; 
+    double blueside[2];
+    double redside[2];
+} DAPEML;
+
+DAPEML   2  NII     6549.86    vac  f  {    3  =0.34 } {    3    = } {    3    = }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   1  Ha      6564.608   vac  f  { None   None } { None None } { None None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   3  NII     6585.27    vac  f  {    1   None } {    1    = } {    1  1.4 }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   4  SII     6718.295   vac  f  {    1   None } {    1    = } {    1  1.4 }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+DAPEML   5  SII     6732.674   vac  f  {    1   None } {    1    = } {    1  1.4 }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+
+
+

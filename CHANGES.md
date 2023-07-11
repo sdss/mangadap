@@ -1,4 +1,10 @@
 
+4.1.0dev
+--------
+
+ - Change syntax for emission-line modeling files to enable additional tying
+   strategies that make it easier to implement multi-component fitting.
+
 4.0.4 (23 Jun 2022)
 -------------------
  

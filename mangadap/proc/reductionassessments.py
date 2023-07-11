@@ -101,6 +101,8 @@ class ReductionAssessmentDef(KeywordParSet):
         """
         Validate the parameters.
         """
+        if self['response_func_file'] in ['none', 'None']:
+            self['response_func_file'] = None
         if self['waverange'] is not None and self['response_func_file'] is not None:
             warnings.warn('You have defined both a wavelength range and a response function for '
                           'the reduction assessments; the latter takes precedence, the former is '

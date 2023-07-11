@@ -1,0 +1,40 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 13 Jun 2023
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double restwave;
+    char waveref[3];
+    char action;
+    char tie_f[2][10];
+    char tie_v[2][10];
+    char tie_s[2][10];
+    double blueside[2];
+    double redside[2];
+} DAPEML;
+
+DAPEML   2  OII      3727.092   vac  f  { None   None }  {    1    = }  {    1  1.4 }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+DAPEML   3  OII      3729.875   vac  f  { None   None }  {    2    = }  {    2    = }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+DAPEML   4  NII      6549.86    vac  f  {    5  =0.34 }  {    5    = }  {    5    = }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   1  Ha       6564.608   vac  f  { None   None }  { None None }  { None None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   5  NII      6585.27    vac  f  { None   None }  {    1    = }  {    1  1.4 }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   6  SII      6718.295   vac  f  { None   None }  {    1    = }  {    1  1.4 }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+DAPEML   7  SII      6732.674   vac  f  { None   None }  {    1    = }  {    1  1.4 }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+DAPEML   9  OIIB     3727.092   vac  f  { None   None }  {    2    = }  {    2    > }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+DAPEML  10  OIIB     3729.875   vac  f  { None   None }  {    9    = }  {    9    = }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+DAPEML  11  NIIB     6549.86    vac  f  {   12  =0.34 }  {   12    = }  {   12    = }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML   8  HaB      6564.608   vac  f  { None   None }  {    1    = }  {    1    > }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML  12  NIIB     6585.27    vac  f  { None   None }  {    5    = }  {    5    > }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML  13  SIIB     6718.295   vac  f  { None   None }  {    6    = }  {    6    > }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+DAPEML  14  SIIB     6732.674   vac  f  { None   None }  {    7    = }  {    7    > }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+
+
+

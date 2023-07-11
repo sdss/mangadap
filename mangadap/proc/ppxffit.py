@@ -980,11 +980,14 @@ class PPXFFit(StellarKinematicsFit):
 #
 #            print(numpy.sum(result[i].bestfit-modelfit))
 #
-#            pyplot.plot(self.obj_wave[start[i]:end[i]], modelfit, color='C0')
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], obj_flux.data[i,start[i]:end[i]],
+#                        color='k')
+##            pyplot.plot(self.obj_wave[start[i]:end[i]], modelfit, color='C0')
 #            pyplot.plot(self.obj_wave[start[i]:end[i]], result[i].bestfit, color='C3')
-#            pyplot.plot(self.obj_wave[start[i]:end[i]], result[i].bestfit-modelfit, color='C1')
+#            pyplot.plot(self.obj_wave[start[i]:end[i]],
+#                        obj_flux.data[i,start[i]:end[i]]-result[i].bestfit, color='C1')
 #            pyplot.show()
-
+#
         print('Running pPXF fit on spectrum: {0}/{1}'.format(nspec,nspec))
         return result
 
@@ -1141,7 +1144,6 @@ class PPXFFit(StellarKinematicsFit):
         # Copy the new mask to the errors
         obj_ferr[numpy.ma.getmaskarray(obj_flux)] = numpy.ma.masked
 
-#        if self.filter_iterations == 0:
         # Refit and return results
         return self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
                                        self.spectrum_end, self.base_velocity, templates,
@@ -1882,6 +1884,7 @@ class PPXFFit(StellarKinematicsFit):
                 is greater than the specified tolerance.
 
         """
+#        plot = True
         #---------------------------------------------------------------
         # Initialize the reporting
         if loggers is not None:
