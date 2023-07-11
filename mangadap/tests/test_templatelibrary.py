@@ -5,9 +5,10 @@ import numpy
 import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
-from mangadap.proc.templatelibrary import TemplateLibrary #, available_template_libraries
+from mangadap.proc.templatelibrary import TemplateLibrary, TemplateLibraryDef
 from mangadap.util.sampling import spectrum_velocity_scale, spectral_coordinate_step
 from mangadap.tests.util import requires_remote, remote_data_file, data_test_file
+from mangadap.config import defaults
 
 
 def test_read():
@@ -68,4 +69,21 @@ def test_match_resolution():
     # Check the file that would have been written has the expected path
     assert cube.directory_path == tpl.directory_path, 'Cube and TPL paths should match.'
     assert tpl.file_name().startswith(cube.output_root), 'TPL file should start with the cube root'
+
+
+def test_new_library():
+    file_search = str(defaults.dap_data_root() / 'spectral_templates' / 'miles'
+                        / 'MILES_res2.50_star_m00*.fits')
+    tpllib = TemplateLibraryDef('TestLib',
+                                file_search=file_search,
+                                fwhm=2.5,
+                                in_vacuum=False,
+                                wave_limit=[3575.,7400.],
+                                lower_flux_limit=0.0,
+                                log10=False) 
+    tpl = TemplateLibrary(tpllib, match_resolution=False, velscale_ratio=4, spectral_step=1e-4,
+                          log=True, hardcopy=False)
+
+    assert tpl.ntpl == 99, 'Wrong number of templates'
+    assert len(tpl['WAVE'].data) == 12639, 'Wrong spectrum length'
 
