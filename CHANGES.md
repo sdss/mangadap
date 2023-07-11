@@ -2,6 +2,7 @@
 4.1.0dev
 --------
 
+ - Adds script for creating synthetic MaNGA datacubes for testing.
  - Change syntax for emission-line modeling files to enable additional tying
    strategies that make it easier to implement multi-component fitting.
 

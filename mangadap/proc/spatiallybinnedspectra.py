@@ -1196,7 +1196,7 @@ class SpatiallyBinnedSpectra:
 
         #---------------------------------------------------------------
         # Get the good spectra
-        #   - Must have valid pixels over more than the specificied fraction
+        #   - Must have valid pixels over more than the specified fraction
         #   (minimum_frac) of the spectral range.
         good_fgoodpix = self.check_fgoodpix()
         #   - Must have sufficienct S/N, as defined by the input par
