@@ -274,7 +274,7 @@ def channel_units(hdu, ext, prefix='U'):
     return channel_units.astype(str)
 
 
-def compress_file(ifile, overwrite=False):
+def compress_file(ifile, overwrite=False, rm_original=False):
     """
     Compress a file using gzip.  The output file has the same name as
     the input file with '.gz' appended.
@@ -294,6 +294,9 @@ def compress_file(ifile, overwrite=False):
     with open(ifile, 'rb') as f_in:
         with gzip.open(ofile, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+
+    if rm_original:
+        os.remove(ifile)
 
 
 def create_symlink(ofile, symlink_dir, relative_symlink=True, overwrite=False, loggers=None,

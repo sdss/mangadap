@@ -188,7 +188,7 @@ class SpectralPixelMask(PixelMask):
         if kin is None:
             return None
 
-        if isinstance(kin, (int,float)):
+        if isinstance(kin, (int, float, numpy.floating, numpy.integer)):
             return numpy.full(self.emldb.size, kin, dtype=float)
         if isinstance(kin, (list, numpy.ndarray)):
             if len(kin) != self.emldb.size:

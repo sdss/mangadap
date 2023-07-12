@@ -89,15 +89,15 @@ class EmissionLinePar(KeywordParSet):
         values =   [index, _name, restwave, _action, tie_index, tie_par, blueside, redside]
         defaults = [None, None, None, 'f', None, None, None, None]
         options =  [None, None, None, action_options, None, None, None, None]
-        dtypes =   [int, str, in_fl, str, int, arr_like, arr_like, arr_like]
+        dtypes =   [int, str, in_fl, str, arr_like, arr_like, arr_like, arr_like]
 
         descr = ['An index used to refer to the line for tying parameters; must be >0.',
                  'A name for the line.',
                  'The rest wavelength of the line in angstroms *in vacuum*.',
                  'Describes how the line should be treated.  See ' \
                     ':ref:`emission-line-modeling-action`. Default is ``f``.',
-                 'Index of the line to which parameters for this line are tied.  ' \
-                    'See :ref:`emission-line-modeling-tying`.',
+                 'Indices the lines to which parameters for this line are tied; one index per ' \
+                    '(3) Gaussian parameters.  See :ref:`emission-line-modeling-tying`.',
                  'Details of how each model parameter for this line is tied to the reference ' \
                     'line.  See :ref:`emission-line-modeling-tying`.',
                  'A two-element vector with the starting and ending wavelength for a bandpass ' \
@@ -148,7 +148,7 @@ class EmissionLineDefinitionTable(DataTable):
                          ACTION=dict(typ='<U1', shape=None,
                                      descr='Action to take for this emission line; see '
                                            ':ref:`emission-line-modeling-action`'),
-                         TIE_ID=dict(typ=int, shape=None,
+                         TIE_ID=dict(typ=int, shape=(3,),
                                      descr='ID of the line to which this one is tied.'),
                          TIE_FLUX=dict(typ='<U{0:d}'.format(tie_len), shape=None,
                                       descr='Tying parameter for the flux of each line.'),
@@ -212,9 +212,13 @@ class EmissionLineDB(SpectralFeatureDB):
         for i in range(self.size):
             invac = par['DAPEML']['waveref'][i] == 'vac'
 
-            tie_index = -1 if par['DAPEML']['tie'][i][0] == 'None' \
-                            else int(par['DAPEML']['tie'][i][0])
-            tie_par = [None if t == 'None' else t for t in par['DAPEML']['tie'][i][1:]]
+            tie_index = numpy.full(3, -1, dtype=int)
+            tie_par = numpy.empty(3, dtype=object)
+            for j, tie in enumerate(['tie_f', 'tie_v', 'tie_s']):
+                tie_index[j] = -1 if par['DAPEML'][tie][i][0] == 'None' \
+                                else int(par['DAPEML'][tie][i][0])
+                tie_par[j] = None if par['DAPEML'][tie][i][1] == 'None' \
+                                else par['DAPEML'][tie][i][1]
 
             parlist += [EmissionLinePar(index=par['DAPEML']['index'][i],
                                        name=par['DAPEML']['name'][i],
@@ -227,6 +231,15 @@ class EmissionLineDB(SpectralFeatureDB):
                                        redside=par['DAPEML']['redside'][i] if invac else \
                                             airtovac(numpy.array(par['DAPEML']['redside'][i])))]
         return parlist
+
+    def _validate(self):
+        super()._validate()
+        # Ensure that no lines are tied to themselves
+        indx = self.data['index'][:,None] == self.data['tie_index']
+        if numpy.any(indx):
+            indx = numpy.any(indx, axis=1)
+            raise ValueError('Cannot tie lines to themselves!  Fix tying index for line '
+                             f'{",".join([str(x) for x in self.data["index"][indx]])}.')
 
     def channel_names(self, dicttype=True):
         """
@@ -274,10 +287,10 @@ class EmissionLineDB(SpectralFeatureDB):
 
     def tie_index_match(self):
         """
-        Return a vector with the row indices for the tied parameters, which
+        Return an array with the row indices for the tied parameters, which
         is more useful than the ID number of the tied line.
         """
-        tie_indx = numpy.full(self.size, -1, dtype=int)
+        tie_indx = numpy.full(self.data['tie_index'].shape, -1, dtype=int)
         indx = self.data['tie_index'] > 0
         tie_indx[indx] = [numpy.where(self.data['index'] == i)[0][0]
                             for i in self.data['tie_index'][indx]]

@@ -997,7 +997,7 @@ class TemplateLibrary:
                                   x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
                                   newRange=fullRange, newLog=self.log10_sampling,
                                   newdx=self.spectral_step, step=False)
-            
+
             # Save the result
             wave = r.outx
             flux[i,:] = r.outy

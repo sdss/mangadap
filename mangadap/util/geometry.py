@@ -26,75 +26,76 @@ def polygon_winding_number(polygon, point):
     21.4.
 
     Args:
-        polygon (numpy.ndarray): An Nx2 array containing the x,y
-            coordinates of a polygon.  The points should be ordered
-            either counter-clockwise or clockwise.
-        point (numpy.ndarray): A 2-element array defining the x,y
-            position of the point to use as a reference for the winding
-            number.
+        polygon (`numpy.ndarray`_):
+            An Nx2 array containing the x,y coordinates of a polygon.
+            The points should be ordered either counter-clockwise or
+            clockwise.
+        point (`numpy.ndarray`_):
+            One or more points for the winding number calculation.
+            Must be either a 2-element array for a single (x,y) pair,
+            or an Nx2 array with N (x,y) points.
 
     Returns:
-        int: Winding number of `polygon` w.r.t. `point`
+        int or `numpy.ndarray`: The winding number of each point with
+        respect to the provided polygon. Points inside the polygon
+        have winding numbers of 1 or -1; see
+        :func:`point_inside_polygon`.
 
     Raises:
-        ValueError: Raised if `polygon` is not 2D, if `polygon` does not
-            have two columns, or if `point` is not a 2-element array.
+        ValueError:
+            Raised if `polygon` is not 2D, if `polygon` does not have
+            two columns, or if the last axis of `point` does not have
+            2 and only 2 elements.
     """
-
     # Check input shape is for 2D only
     if len(polygon.shape) != 2:
         raise ValueError('Polygon must be an Nx2 array.')
     if polygon.shape[1] != 2:
         raise ValueError('Polygon must be in two dimensions.')
-    if point.size != 2:
+    _point = numpy.atleast_2d(point)
+    if _point.shape[1] != 2:
         raise ValueError('Point must contain two elements.')
 
     # Get the winding number
-    np=polygon.shape[0]
-    x0 = polygon[np-1,0]
-    y0 = polygon[np-1,1]
-    wind = 0
-    for i in range(np):
-        if (y0 > point[1]):
-            if polygon[i,1] <= point[1] and \
-               (x0-point[0])*(polygon[i,1]-point[1]) - (y0-point[1])*(polygon[i,0]-point[0]) < 0:
-                wind -= 1
-        else:
-            if polygon[i,1] > point[1] and \
-               (x0-point[0])*(polygon[i,1]-point[1]) - (y0-point[1])*(polygon[i,0]-point[0]) > 0:
-                wind += 1
-        x0 = polygon[i,0]
-        y0 = polygon[i,1]
+    nvert = polygon.shape[0]
+    np = _point.shape[0]
 
-    return wind
+    dl = numpy.roll(polygon, 1, axis=0)[None,:,:] - _point[:,None,:]
+    dr = polygon[None,:,:] - point[:,None,:]
+    dx = dl[:,:,0]*dr[:,:,1] - dl[:,:,1]*dr[:,:,0]
+
+    indx_l = dl[:,:,1] > 0
+    indx_r = dr[:,:,1] > 0
+
+    wind = numpy.zeros((np, nvert), dtype=int)
+    wind[indx_l & numpy.invert(indx_r) & (dx < 0)] = -1
+    wind[numpy.invert(indx_l) & indx_r & (dx > 0)] = 1
+
+    return numpy.sum(wind, axis=1)[0] if point.ndim == 1 else numpy.sum(wind, axis=1)
 
 
 def point_inside_polygon(polygon, point):
     """
-    Determine if a point is inside a polygon using the winding number.
+    Determine if one or more points is inside the provided polygon.
+
+    Primarily a wrapper for :func:`polygon_winding_number`, that
+    returns True for each poing that is inside the polygon.
 
     Args:
-        polygon (numpy.ndarray): An Nx2 array containing the x,y
-            coordinates of a polygon.  The points should be ordered
-            either counter-clockwise or clockwise.
-        point (numpy.ndarray): A 2-element array defining the x,y
-            position of the point to use as a reference for the winding
-            number.
+        polygon (`numpy.ndarray`_):
+            An Nx2 array containing the x,y coordinates of a polygon.
+            The points should be ordered either counter-clockwise or
+            clockwise.
+        point (`numpy.ndarray`_):
+            One or more points for the winding number calculation.
+            Must be either a 2-element array for a single (x,y) pair,
+            or an Nx2 array with N (x,y) points.
 
     Returns:
-        bool: True if the point is inside the polygon.
-
-    .. warning:: 
-        If the point is **on** the polygon (or very close to it w.r.t.
-        the machine precision), the returned value is `False`.
-
+        bool or `numpy.ndarray`: Boolean indicating whether or not
+        each point is within the polygon.
     """
-    _point = numpy.atleast_2d(point)
-    if _point.shape[-1] != 2:
-        raise ValueError('Provided point must have two elements in last dimension.')
-    if _point.shape[0] == 1:
-        return (abs(polygon_winding_number(polygon, point)) == 1)
-    return numpy.array([ abs(polygon_winding_number(polygon, p)) == 1 for p in _point ])
+    return numpy.absolute(polygon_winding_number(polygon, point)) == 1
 
 
 def polygon_area(x, y):
@@ -117,6 +118,93 @@ def polygon_area(x, y):
         :obj:`float`: Polygon area
     """
     return 0.5 * numpy.abs(numpy.dot(x, numpy.roll(y, 1)) - numpy.dot(y, numpy.roll(x, 1)))
+
+
+# TODO: Use rotate and projected_polar instead of SemiMajorAxisCoo?
+def rotate(x, y, rot, clockwise=False):
+    r"""
+    Rotate a set of coordinates about :math:`(x,y) = (0,0)`.
+
+    .. warning::
+
+        The ``rot`` argument should be a float.  If it is an array, the code
+        will either fault if ``rot`` cannot be broadcast to match ``x`` and
+        ``y`` or the rotation will be different for each ``x`` and ``y``
+        element.
+
+    Args:
+        x (array-like):
+            Cartesian x coordinates.
+        y (array-like):
+            Cartesian y coordinates.  Shape must match ``x``, but this is not
+            checked.
+        rot (:obj:`float`):
+            Rotation angle in radians.
+        clockwise (:obj:`bool`, optional):
+            Perform a clockwise rotation.  Rotation is counter-clockwise by
+            default.  By definition and implementation, setting this to True is
+            identical to calling the function with a negative counter-clockwise
+            rotation.  I.e.::
+
+                xr, yr = rotate(x, y, rot, clockwise=True)
+                _xr, _yr = rotate(x, y, -rot)
+                assert numpy.array_equal(xr, _xr) and numpy.array_equal(yr, _yr)
+
+    Returns:
+        :obj:`tuple`: Two `numpy.ndarray`_ objects with the rotated x
+        and y coordinates.
+    """
+    if clockwise:
+        return rotate(x, y, -rot)
+    cosr = numpy.cos(rot)
+    sinr = numpy.sin(rot)
+    _x = numpy.atleast_1d(x)
+    _y = numpy.atleast_1d(y)
+    return _x*cosr - _y*sinr, _y*cosr + _x*sinr
+
+
+def projected_polar(x, y, pa, inc):
+    r"""
+    Calculate the in-plane polar coordinates of an inclined plane.
+
+    The position angle, :math:`\phi_0`, is the rotation from the :math:`y=0`
+    axis through the :math:`x=0` axis. I.e., :math:`\phi_0 = \pi/2` is along the
+    :math:`+x` axis and :math:`\phi_0 = \pi` is along the :math:`-y` axis.
+
+    The inclination, :math:`i`, is the angle of the plane normal with respect to
+    the line-of-sight. I.e., :math:`i=0` is a face-on (top-down) view of the
+    plane and :math:`i=\pi/2` is an edge-on view.
+
+    The returned coordinates are the projected distance from the :math:`(x,y) =
+    (0,0)` and the project azimuth. The projected azimuth, :math:`\theta`, is
+    defined to increase in the same direction as :math:`\phi_0`, with
+    :math:`\theta = 0` at :math:`\phi_0`.
+
+    .. warning::
+
+        Calculation of the disk-plane y coordinate is undefined at :math:`i =
+        \pi/2`.  Only use this function with :math:`i < \pi/2`!
+
+    Args:
+        x (array-like):
+            Cartesian x coordinates.
+        y (array-like):
+            Cartesian y coordinates.  Shape must match ``x``, but this is not
+            checked.
+        pa (:obj:`float`)
+            Position angle, as defined above, in radians.
+        inc (:obj:`float`)
+            Inclination, as defined above, in radians.
+
+    Returns:
+        :obj:`tuple`: Returns two arrays with the projected radius
+        and in-plane azimuth. The radius units are identical to the
+        provided cartesian coordinates. The azimuth is in radians
+        over the range :math:`[0,2\pi)`.
+    """
+    xd, yd = rotate(x, y, numpy.pi/2-pa, clockwise=True)
+    yd /= numpy.cos(inc)
+    return numpy.sqrt(xd**2 + yd**2), numpy.arctan2(-yd,xd) % (2*numpy.pi)
 
 
 class SemiMajorAxisCoo:

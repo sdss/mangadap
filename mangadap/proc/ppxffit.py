@@ -980,11 +980,14 @@ class PPXFFit(StellarKinematicsFit):
 #
 #            print(numpy.sum(result[i].bestfit-modelfit))
 #
-#            pyplot.plot(self.obj_wave[start[i]:end[i]], modelfit, color='C0')
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], obj_flux.data[i,start[i]:end[i]],
+#                        color='k')
+##            pyplot.plot(self.obj_wave[start[i]:end[i]], modelfit, color='C0')
 #            pyplot.plot(self.obj_wave[start[i]:end[i]], result[i].bestfit, color='C3')
-#            pyplot.plot(self.obj_wave[start[i]:end[i]], result[i].bestfit-modelfit, color='C1')
+#            pyplot.plot(self.obj_wave[start[i]:end[i]],
+#                        obj_flux.data[i,start[i]:end[i]]-result[i].bestfit, color='C1')
 #            pyplot.show()
-
+#
         print('Running pPXF fit on spectrum: {0}/{1}'.format(nspec,nspec))
         return result
 
@@ -1141,7 +1144,6 @@ class PPXFFit(StellarKinematicsFit):
         # Copy the new mask to the errors
         obj_ferr[numpy.ma.getmaskarray(obj_flux)] = numpy.ma.masked
 
-#        if self.filter_iterations == 0:
         # Refit and return results
         return self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
                                        self.spectrum_end, self.base_velocity, templates,
@@ -1882,6 +1884,7 @@ class PPXFFit(StellarKinematicsFit):
                 is greater than the specified tolerance.
 
         """
+#        plot = True
         #---------------------------------------------------------------
         # Initialize the reporting
         if loggers is not None:
@@ -2322,7 +2325,7 @@ class PPXFFit(StellarKinematicsFit):
             - Implement a check that calculates the velocity ratio directly?
         """
         dlogl = numpy.log(obj_wave[0])-numpy.log(tpl_wave[0]) if velscale_ratio is None \
-                    else numpy.log(obj_wave[0])-numpy.mean(numpy.log(tpl_wave[0:velscale_ratio]))
+                        else numpy.log(obj_wave[0])-numpy.mean(numpy.log(tpl_wave[0:velscale_ratio]))
         return dlogl*velscale / numpy.diff(numpy.log(obj_wave[0:2]))[0]
 
     @staticmethod
@@ -2556,117 +2559,6 @@ class PPXFFit(StellarKinematicsFit):
         return _v, verr/numpy.absolute(numpy.exp(_v/c))
 
     @staticmethod
-    def reconstruct_model(tpl_wave, templates, obj_wave, kin, weights, velscale, polyweights=None,
-                          mpolyweights=None, start=None, end=None, redshift_only=False,
-                          sigma_corr=0.0, velscale_ratio=None, dvtol=1e-10, revert_velocity=True):
-        """
-        Construct a pPXF model spectrum based on a set of input spectra
-        and parameters.
-
-        **This function is outdated!  Use :func:`construct_models` or
-        :class:`PPXFModel` instead.**
-        """
-        # Make sure the pixel scales match
-        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
-        if not PPXFFit.obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=_velscale_ratio,
-                                          dvtol=dvtol):
-            raise ValueError('Pixel scale of the object and template spectra must be identical.')
-
-        # Moments for each kinematic component
-        ncomp = 1
-        moments = numpy.atleast_1d(kin.size)
-        _moments = numpy.full(ncomp, numpy.absolute(moments), dtype=int) if moments.size == 1 \
-                            else numpy.absolute(moments)
-
-        # Get the redshift to apply
-        redshift = kin[0]/astropy.constants.c.to('km/s').value
-
-        # Check that the corrected sigma is defined
-        corrected_sigma = numpy.square(kin[1]) - numpy.square(sigma_corr)
-        if not redshift_only and not corrected_sigma > 0:
-            warnings.warn('Corrected sigma is 0 or not defined.  Redshifting template only.')
-            _redshift_only = True
-        else:
-            _redshift_only = redshift_only
-
-        # Start and end pixel in the object spectrum to fit
-        _start = 0 if start is None else start
-        _end = obj_wave.size if end is None else end
-
-        # Construct the composite template
-        composite_template = numpy.dot(weights, templates)
-
-#        pyplot.step(tpl_wave, composite_template, where='mid', linestyle='-', lw=0.5,
-#                    color='k')
-#        pyplot.show()
-
-        # Construct the output models
-        model = numpy.ma.zeros(obj_wave.size, dtype=float)
-        if _redshift_only:
-            # Resample the redshifted template to the wavelength grid of
-            # the binned spectra
-            model = Resample(composite_template, x=tpl_wave*(1.0 + redshift), inLog=True,
-                             newRange=obj_wave[[0,-1]], newpix=obj_wave.size, newLog=True).outy
-            model[:_start] = 0.0
-            model[:_start] = numpy.ma.masked
-            model[_end:] = 0.0
-            model[_end:] = numpy.ma.masked
-        else:
-            # Perform the same operations as pPXF v6.0.0
-
-            # Get the offset velocity just due to the difference in the
-            # initial wavelength of the template and object data
-            vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[_start:_end], velscale,
-                                               velscale_ratio=_velscale_ratio)
-            # Account for a modulus in the number of object pixels in
-            # the template spectra
-            if _velscale_ratio > 1:
-                npix_tpl = composite_template.size - composite_template.size % _velscale_ratio
-                _composite_template = composite_template[:npix_tpl].reshape(1,-1)
-            else:
-                _composite_template = composite_template.reshape(1,-1)
-            npix_tpl = _composite_template.shape[1]
-
-            # Get the FFT of the composite template
-            npad = 2**int(numpy.ceil(numpy.log2(npix_tpl)))
-#            npad = fftpack.next_fast_len(npix_tpl)
-            ctmp_rfft = numpy.fft.rfft(_composite_template, npad, axis=1)
-
-            # Construct the LOSVD parameter vector
-            par = kin.copy()
-            # Convert the velocity to pixel units
-            if revert_velocity:
-                par[0], verr = PPXFFit.revert_velocity(par[0], 1.0)
-            # Convert the velocity dispersion to ignore the
-            # resolution difference
-            par[1] = numpy.sqrt(numpy.square(par[1]) - numpy.square(sigma_corr))
-            # Convert the kinematics to pixel units
-            par[0:2] /= velscale
-
-            # Construct the model spectrum
-            kern_rfft = ppxf.losvd_rfft(par, 1, _moments, ctmp_rfft.shape[1], 1, vsyst/velscale,
-                                        _velscale_ratio, 0.0)
-            _model = numpy.fft.irfft(ctmp_rfft[0,:] * kern_rfft[:,0,0])[:npix_tpl]
-            if _velscale_ratio > 1:
-                _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1)
-            
-            # Copy the model to the output vector
-            model[_start:_end] = _model[:_end-_start]
-
-#            pyplot.plot(tpl_wave[:npix_tpl], _composite_template[0,:])
-#            pyplot.plot(obj_wave, model)
-#            pyplot.show()
-
-        # Account for the polynomials
-        x = numpy.linspace(-1, 1, _end-_start)
-        if mpolyweights is not None:
-            model[_start:_end] *= numpy.polynomial.legendre.legval(x,numpy.append(1.0,mpolyweights))
-        if polyweights is not None:
-            model[_start:_end] += numpy.polynomial.legendre.legval(x,polyweights)
-
-        return model
-
-    @staticmethod
     def construct_models(tpl_wave, tpl_flux, obj_wave, obj_flux_shape, model_par, select=None,
                          redshift_only=False, deredshift=False, corrected_dispersion=False,
                          dvtol=1e-10):
@@ -2722,6 +2614,7 @@ class PPXFFit(StellarKinematicsFit):
         # shift between the two
         vsyst = numpy.array([ -PPXFFit.ppxf_tpl_obj_voff(_tpl_wave, _obj_wave[s:e], _velscale,
                                                          velscale_ratio=_velscale_ratio)
+                                    if e > s else 0.0
                                     for s,e in zip(model_par['BEGPIX'], model_par['ENDPIX'])])
 
         # Get the additive and multiplicative degree of the polynomials
@@ -2732,7 +2625,7 @@ class PPXFFit(StellarKinematicsFit):
         moments = model_par['KIN'].shape[1]
 
         # Only produce selected models
-        skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
+        skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.logical_not(select)
 
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=float)

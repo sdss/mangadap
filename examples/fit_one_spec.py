@@ -444,8 +444,6 @@ def main():
               f'{corrected_indices_err[0,i]:12.4f}')
     print('-'*73)
 
-    embed()
-
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
