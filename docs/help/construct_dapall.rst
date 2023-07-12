@@ -7,7 +7,7 @@
     
     Compile metadata for the DAPall file
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --drpver DRPVER       DRP version (default: None)
       -r REDUX_PATH, --redux_path REDUX_PATH

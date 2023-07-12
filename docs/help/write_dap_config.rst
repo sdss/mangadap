@@ -14,7 +14,7 @@
       ifudesign             IFU design number
       ofile                 Output file name
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       -c DRPCOMPLETE, --drpcomplete DRPCOMPLETE
                             DRP complete fits file (default: None)

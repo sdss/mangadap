@@ -14,7 +14,7 @@
     
     Perform analysis of integral-field data.
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --overwrite           if all selected, will run dap for all
                             plates/ifudesigns/modes regardless of state (default:
