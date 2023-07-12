@@ -7,7 +7,7 @@
     
     Inspect results of the MaNGA DAP
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --maps_file MAPS_FILE
                             Output MAPS file (default: None)

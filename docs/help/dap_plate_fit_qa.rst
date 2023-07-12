@@ -12,7 +12,7 @@
     positional arguments:
       plate                 plate ID to process
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --drpver DRPVER       DRP version (default: None)
       --dapver DAPVER       DAP version (default: None)

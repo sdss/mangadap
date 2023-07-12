@@ -8,7 +8,7 @@
     
     Perform analysis of integral-field data.
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       -c CONFIG, --config CONFIG
                             Configuration file used to instantiate the relevant

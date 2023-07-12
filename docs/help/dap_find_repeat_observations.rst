@@ -8,7 +8,7 @@
     
     Use the DRPall file to find repeat observations
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --drpver DRPVER       DRP version (default: None)
       --dapver DAPVER       DAP version (default: None)

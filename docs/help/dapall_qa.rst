@@ -7,7 +7,7 @@
     
     Construct QA plots using the DAPall metadata
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --drpver DRPVER       DRP version (default: None)
       --dapver DAPVER       DAP version (default: None)
