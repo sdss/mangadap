@@ -407,7 +407,7 @@ class PPXFModel:
         self.reddening = reddening
         self.gas_reddening = gas_reddening
         if reddening_func is None:
-            self.reddening_func = ppxf.reddening_cal00
+            self.reddening_func = ppxf.attenuation
         else:
             if not callable(reddening_func):
                 raise TypeError('`reddening_func` must be callable')

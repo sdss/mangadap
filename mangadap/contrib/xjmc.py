@@ -246,11 +246,11 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
     Returns:
         :obj:`tuple`: Three numpy arrays are returned:
 
-            #. The list of downselected and renumbered, if necessary,
+            #. The list of down-selected and renumbered, if necessary,
                kinematic components,
-            #. the downselected and reordered, if necessary, number
+            #. the down-selected and reordered, if necessary, number
                of moments to fit, and
-            #. the downselected and reordered starting guesses for
+            #. the down-selected and reordered starting guesses for
                each component.
 
     Raises:
@@ -289,7 +289,7 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
         _start[i] = s[stellar_components].tolist() if len(stellar_components) > 0 else []
         if gas_start is None:
             _gas_start = [np.mean(np.asarray(s[gas_components]), axis=0).tolist()] \
-                                if n_gas_components == 1 else [s[gas_components]]
+                                if n_gas_components == 1 else s[gas_components].tolist()
         else:
             _gas_start = [gas_start[i].tolist()]*n_gas_components
         _start[i] += _gas_start
@@ -792,7 +792,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
     tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
     addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
     multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
-    ebv = None if reddening is None else np.zeros(nspec, dtype=float)
+    av = None if reddening is None else np.zeros(nspec, dtype=float)
     kininp = np.zeros((nspec,nkin), dtype=float)
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
@@ -954,7 +954,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
         if mdegree > 0:
             multcoef[i,:] = pp.mpolyweights.copy()
         if reddening is not None:
-            ebv[i] = pp.reddening
+            av[i] = pp.reddening
 
         kininp[i,:] = np.concatenate(tuple(start[i]))
         kin[i,:] = np.concatenate(tuple(sol))
@@ -963,7 +963,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
     # Done
     print('Fitting spectrum: {0}/{0}'.format(nspec))
 
-    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv, \
+    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, av, \
                     kininp, kin, kin_err, fault
 
 
@@ -1440,7 +1440,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
 
     addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
     multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
-    ebv = None if reddening is None else np.zeros(nspec, dtype=float)
+    av = None if reddening is None else np.zeros(nspec, dtype=float)
 
     kininp = np.zeros((nspec,nkin), dtype=float)
     kin = np.zeros((nspec,nkin), dtype=float)
@@ -1453,7 +1453,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
         kin = kininp
         kinerr = kin/10
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, _binid #nearest_bin
+                    av, kininp, kin, kin_err, _binid #nearest_bin
 
     # Fit the binned data
     if mode == 'fitBins':
@@ -1504,13 +1504,16 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
             single_spaxel_bin = np.invert(component_of_bin)
             model_mask[single_spaxel_bin,:] &= _mask[_binid[single_spaxel_bin],:]
 
-        # - Use the best-fit parameters from the binned spectra as the
-        #   starting guesses for the fits to the the individual spaxels
+        # - If no constraints are applied to the kinematics, use the best-fit
+        # parameters from the binned spectra as the starting guesses for the
+        # fits to the the individual spaxels.  Otherwise, use the input to
+        # ensure the input guess adhere to any constraints.
         n_gas_comp = len(np.unique(_component[_gas_template]))
         _start = inp_start[_binid]
-        gas_start = binned_kin[:,np.absolute(moments[0]):][_binid,:]
-        for i in range(nspec):
-            _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
+        if constr_kinem is None:
+            gas_start = binned_kin[:,np.absolute(moments[0]):][_binid,:]
+            for i in range(nspec):
+                _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
     else:
         # Binned spectra were not provided, prepare to fit the
         # individual spectra by just pointing to the input
@@ -1563,7 +1566,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     # Second fit to the individual spectra
     # - Use first fit to to reset the starting estimates for the gas kinematics
     all_stellar_moments = np.sum(np.absolute(moments[:-1]))
-    gas_start = kin[:,all_stellar_moments:]
+    gas_start = kin[:,all_stellar_moments:] if constr_kinem is None else None
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       gas_start=gas_start)
 
@@ -1571,7 +1574,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     kin = np.zeros((nspec,nkin), dtype=float)
     indx = np.logical_not(fault)
     model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts[indx,:], \
-        tpl_wgts_err, _addcoef, _multcoef, _ebv, kininp[indx,:], kin[indx,:], \
+        tpl_wgts_err, _addcoef, _multcoef, _av, kininp[indx,:], kin[indx,:], \
         kin_err[indx,:], fault[indx] \
                 = _fit_iteration(tpl_wave, _templates, wave, flux[indx,:], noise[indx,:], velscale,
                                  start[indx], moments, component, _gas_template,
@@ -1587,7 +1590,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     if mdegree > 0:
         multcoef[indx,:] = _multcoef
     if reddening is not None:
-        ebv[indx] = _ebv
+        av[indx] = _av
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the
@@ -1603,5 +1606,5 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     _tpl_wgts_err[_indx] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, _binid, fault
+                    av, kininp, kin, kin_err, _binid, fault
 

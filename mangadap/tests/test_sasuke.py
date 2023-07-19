@@ -316,20 +316,24 @@ def test_multicomp_basic():
     moments = numpy.array([-2] + [2]*(ncomp-1))
     gas_comp_sigma = numpy.empty(ncomp-1, dtype=float)
     gas_comp_sigma[etpl.comp] = etpl_sigma
-    start_kin = numpy.append([[0., stellar_sigma]],
+    start_kin = numpy.append([[-50.*velscale, stellar_sigma]],
                              numpy.column_stack(([100.]*(ncomp-1), gas_comp_sigma*1.1)), axis=0)
     A_ineq = numpy.hstack((numpy.zeros((etpl.A_ineq.shape[0], 2), dtype=float),
                            etpl.A_ineq))
     constr_kinem = {'A_ineq': A_ineq, 'b_ineq': etpl.b_ineq}
     tied = ppxf_tied_parameters(component, vgrp, sgrp, moments)
 
-    #from matplotlib import pyplot
-    pp = ppxf.ppxf(templates.T, flux, ferr, velscale, start_kin, moments=moments,
+    from matplotlib import pyplot
+    pp = ppxf.ppxf(templates.T, flux[50:-50], ferr[50:-50], velscale, start_kin, moments=moments,
                     degree=-1, mdegree=0, tied=tied, constr_kinem=constr_kinem,
                     component=component, gas_component=gas_component, method='capfit',
-                    quiet=True)
-                    #quiet=False, plot=True)
-    #pyplot.show()
+                    linear_method='lsq_lin',
+                    #quiet=True)
+                    quiet=False, plot=True)
+    pyplot.show()
+
+    embed()
+    exit()
 
     sol = numpy.array(pp.sol)
     assert numpy.allclose(sol[1,0], sol[2:,0]), 'All gas velocities should be the same'
@@ -339,6 +343,9 @@ def test_multicomp_basic():
             'Narrow dispersion too discrepant from input'
     assert numpy.all(numpy.absolute(sol[broad,1] - broad_sigma) < 1.), \
             'Broad dispersion too discrepant from input'
+
+
+test_multicomp_basic()
 
 
 def test_multicomp_manga():
@@ -379,7 +386,7 @@ def test_multicomp_manga():
     pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
-    emldb = EmissionLineDB(data_test_file('elp_ha_multicomp.par'))
+    emldb = EmissionLineDB(data_test_file('elp_ha_multicomp_broadv.par'))
 
     # Instantiate the fitting class
     emlfit = Sasuke(EmissionLineModelBitMask())
@@ -392,7 +399,10 @@ def test_multicomp_manga():
                          stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data,
                          stpl_sres=tpl_sres, stellar_kinematics=sc_par['KIN'],
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
-                         velscale_ratio=velscale_ratio) #, plot=True) #, matched_resolution=False
+                         velscale_ratio=velscale_ratio) #, plot=True)
+
+    assert numpy.array_equal(el_fit['MASK'], numpy.zeros(nspec, dtype=el_fit['MASK'].dtype)), \
+            'None of the fits should fail!'
 
     # TODO: Add tests of the results!
 

@@ -215,6 +215,8 @@ class EmissionLineTemplates:
         self.comp = None            # Kinematic component associated with each template
         self.vgrp = None            # Velocity group associated with each template
         self.sgrp = None            # Sigma group associated with each template
+        self.tie_comp_lb = None     # Fractional lower bound on each kinematic component
+        self.tie_comp_ub = None     # Fractional upper bound on each kinematic component
         self.A_ineq = None          # Linear inequality constraint matrix for the kinematics
         self.b_ineq = None          # Linear inequality constraint vector for the kinematics
         self.eml_sigma_inst = None  # Instrumental dispersion at the center of each line
@@ -474,8 +476,8 @@ class EmissionLineTemplates:
         nconstr = numpy.sum([int(is_number(s))+1 for s in self.emldb['tie_par'][tie_ineq]])
 
         # Get the fractional constraint on each parameter
-        tie_comp_lb = numpy.zeros((ncomp, 2), dtype=float)
-        tie_comp_ub = numpy.zeros((ncomp, 2), dtype=float)
+        self.tie_comp_lb = numpy.zeros((ncomp, 2), dtype=float)
+        self.tie_comp_ub = numpy.zeros((ncomp, 2), dtype=float)
 
         # NOTE: This loop is necessary because of recursive tying of lines. For
         # example, in the OII doublet, one of the lines could have its velocity
@@ -508,8 +510,10 @@ class EmissionLineTemplates:
                         raise ValueError('Fractional constraints with lower and upper bounds '
                                          'must be >1!')
                     _lb += [1./_ub[-1]]
-            tie_comp_lb[i,:] = numpy.amax(numpy.asarray(_lb).reshape(numpy.sum(indx),2), axis=0)
-            tie_comp_ub[i,:] = numpy.amax(numpy.asarray(_ub).reshape(numpy.sum(indx),2), axis=0)
+            self.tie_comp_lb[i,:] \
+                    = numpy.amax(numpy.asarray(_lb).reshape(numpy.sum(indx),2), axis=0)
+            self.tie_comp_ub[i,:] \
+                    = numpy.amax(numpy.asarray(_ub).reshape(numpy.sum(indx),2), axis=0)
 
         # Set an array indicating the index of the components tied by inequality
         # for the velocity and velocity dispersion.
@@ -529,12 +533,12 @@ class EmissionLineTemplates:
             for j in range(2):
                 if tie_comp[i,j] < 0:
                     continue
-                if tie_comp_lb[i,j] > 0:
-                    self.A_ineq[constr,2*tie_comp[i,j]+j] = tie_comp_lb[i,j]
+                if self.tie_comp_lb[i,j] > 0:
+                    self.A_ineq[constr,2*tie_comp[i,j]+j] = self.tie_comp_lb[i,j]
                     self.A_ineq[constr,2*i+j] = -1.
                     constr += 1
-                if tie_comp_ub[i,j] > 0:
-                    self.A_ineq[constr,2*tie_comp[i,j]+j] = -tie_comp_ub[i,j]
+                if self.tie_comp_ub[i,j] > 0:
+                    self.A_ineq[constr,2*tie_comp[i,j]+j] = -self.tie_comp_ub[i,j]
                     self.A_ineq[constr,2*i+j] = 1.
                     constr += 1
 
@@ -657,6 +661,78 @@ class EmissionLineTemplates:
 
         return self.flux, self.comp, self.vgrp, self.sgrp, self.A_ineq, self.b_ineq
 
+    @staticmethod
+    def fill_guess_kinematics(guess_kin, ncomp, lb, ub, A_ineq):
+        r"""
+        Construct the array with the initial guess kinematics, ensuring that
+        they meet any inequality constraints.
 
+        .. warning::
+
+            Always assumes that only 2 moments are fit for each emission-line
+            component.
+
+        Args:
+            guess_kin (array-like):
+                Guess kinematics for one or more spectra to be fit.  Shape is
+                :math:`(N_{\rm spec}, 2)` or :math:`(2,)`.  The number of
+                parameters will be expanded to the number of components in this
+                template set and adjusted to meet any inequality constraints.
+            ncomp (:obj:`int`):
+                Number of kinematic components.
+            lb (`numpy.ndarray`_):
+                Array providing the fractional lower bounds on all the
+                components.  Can be None if no lower bounds are set; otherwise,
+                shape must be :math:`(N_{\rm comp}, 2)`.
+            ub (`numpy.ndarray`_):
+                Array providing the fractional upper bounds on all the
+                components.  Can be None if no upper bounds are set; otherwise,
+                shape must be :math:`(N_{\rm comp}, 2)`.
+            A_ineq (`numpy.ndarray`_):
+                Inequality constraint matrix used by pPXF.  Can be None if no
+                constraints are to be applied; otherwise, shape must be
+                :math:`(N_{\rm constr}, 2 N_{\rm comp})`.
+
+        Returns:
+            `numpy.ndarray`_: A 2D or 3D array with the guess parameters.  Shape
+            is :math:`(N_{\rm spec}, N_{\rm comp}, 2)` or :math:`(N_{\rm comp},
+            2)`.
+        """
+        _guess_kin = numpy.asarray(guess_kin)
+        if _guess_kin.ndim == 2:
+            start = numpy.tile(guess_kin, (ncomp,1,1)).transpose(1,0,2)
+        else:
+            start = numpy.expand_dims(numpy.tile(guess_kin, (ncomp,1)), 0)
+        if A_ineq is None:
+            # There are no inequality constraints, so simply repeat the guess
+            # for each component.
+            return start if _guess_kin.ndim == 2 else start[0]
+
+        if lb is None or ub is None:
+            # Should not get here if A_ineq is defined
+            raise ValueError('Definition of tied components incomplete.  Re-build the templates.')
+
+        eps = 1e-10*numpy.linalg.norm(A_ineq, axis=1)
+
+        for s in start:
+            # TODO: The inequality constraints are currently *always*
+            # multiplicative.  I.e., b_ineq is always 0.
+            indx = A_ineq @ s.ravel() <= eps
+            if numpy.all(indx):
+                # Constraints already satisfied
+                continue
+            _lb = s * lb
+            _ub = s * ub
+            indx = (_lb > 0) & (_ub > 0)
+            if numpy.any(indx):
+                s[indx] = numpy.sqrt(_lb[indx]*_ub[indx]) # Geometric mean
+            indx = (_ub <= 0) & (_lb > 0) & (s < _lb)
+            if numpy.any(indx):
+                s[indx] = 1.1*_lb[indx]
+            indx = (_ub > 0) & (_lb <= 0) & (s > _ub)
+            if numpy.any(indx):
+                s[indx] = _ub[indx]/1.1
+
+        return start if _guess_kin.ndim == 2 else start[0]
 
 
