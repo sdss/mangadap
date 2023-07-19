@@ -4,9 +4,6 @@
 
  - Fixed bug in initial guess used for emission-line kinematics.  Now ensures
    that initial guess satisfies any imposed inequalities.
- - Change reddening treatment in updated version of pPXF (8.2.6), accommodating
-   changes from use of E(B-V) to Av.  Beware of this change because reddening
-   functionality within the larger context of the code not well tested. 
 
 4.1.0 (12 Jul 2023)
 -------------------
