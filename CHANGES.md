@@ -1,4 +1,10 @@
 
+4.1.1dev
+--------
+
+ - Fixed bug in initial guess used for emission-line kinematics.  Now ensures
+   that initial guess satisfies any imposed inequalities.
+
 4.1.0 (12 Jul 2023)
 -------------------
 
