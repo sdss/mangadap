@@ -9,7 +9,7 @@
       key                   DAP template-library key
       ofile                 Output file name
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       -v VELSCALE_RATIO, --velscale_ratio VELSCALE_RATIO
                             velocity scale ratio between the template pixel and the

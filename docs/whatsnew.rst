@@ -5,6 +5,17 @@
 What's New in the DAP
 *********************
 
+Version 4.1.0
+=============
+
+User-level changes/bug fixes
+----------------------------
+
+* Changes made to format of emission-line database files to allow for more
+  flexible line tying.  See updates to :ref:`emissionlines`.
+
+* Included a script to construct synthetic MaNGA datacubes for testing purposes.
+
 Version 4.0.0
 =============
 

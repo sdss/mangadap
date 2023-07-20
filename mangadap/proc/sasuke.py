@@ -325,7 +325,7 @@ class SasukeFitDataTable(DataTable):
                          MPLYMINMAX=dict(typ=float, shape=(2,) if nmult > 1 else None,
                                          descr='Minimum and maximum of multiplicative polynomial.'),
                          EBV=dict(typ=float, shape=None,
-                                  descr='Fitted E(B-V) from pPXF, if requested.'),
+                                 descr='Fitted E(B-V) from pPXF, if requested.'),
                          KININP=dict(typ=float, shape=(nkin,), descr='Initial guess kinematics.'),
                          KIN=dict(typ=float, shape=(nkin,), descr='Best-fitting kinematics.'),
                          KINERR=dict(typ=float, shape=(nkin,),
@@ -2107,6 +2107,10 @@ class Sasuke(EmissionLineFit):
         # stellar templates
         self.constr_kinem = None if not hasattr(etpl, 'A_ineq') or etpl.A_ineq is None \
                                 else {'A_ineq': etpl.A_ineq, 'b_ineq': etpl.b_ineq}
+        self.comp_start_kin \
+                = EmissionLineTemplates.fill_guess_kinematics(guess_kin, numpy.amax(etpl.comp)+1,
+                                                              etpl.tie_comp_lb, etpl.tie_comp_ub,
+                                                              etpl.A_ineq)
         if self.nstpl == 0:
             self.gas_tpl = numpy.ones(etpl.ntpl, dtype=bool)
             self.tpl_flux = etpl.flux
@@ -2116,7 +2120,6 @@ class Sasuke(EmissionLineFit):
             self.tpl_sgrp = etpl.sgrp
             self.ncomp = numpy.amax(self.tpl_comp)+1
             self.comp_moments = numpy.array([moments]*self.ncomp)
-            self.comp_start_kin = numpy.array([[gk.tolist()]*self.ncomp for gk in guess_kin ])
         else:
             self.gas_tpl = numpy.append(numpy.zeros(self.tpl_flux.shape[0]),
                                         numpy.ones(etpl.ntpl)).astype(bool)
@@ -2131,8 +2134,10 @@ class Sasuke(EmissionLineFit):
             self.eml_compi[self.fit_eml] += 1
             self.ncomp = numpy.amax(self.tpl_comp)+1
             self.comp_moments = numpy.array([-stellar_moments] + [moments]*(self.ncomp-1))
-            self.comp_start_kin = numpy.array([ [sk.tolist()] + [gk.tolist()]*(self.ncomp-1) 
-                                            for sk,gk in zip(_stellar_kinematics, guess_kin) ])
+
+            self.comp_start_kin = numpy.append(numpy.expand_dims(_stellar_kinematics, 0),
+                                               self.comp_start_kin.transpose(1,0,2),
+                                               axis=0).transpose(1,0,2)
             if self.constr_kinem is not None:
                 self.constr_kinem['A_ineq'] \
                         = numpy.hstack((numpy.zeros((self.constr_kinem['A_ineq'].shape[0], 2),

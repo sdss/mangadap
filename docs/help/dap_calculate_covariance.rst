@@ -12,7 +12,7 @@
       ifudesign             IFU design to process
       output_file           Name for output file
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       -n NUMCHANNELS, --numchannels NUMCHANNELS
                             Number of channels spread across the wavelength range

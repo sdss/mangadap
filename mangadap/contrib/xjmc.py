@@ -246,11 +246,11 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
     Returns:
         :obj:`tuple`: Three numpy arrays are returned:
 
-            #. The list of downselected and renumbered, if necessary,
+            #. The list of down-selected and renumbered, if necessary,
                kinematic components,
-            #. the downselected and reordered, if necessary, number
+            #. the down-selected and reordered, if necessary, number
                of moments to fit, and
-            #. the downselected and reordered starting guesses for
+            #. the down-selected and reordered starting guesses for
                each component.
 
     Raises:
@@ -289,7 +289,7 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
         _start[i] = s[stellar_components].tolist() if len(stellar_components) > 0 else []
         if gas_start is None:
             _gas_start = [np.mean(np.asarray(s[gas_components]), axis=0).tolist()] \
-                                if n_gas_components == 1 else [s[gas_components]]
+                                if n_gas_components == 1 else s[gas_components].tolist()
         else:
             _gas_start = [gas_start[i].tolist()]*n_gas_components
         _start[i] += _gas_start
@@ -1504,13 +1504,16 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
             single_spaxel_bin = np.invert(component_of_bin)
             model_mask[single_spaxel_bin,:] &= _mask[_binid[single_spaxel_bin],:]
 
-        # - Use the best-fit parameters from the binned spectra as the
-        #   starting guesses for the fits to the the individual spaxels
+        # - If no constraints are applied to the kinematics, use the best-fit
+        # parameters from the binned spectra as the starting guesses for the
+        # fits to the the individual spaxels.  Otherwise, use the input to
+        # ensure the input guess adhere to any constraints.
         n_gas_comp = len(np.unique(_component[_gas_template]))
         _start = inp_start[_binid]
-        gas_start = binned_kin[:,np.absolute(moments[0]):][_binid,:]
-        for i in range(nspec):
-            _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
+        if constr_kinem is None:
+            gas_start = binned_kin[:,np.absolute(moments[0]):][_binid,:]
+            for i in range(nspec):
+                _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
     else:
         # Binned spectra were not provided, prepare to fit the
         # individual spectra by just pointing to the input
@@ -1563,7 +1566,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     # Second fit to the individual spectra
     # - Use first fit to to reset the starting estimates for the gas kinematics
     all_stellar_moments = np.sum(np.absolute(moments[:-1]))
-    gas_start = kin[:,all_stellar_moments:]
+    gas_start = kin[:,all_stellar_moments:] if constr_kinem is None else None
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       gas_start=gas_start)
 

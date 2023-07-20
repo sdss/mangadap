@@ -11,7 +11,7 @@
       plan_file             parameter file with the MaNGA DAP execution plan to use
                             instead of the default
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       --logdir LOGDIR       Log path (e.g., 31Jan2019T19.16.28UTC) (default: None)
       --drpver DRPVER       DRP version (default: None)

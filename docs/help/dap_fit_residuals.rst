@@ -8,7 +8,7 @@
     
     Construct QA plots showing the fit residuals
     
-    optional arguments:
+    options:
       -h, --help            show this help message and exit
       -c CONFIG, --config CONFIG
                             Configuration file used to instantiate the relevant

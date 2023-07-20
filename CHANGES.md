@@ -1,6 +1,12 @@
 
-4.1.0dev
---------
+4.1.1 (19 Jul 2023)
+-------------------
+
+ - Fixed bug in initial guess used for emission-line kinematics.  Now ensures
+   that initial guess satisfies any imposed inequalities.
+
+4.1.0 (12 Jul 2023)
+-------------------
 
  - Adds script for creating synthetic MaNGA datacubes for testing.
  - Change syntax for emission-line modeling files to enable additional tying
