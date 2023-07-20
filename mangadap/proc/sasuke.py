@@ -324,8 +324,8 @@ class SasukeFitDataTable(DataTable):
                                        descr='Multiplicative polynomal coefficients.'),
                          MPLYMINMAX=dict(typ=float, shape=(2,) if nmult > 1 else None,
                                          descr='Minimum and maximum of multiplicative polynomial.'),
-                         AV=dict(typ=float, shape=None,
-                                 descr='Fitted AV attenuation from pPXF, if requested.'),
+                         EBV=dict(typ=float, shape=None,
+                                 descr='Fitted E(B-V) from pPXF, if requested.'),
                          KININP=dict(typ=float, shape=(nkin,), descr='Initial guess kinematics.'),
                          KIN=dict(typ=float, shape=(nkin,), descr='Best-fitting kinematics.'),
                          KINERR=dict(typ=float, shape=(nkin,),
@@ -1025,10 +1025,10 @@ class Sasuke(EmissionLineFit):
             model_fit_par['MULTCOEF'][spec_to_fit,:] = model_multcoef
             used_mpoly = True
 
-        used_av = False
+        used_ebv = False
         if self.reddening is not None and model_reddening is not None:
-            model_fit_par['AV'][spec_to_fit] = model_reddening
-            used_av = True
+            model_fit_par['EBV'][spec_to_fit] = model_reddening
+            used_ebv = True
 
         # Degrees of freedom is the number of non-zero templates, the
         # associated set of kinematic parameters, and any continuum
@@ -1036,7 +1036,7 @@ class Sasuke(EmissionLineFit):
         dof = numpy.sum(model_fit_par['TPLWGT'] > 0, axis=1) \
                 + numpy.sum(kin_is_free[None,:] * kin_is_used, axis=1)
         dof += (self.degree+1 + self.mdegree)       # Sums to zero if both are not used
-        if used_av:
+        if used_ebv:
             dof += 1
 
         # Reduced chi-square
@@ -1167,7 +1167,7 @@ class Sasuke(EmissionLineFit):
                         = sample_growth(numpy.ma.absolute(fractional_residual[i,:]).compressed(),
                                         [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
 
-            if used_apoly or used_mpoly or used_av:
+            if used_apoly or used_mpoly or used_ebv:
                 # Sample the polynomials at the fitted wavelength of
                 # each line
                 obswave = self.emldb['restwave'][self.fit_eml] \
@@ -1202,8 +1202,8 @@ class Sasuke(EmissionLineFit):
                 #-------------------------------------------------------
 
                 # - Reddening:
-                if used_av:
-                    extcurve = ppxf.attenuation(self.obj_wave, model_fit_par['AV'][i])
+                if used_ebv:
+                    extcurve = ppxf.reddening_cal00(self.obj_wave, model_fit_par['EBV'][i])
                     model_eml_par['CONTRFIT'][i,:] \
                             = interpolate.interp1d(self.obj_wave, extcurve,
                                                    bounds_error=False, fill_value=1.0,
@@ -2120,7 +2120,6 @@ class Sasuke(EmissionLineFit):
             self.tpl_sgrp = etpl.sgrp
             self.ncomp = numpy.amax(self.tpl_comp)+1
             self.comp_moments = numpy.array([moments]*self.ncomp)
-#            self.comp_start_kin = numpy.array([[gk.tolist()]*self.ncomp for gk in guess_kin ])
         else:
             self.gas_tpl = numpy.append(numpy.zeros(self.tpl_flux.shape[0]),
                                         numpy.ones(etpl.ntpl)).astype(bool)
@@ -2139,8 +2138,6 @@ class Sasuke(EmissionLineFit):
             self.comp_start_kin = numpy.append(numpy.expand_dims(_stellar_kinematics, 0),
                                                self.comp_start_kin.transpose(1,0,2),
                                                axis=0).transpose(1,0,2)
-#            self.comp_start_kin = numpy.array([ [sk.tolist()] + [gk.tolist()]*(self.ncomp-1) 
-#                                            for sk,gk in zip(_stellar_kinematics, guess_kin) ])
             if self.constr_kinem is not None:
                 self.constr_kinem['A_ineq'] \
                         = numpy.hstack((numpy.zeros((self.constr_kinem['A_ineq'].shape[0], 2),
@@ -2538,7 +2535,7 @@ class Sasuke(EmissionLineFit):
         for i in range(nobj):
             if skip[i]:
                 continue
-            av = model_fit_par['AV'][i] if reddening else None
+            ebv = model_fit_par['EBV'][i] if reddening else None
 
             print('Constructing continuum for spectrum: {0}/{1}'.format(i+1,nobj), end='\r')
 
@@ -2551,13 +2548,13 @@ class Sasuke(EmissionLineFit):
                           _velscale, velscale_ratio=_velscale_ratio, vsyst=vsyst[i],
                           moments=smoments, degree=degree, mdegree=mdegree,
                           lam=_obj_wave[model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]],
-                          reddening=av)
+                          reddening=ebv)
 
             models[i,model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]] \
                         = f(kin[i,:], model_fit_par['TPLWGT'][i,:nstpl],
                             addpoly=None if degree < 0 else model_fit_par['ADDCOEF'][i,:],
                             multpoly=None if mdegree < 1 else model_fit_par['MULTCOEF'][i,:],
-                            reddening=av)
+                            reddening=ebv)
 
         print('Constructing continuum for spectrum: {0}/{0}'.format(nobj))
         return models

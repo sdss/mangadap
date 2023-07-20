@@ -792,7 +792,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
     tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
     addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
     multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
-    av = None if reddening is None else np.zeros(nspec, dtype=float)
+    ebv = None if reddening is None else np.zeros(nspec, dtype=float)
     kininp = np.zeros((nspec,nkin), dtype=float)
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
@@ -954,7 +954,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
         if mdegree > 0:
             multcoef[i,:] = pp.mpolyweights.copy()
         if reddening is not None:
-            av[i] = pp.reddening
+            ebv[i] = pp.reddening
 
         kininp[i,:] = np.concatenate(tuple(start[i]))
         kin[i,:] = np.concatenate(tuple(sol))
@@ -963,7 +963,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
     # Done
     print('Fitting spectrum: {0}/{0}'.format(nspec))
 
-    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, av, \
+    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv, \
                     kininp, kin, kin_err, fault
 
 
@@ -1440,7 +1440,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
 
     addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
     multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
-    av = None if reddening is None else np.zeros(nspec, dtype=float)
+    ebv = None if reddening is None else np.zeros(nspec, dtype=float)
 
     kininp = np.zeros((nspec,nkin), dtype=float)
     kin = np.zeros((nspec,nkin), dtype=float)
@@ -1453,7 +1453,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
         kin = kininp
         kinerr = kin/10
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
-                    av, kininp, kin, kin_err, _binid #nearest_bin
+                    ebv, kininp, kin, kin_err, _binid #nearest_bin
 
     # Fit the binned data
     if mode == 'fitBins':
@@ -1574,7 +1574,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     kin = np.zeros((nspec,nkin), dtype=float)
     indx = np.logical_not(fault)
     model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts[indx,:], \
-        tpl_wgts_err, _addcoef, _multcoef, _av, kininp[indx,:], kin[indx,:], \
+        tpl_wgts_err, _addcoef, _multcoef, _ebv, kininp[indx,:], kin[indx,:], \
         kin_err[indx,:], fault[indx] \
                 = _fit_iteration(tpl_wave, _templates, wave, flux[indx,:], noise[indx,:], velscale,
                                  start[indx], moments, component, _gas_template,
@@ -1590,7 +1590,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     if mdegree > 0:
         multcoef[indx,:] = _multcoef
     if reddening is not None:
-        av[indx] = _av
+        ebv[indx] = _ebv
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the
@@ -1606,5 +1606,5 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, mask, velsca
     _tpl_wgts_err[_indx] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    av, kininp, kin, kin_err, _binid, fault
+                    ebv, kininp, kin, kin_err, _binid, fault
 

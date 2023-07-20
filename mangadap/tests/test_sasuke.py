@@ -323,29 +323,23 @@ def test_multicomp_basic():
     constr_kinem = {'A_ineq': A_ineq, 'b_ineq': etpl.b_ineq}
     tied = ppxf_tied_parameters(component, vgrp, sgrp, moments)
 
-    from matplotlib import pyplot
+    #from matplotlib import pyplot
     pp = ppxf.ppxf(templates.T, flux[50:-50], ferr[50:-50], velscale, start_kin, moments=moments,
                     degree=-1, mdegree=0, tied=tied, constr_kinem=constr_kinem,
                     component=component, gas_component=gas_component, method='capfit',
-                    linear_method='lsq_lin',
-                    #quiet=True)
-                    quiet=False, plot=True)
-    pyplot.show()
-
-    embed()
-    exit()
+                    quiet=True)
+    #                quiet=False, plot=True)
+    #pyplot.show()
 
     sol = numpy.array(pp.sol)
     assert numpy.allclose(sol[1,0], sol[2:,0]), 'All gas velocities should be the same'
     assert numpy.all(sol[broad,1] > sol[narrow,1]), 'Constraints not met'
-    assert numpy.all(numpy.absolute(sol[1:,0]) < 1e-2), 'Velocities too discrepant from input'
+    assert numpy.all(numpy.absolute(sol[1:,0] - start_kin[0,0]) < 1e-2), \
+            'Velocities too discrepant from input'
     assert numpy.all(numpy.absolute(sol[narrow,1] - narrow_sigma) < 1e-1), \
             'Narrow dispersion too discrepant from input'
     assert numpy.all(numpy.absolute(sol[broad,1] - broad_sigma) < 1.), \
             'Broad dispersion too discrepant from input'
-
-
-test_multicomp_basic()
 
 
 def test_multicomp_manga():
