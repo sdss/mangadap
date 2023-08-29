@@ -276,7 +276,7 @@ def test_multicomp_basic():
     wave = tpl['WAVE'].data.copy()
 
     velscale = spectrum_velocity_scale(wave)
-    emldb = EmissionLineDB(data_test_file('elp_ha_multicomp.par'))
+    emldb = EmissionLineDB(data_test_file('elp_ha_multicomp_broadv.par'))
 
     etpl = EmissionLineTemplates(wave, velscale, emldb=emldb)
 
@@ -297,7 +297,7 @@ def test_multicomp_basic():
 #    pyplot.plot(wave, flux, color='k')
 #    pyplot.show()
 
-    ferr = numpy.full(flux.size, 0.1, dtype=float)
+    ferr = numpy.full(flux.size, 0.001, dtype=float)
     mask = numpy.zeros(flux.size, dtype=bool)
     sres = tpl_sres.copy()
 
@@ -317,19 +317,51 @@ def test_multicomp_basic():
     gas_comp_sigma = numpy.empty(ncomp-1, dtype=float)
     gas_comp_sigma[etpl.comp] = etpl_sigma
     start_kin = numpy.append([[-50.*velscale, stellar_sigma]],
-                             numpy.column_stack(([100.]*(ncomp-1), gas_comp_sigma*1.1)), axis=0)
+                 EmissionLineTemplates.fill_guess_kinematics([100.,100.], numpy.amax(etpl.comp)+1,
+                                                              etpl.tie_comp_lb, etpl.tie_comp_ub,
+                                                              etpl.A_ineq),
+#                             numpy.column_stack(([100.]*(ncomp-1), gas_comp_sigma*1.1)),
+                              axis=0)
     A_ineq = numpy.hstack((numpy.zeros((etpl.A_ineq.shape[0], 2), dtype=float),
                            etpl.A_ineq))
     constr_kinem = {'A_ineq': A_ineq, 'b_ineq': etpl.b_ineq}
     tied = ppxf_tied_parameters(component, vgrp, sgrp, moments)
 
-    #from matplotlib import pyplot
+
+#    test_start_kin \
+#                = EmissionLineTemplates.fill_guess_kinematics([100.,100.], numpy.amax(etpl.comp)+1,
+#                                                              etpl.tie_comp_lb, etpl.tie_comp_ub,
+#                                                              etpl.A_ineq)
+
+
+    numpy.savez_compressed('ppxf_multicomp.npz',
+                           templates=templates,
+                           flux=flux,
+                           ferr=ferr,
+                           velscale=velscale,
+                           start_kin=start_kin,
+                           moments=moments,
+                           tied=tied,
+                           A_ineq=A_ineq,
+                           b_ineq=etpl.b_ineq,
+                           component=component,
+                           gas_component=gas_component,
+                           narrow=narrow,
+                           narrow_sigma=narrow_sigma,
+                           broad=broad,
+                           broad_sigma=broad_sigma,
+                           )
+
+    from matplotlib import pyplot
     pp = ppxf.ppxf(templates.T, flux[50:-50], ferr[50:-50], velscale, start_kin, moments=moments,
                     degree=-1, mdegree=0, tied=tied, constr_kinem=constr_kinem,
                     component=component, gas_component=gas_component, method='capfit',
-                    quiet=True)
-    #                quiet=False, plot=True)
-    #pyplot.show()
+    #                quiet=True)
+                    quiet=False, plot=True)
+    pyplot.show()
+
+    embed()
+    exit()
 
     sol = numpy.array(pp.sol)
     assert numpy.allclose(sol[1,0], sol[2:,0]), 'All gas velocities should be the same'
@@ -341,6 +373,8 @@ def test_multicomp_basic():
     assert numpy.all(numpy.absolute(sol[broad,1] - broad_sigma) < 1.), \
             'Broad dispersion too discrepant from input'
 
+
+test_multicomp_basic()
 
 def test_multicomp_manga():
     # Read the data
