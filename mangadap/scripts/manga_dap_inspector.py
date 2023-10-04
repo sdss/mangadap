@@ -151,6 +151,7 @@ def build_maps(hdu, ext=['BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']
     # Build the maps cube
     _ext = numpy.array([ 'BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']) \
                 if ext is None else numpy.asarray(ext)
+    _ext = numpy.array([e for e in _ext if hdu[e].data is not None])
 
     print('Building maps from extensions: {0}'.format(_ext))
 
@@ -185,6 +186,8 @@ def build_maps(hdu, ext=['BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']
 
 def build_model_spectra(hdu, masked=True):
 
+    stellar_continuum = 0. if hdu['STELLAR'].data is None else hdu['STELLAR'].data
+
     if masked:
         bm = DAPCubeBitMask()
         masked_spec = numpy.ma.MaskedArray(hdu['FLUX'].data,
@@ -196,7 +199,7 @@ def build_model_spectra(hdu, masked=True):
                                           mask=bm.flagged(hdu['MASK'].data,
                                                           flag=['FITIGNORED', 'FITFAILED']))
 
-        model_emission = numpy.ma.MaskedArray(hdu['MODEL'].data - hdu['STELLAR'].data,
+        model_emission = numpy.ma.MaskedArray(hdu['MODEL'].data - stellar_continuum,
                                               mask=bm.flagged(hdu['MASK'].data,
                                                               flag=['FITIGNORED', 'FITFAILED',
                                                                     'ELIGNORED', 'ELFAILED']))
@@ -208,7 +211,7 @@ def build_model_spectra(hdu, masked=True):
     else:
         masked_spec = hdu['FLUX'].data
         model_spec = hdu['MODEL'].data
-        model_emission = hdu['MODEL'].data - hdu['STELLAR'].data
+        model_emission = hdu['MODEL'].data - stellar_continuum
         model_continuum = hdu['MODEL'].data - hdu['EMLINE'].data
 
     return hdu['WAVE'].data, masked_spec, model_spec, model_continuum, model_emission
@@ -522,7 +525,7 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
     # ------------------------------------------------------------------
 
 
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------
     # Add the image marker
     coo_pointer = Pointer(im.axes, pos, color='C3', lw=0.5, alpha=0.5)
     coo_selector = ImageMarker(marker, coo_pointer)

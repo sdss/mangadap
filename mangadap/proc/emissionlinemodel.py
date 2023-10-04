@@ -34,6 +34,7 @@ from .stellarcontinuummodel import StellarContinuumModel
 from .sasuke import Sasuke, SasukePar
 from .util import replace_with_data_from_nearest_coo
 from .spectralfitting import EmissionLineFit
+from .templatelibrary import TemplateLibrary
 
 
 class EmissionLineModelDef(KeywordParSet):

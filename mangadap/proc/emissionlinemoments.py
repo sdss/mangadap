@@ -14,6 +14,7 @@ A class hierarchy that measures moments of the observed emission lines.
 import inspect
 from pathlib import Path
 import logging
+import warnings
 
 import numpy
 
@@ -655,6 +656,7 @@ class EmissionLineMoments:
             # the code to continue with a warning
             if spec_n is None:
                 warnings.warn('Multiple spectra entered, but no designation for which to use!')
+                # TODO: This will barf!  What should nmom actually be?
                 _spec_n = numpy.zeros(self.nmom, dtype=int)
             else:
                 _spec_n = spec_n
@@ -982,6 +984,7 @@ class EmissionLineMoments:
         #  - Check if the EmissionLineModel fitter has the appropriate
         #    function; True for Sasuke, not currently true for Elric
         eml_stellar_continuum_available = self.emission_line_model is not None \
+                and self.emission_line_model.stellar_continuum is not None \
                 and callable(self.emission_line_model.method['fitclass'].construct_continuum_models)
 
         # What spectra to use?
@@ -1080,6 +1083,7 @@ class EmissionLineMoments:
                                                      original_spaxels=measure_on_unbinned_spaxels)
 
         # Get the continuum if there is any
+        continuum = None
         if eml_stellar_continuum_available:
             if measure_on_unbinned_spaxels:
                 binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
