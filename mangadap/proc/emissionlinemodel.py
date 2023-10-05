@@ -514,7 +514,7 @@ class EmissionLineModel:
         return mask
 
     def _assign_spectral_arrays(self):
-        self.spectral_arrays = [ 'FLUX', 'BASE', 'MASK' ]
+        self.spectral_arrays = [ 'FLUX', 'EMLINE', 'MASK' ]
 
     def _assign_image_arrays(self):
         """
@@ -530,8 +530,8 @@ class EmissionLineModel:
                         self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
-    def _get_line_fit_metrics(self, model_flux, model_base, model_mask, model_eml_par,
-                              model_binid=None, window=15, debug=False):
+    def _get_line_fit_metrics(self, model_flux, model_mask, model_eml_par, model_binid=None,
+                              window=15, debug=False):
         """
         Compute fit-quality metrics near each fitted line.
 
@@ -539,12 +539,7 @@ class EmissionLineModel:
 
         Args:
             model_flux (`numpy.ndarray`_):
-                The best-fitting emission-line model spectra.
-            model_base (`numpy.ndarray`_):
-                The "baseline" of the emission-line model defined as the
-                difference between the best-fitting stellar-continuum
-                model and the best-fitting continuum from the
-                emission-line modeling procedure.
+                The best-fitting continuum+emission-line model spectra.
             model_mask (`numpy.ndarray`_):
                 A boolean or integer (bitmask) array with the mask for
                 the model data.
@@ -573,23 +568,7 @@ class EmissionLineModel:
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
                                             model_eml_par['BINID']).reshape(self.spatial_shape) \
                             if model_binid is None else model_binid
-#        continuum = numpy.ma.MaskedArray(numpy.zeros(model_base.shape, dtype=float)) \
-#                        if self.stellar_continuum is None else \
-#                    self.stellar_continuum.fill_to_match(bin_indx, missing=self.missing_models)
-
-        # If stellar continuum available, masked array returned by
-        # fill_to_match needs to be filled with zeros to correctly
-        # reconstruct the emission-line continuum.
-        if self.stellar_continuum is None:
-            continuum = model_base
-        else:
-            continuum = self.stellar_continuum.fill_to_match(bin_indx,
-                                                             missing=self.missing_models).filled(0.)
-            indx = numpy.unique(bin_indx.ravel())
-            if indx[0] == -1:
-                indx = indx[1:]
-            continuum = continuum[indx,:] + model_base
-
+        
         # Interpret the input mask as either a boolean or bitmask array
         if model_mask.dtype is numpy.dtype('bool'):
             _model_mask = numpy.zeros(model_flux.shape, dtype=self.bitmask.minimum_dtype())
@@ -598,7 +577,7 @@ class EmissionLineModel:
             _model_mask = model_mask
 
         # Compute the full (continuum + emission lines) model spectra
-        model = numpy.ma.MaskedArray(model_flux+continuum, mask=_model_mask>0)
+        _model_flux = numpy.ma.MaskedArray(model_flux, mask=_model_mask>0)
 
         pixelmask = None if 'pixelmask' not in self.method['fitpar'].keys() \
                         else self.method['fitpar']['pixelmask']
@@ -606,34 +585,30 @@ class EmissionLineModel:
         # Get the fitted spectra
         if self.method['fitpar']['deconstruct_bins'] != 'ignore':
             # The models should be for the individual spaxels
-            bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
-                                                        minimum_snr=self.method['minimum_snr'],
-                                                        stellar_continuum=self.stellar_continuum,
-                                                                       debug=debug)
+            bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(
+                    self.binned_spectra, minimum_snr=self.method['minimum_snr'],
+                    stellar_continuum=self.stellar_continuum, debug=debug)
             # NOTE: bins_to_fit only used in this spaxel selection if debug=True
-            spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(self.binned_spectra,
-                                                        minimum_snr=self.method['minimum_snr'],
-                                                        bins_to_fit=bins_to_fit, debug=debug)
-            wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                                     pixelmask=pixelmask,
-                                                                     select=spaxel_to_fit,
-                                                                     error=True,
-                                                                     original_spaxels=True)
+            spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(
+                    self.binned_spectra, minimum_snr=self.method['minimum_snr'],
+                    bins_to_fit=bins_to_fit, debug=debug)
+            wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(
+                    self.binned_spectra, pixelmask=pixelmask, select=spaxel_to_fit, error=True,
+                    original_spaxels=True)
         else:
             # The models should be for the binned spectra
-            bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
-                                                        minimum_snr=self.method['minimum_snr'],
-                                                        stellar_continuum=self.stellar_continuum,
-                                                                       debug=debug)
-            wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                                     pixelmask=pixelmask,
-                                                                     select=bins_to_fit, error=True)
+            bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(
+                    self.binned_spectra, minimum_snr=self.method['minimum_snr'],
+                    stellar_continuum=self.stellar_continuum, debug=debug)
+            wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(
+                    self.binned_spectra, pixelmask=pixelmask, select=bins_to_fit, error=True)
 
         # Get the line metrics
-        return EmissionLineFit.line_metrics(self.method['fitpar'].emldb, wave, flux, ferr, model,
-                                            model_eml_par, bitmask=self.bitmask, window=window)
+        return EmissionLineFit.line_metrics(self.method['fitpar'].emldb, wave, flux, ferr,
+                                            _model_flux, model_eml_par, bitmask=self.bitmask,
+                                            window=window)
 
-    def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_eml_par,
+    def _construct_2d_hdu(self, good_snr, model_flux, model_eml_flux, model_mask, model_eml_par,
                           model_fit_par=None, model_binid=None):
         """
         Construct :attr:`hdu` that is held in memory for manipulation of
@@ -703,7 +678,7 @@ class EmissionLineModel:
 
         self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
                                  fits.ImageHDU(data=model_flux.data, name='FLUX'),
-                                 fits.ImageHDU(data=model_base.data, name='BASE'),
+                                 fits.ImageHDU(data=model_eml_flux.data, name='EMLINE'),
                                  fits.ImageHDU(data=_model_mask, name='MASK'),
                                  self.binned_spectra['WAVE'].copy(),
                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
@@ -863,7 +838,7 @@ class EmissionLineModel:
         # Mask should be fully defined within the fitting function This
         # should also add the equivalent widths.  TODO: Shouldn't the
         # equivalent widths be done here?
-        model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
+        model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par, model_binid = \
                 self.method['fitfunc'](self.binned_spectra,
                                        stellar_continuum=self.stellar_continuum,
                                        good_bins=good_bins, good_spax=good_spax,
@@ -917,13 +892,12 @@ class EmissionLineModel:
             log_output(self.loggers, 1, logging.INFO, 'Calculating fit metrics')
 
         # Compute the line-fit metrics
-        model_eml_par = self._get_line_fit_metrics(model_flux, model_base, model_mask,
-                                                   model_eml_par, model_binid=model_binid,
-                                                   debug=debug)
+        model_eml_par = self._get_line_fit_metrics(model_flux, model_mask, model_eml_par,
+                                                   model_binid=model_binid, debug=debug)
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
-        self._construct_2d_hdu(good_bins, model_flux, model_base, model_mask, model_eml_par,
+        self._construct_2d_hdu(good_bins, model_flux, model_eml_flux, model_mask, model_eml_par,
                                model_fit_par=model_fit_par, model_binid=model_binid)
 
         #---------------------------------------------------------------
@@ -948,11 +922,12 @@ class EmissionLineModel:
 
         bin_indx = self.hdu['BINID'].data.copy()
         model_flux = self.hdu['FLUX'].data.copy()
-        model_base = self.hdu['BASE'].data.copy()
+        model_eml_flux = self.hdu['EMLINE'].data.copy()
         model_mask = self.hdu['MASK'].data.copy()
 
-        flux, base, mask = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx.ravel(),
-                                                        [model_flux, model_base, model_mask])
+        flux, eml_flux, mask \
+                = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx.ravel(),
+                                               [model_flux, model_eml_flux, model_mask])
 
         mask = self._finalize_cube_mask(mask)
 
@@ -970,7 +945,7 @@ class EmissionLineModel:
         # Return the converted hdu without altering the internal hdu
         return fits.HDUList([ fits.PrimaryHDU(header=hdr),
                               fits.ImageHDU(data=flux, header=cube_hdr, name='FLUX'),
-                              fits.ImageHDU(data=base, header=cube_hdr, name='BASE'),
+                              fits.ImageHDU(data=eml_flux, header=cube_hdr, name='EMLINE'),
                               fits.ImageHDU(data=mask, header=cube_hdr, name='MASK'),
                               self.hdu['WAVE'].copy(),
                               self.hdu['BINID'].copy(),
@@ -1128,24 +1103,22 @@ class EmissionLineModel:
                 missing_bins=self.missing_models if include_missing else None,
                 nbins=self.nmodels, unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
-    def fill_to_match(self, binid, include_base=False, missing=None):
+    def fill_to_match(self, binid, with_continuum=False, missing=None):
         """
         Get the emission-line model that matches the input bin ID matrix.  The
         output is a 2D matrix ordered by the bin ID; any skipped index numbers
         in the maximum of the union of the unique numbers in the `binid` and
         `missing` input are masked.
 
-        Use `include_base` to include the baseline in the output emission-line
-        models.
+        Use ``with_continuum`` to include the full model, not just the emission
+        lines.
         """
         # The input bin id array must have the same shape as self
         if binid.shape != self.spatial_shape:
             raise ValueError('Input bin ID matrix has incorrect shape.')
 
         # Construct the best-fitting models
-        best_fit_model = self.copy_to_array()
-        if include_base:
-            best_fit_model += self.copy_to_array(ext='BASE')
+        best_fit_model = self.copy_to_array(ext='FLUX' if with_continuum else 'EMLINE')
 
         # Get the number of output models
         nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
@@ -1166,7 +1139,6 @@ class EmissionLineModel:
             if i < 0 or j < 0:
                 continue
             emission_lines[i,:] = best_fit_model[j,:]
-
         return emission_lines
 
     def matched_kinematics(self, binid, line_name, redshift=None, dispersion=100.0, constant=False,

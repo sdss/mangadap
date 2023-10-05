@@ -715,8 +715,8 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
         errors.
     """
     # Convert to 1D arrays
-    _ppsol = np.concatenate(ppsol) if len(moments) > 1 else ppsol
-    _pperr = np.concatenate(pperr) if len(moments) > 1 else pperr
+    _ppsol = np.concatenate(ppsol) if len(component_map) > 1 else ppsol
+    _pperr = np.concatenate(pperr) if len(component_map) > 1 else pperr
 
     # If all the components were fit, just return the input
     ncomp = len(moments)

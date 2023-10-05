@@ -143,8 +143,6 @@ def pull_maps(hdu, ext, toerr=False):
 
 def build_maps(hdu, ext=['BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']):
 
-    # TODO: Deal with the transpose
-
     # Always get the bin ID extension
     binid = hdu['BINID'].data
 
@@ -178,8 +176,8 @@ def build_maps(hdu, ext=['BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']
                     if numpy.sum(_maps_mask>0) < _maps_mask.size else numpy.ma.MaskedArray(_maps)
         mins = numpy.ma.amin(_maps) if _maps.ndim == 2 else numpy.ma.amin(_maps, axis=(1,2))
         maxs = numpy.ma.amax(_maps) if _maps.ndim == 2 else numpy.ma.amax(_maps, axis=(1,2))
-        zmin = numpy.append(zmin, mins)
-        zmax = numpy.append(zmax, maxs)
+        zmin = numpy.append(zmin, mins.filled(-1.))
+        zmax = numpy.append(zmax, maxs.filled(1.))
 
     return binid, channel_name, channel_bits, map_cube, map_cube_ivar, map_cube_mask, zmin, zmax
 

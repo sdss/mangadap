@@ -57,6 +57,7 @@ class MangaDap(scriptbase.ScriptBase):
 
         import warnings
         warnings.simplefilter('error', DeprecationWarning)
+        warnings.simplefilter('error', RuntimeWarning)
         from mangadap.config.analysisplan import AnalysisPlan
         from mangadap.survey.manga_dap import manga_dap
         from mangadap.datacube import DataCube

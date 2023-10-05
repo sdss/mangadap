@@ -1611,16 +1611,18 @@ class construct_cube_file:
         #---------------------------------------------------------------
         ext = ['MODEL', 'MODEL_MASK', 'EMLINE', 'STELLAR', 'STELLAR_MASK']
 
-        if binned_spectra is None or stellar_continuum is None or emission_line_model is None:
+        if binned_spectra is None and stellar_continuum is None and emission_line_model is None:
             # Construct and return empty hdus
             return prihdr, DAPFitsUtil.empty_hdus(ext)
 
         #---------------------------------------------------------------
         # Add the model data to the primary header
-        prihdr = stellar_continuum._initialize_primary_header(hdr=prihdr)
-        prihdr = stellar_continuum._add_method_header(prihdr)
-        prihdr = emission_line_model._initialize_primary_header(hdr=prihdr)
-        prihdr = emission_line_model._add_method_header(prihdr)
+        if stellar_continuum is not None:
+            prihdr = stellar_continuum._initialize_primary_header(hdr=prihdr)
+            prihdr = stellar_continuum._add_method_header(prihdr)
+        if emission_line_model is not None:
+            prihdr = emission_line_model._initialize_primary_header(hdr=prihdr)
+            prihdr = emission_line_model._add_method_header(prihdr)
 
         #---------------------------------------------------------------
         # Get the extension headers
@@ -1639,26 +1641,32 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Get the data arrays
         # Best-fitting composite model
-        model = stellar_continuum_3d_hdu['FLUX'].data.copy()
-        if emission_line_model is not None:
-            model += (emission_line_model_3d_hdu['FLUX'].data
-                            + emission_line_model_3d_hdu['BASE'].data)
+        model = stellar_continuum_3d_hdu['FLUX'].data.copy() if emission_line_model is None \
+                    else emission_line_model_3d_hdu['FLUX'].data
+
         # with reddening
         model = binned_spectra.galext.apply(model, deredden=False)
+        if stellar_continuum is None:
+            scnt = None
+            scnt_mask = None
+        else:
+            scnt = binned_spectra.galext.apply(stellar_continuum_3d_hdu['FLUX'].data,
+                                               deredden=False)
+            scnt_mask = self._get_stellar_continuum_mask(stellar_continuum,
+                                                         stellar_continuum_3d_hdu)
         if emission_line_model is None:
             line = None
+            line_mask = None
         else:
-            line = binned_spectra.galext.apply(emission_line_model_3d_hdu['FLUX'].data,
+            line = binned_spectra.galext.apply(emission_line_model_3d_hdu['EMLINE'].data,
                                                deredden=False)
-            line = line.astype(self.float_dtype)
-        scnt = binned_spectra.galext.apply(stellar_continuum_3d_hdu['FLUX'].data, deredden=False)
+            line_mask = self._get_emission_line_model_mask(emission_line_model,
+                                                           emission_line_model_3d_hdu)
 
         # Compile the data arrays
         data = [model.astype(self.float_dtype),
-                self._get_emission_line_model_mask(emission_line_model,
-                                                   emission_line_model_3d_hdu),
-                line, scnt.astype(self.float_dtype),
-                self._get_stellar_continuum_mask(stellar_continuum, stellar_continuum_3d_hdu)]
+                line_mask, None if line is None else line.astype(self.float_dtype),
+                None if scnt is None else scnt.astype(self.float_dtype), scnt_mask]
 
         # Return the primary header and the list of HDUs
         return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
