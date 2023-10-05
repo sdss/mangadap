@@ -200,6 +200,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
                                         redshift=cube.meta['z'], output_path=method_ref_dir,
                                         loggers=loggers)
 
+        # emission_line_moments.qa()
+
         #---------------------------------------------------------------
         # Emission-line Fit: placed in the DAPTYPE/ref/ directory
         #---------------------------------------------------------------

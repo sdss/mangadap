@@ -55,8 +55,8 @@ class MangaDap(scriptbase.ScriptBase):
     @staticmethod
     def main(args):
 
-#        import warnings
-#        warnings.simplefilter('error', DeprecationWarning)
+        import warnings
+        warnings.simplefilter('error', DeprecationWarning)
         from mangadap.config.analysisplan import AnalysisPlan
         from mangadap.survey.manga_dap import manga_dap
         from mangadap.datacube import DataCube

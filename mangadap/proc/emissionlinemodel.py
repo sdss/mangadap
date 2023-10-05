@@ -345,18 +345,21 @@ class EmissionLineModel:
         #---------------------------------------------------------------
         # Get the redshift and dispersion measured for the stars or
         # based on the moments if the relevant objects are provided
-        obj_redshift, obj_dispersion = (None, None)
+        obj_redshift, obj_dispersion = None, None
         if emission_line_moments is not None:
             names = emission_line_moments.channel_names()
             vel_channel = -1 if self.method['mom_vel_name'] is None \
                                 else numpy.arange(len(names))[self.method['mom_vel_name']
                                                                 == names][0]
+
             if vel_channel > -1:
                 obj_redshift = numpy.full(self.binned_spectra.nbins, 0.0, dtype=float)
             
-                mom1_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,vel_channel] > 0
+                mom1_masked = emission_line_moments.bitmask.flagged(
+                                emission_line_moments['ELMMNTS'].data['MASK'][:,vel_channel],
+                                emission_line_moments.bitmask.bad_kinematic_reference)
                 # - Use the 1st moment of the named line
-                obj_redshift[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
+                obj_redshift[emission_line_moments['ELMMNTS'].data['BINID_INDEX']] \
                         = emission_line_moments['ELMMNTS'].data['MOM1'][:,vel_channel] \
                                 / astropy.constants.c.to('km/s').value
 
@@ -364,8 +367,10 @@ class EmissionLineModel:
                 # line moment measurements, use the value for the
                 # nearest good bin
                 bad_bins = numpy.append(emission_line_moments.missing_bins,
-                                        emission_line_moments['ELMMNTS'].data['BINID']\
-                                            [mom1_masked]).astype(int)
+                                emission_line_moments['ELMMNTS'].data['BINID'][mom1_masked]).astype(int)
+                if numpy.all(bad_bins):
+                    warnings.warn('Unable to find good velocity estimates from the measured '
+                                  'line moments!')
                 if len(bad_bins) > 0 and len(bad_bins) != self.binned_spectra.nbins:
                     nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
                                                                                   indices=True)
@@ -378,7 +383,10 @@ class EmissionLineModel:
                 obj_dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion,
                                             dtype=float)
             
-                mom2_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,disp_channel] > 0
+                mom2_masked = emission_line_moments.bitmask.flagged(
+                                emission_line_moments['ELMMNTS'].data['MASK'][:,disp_channel],
+                                emission_line_moments.bitmask.bad_kinematic_reference)
+#                mom2_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,disp_channel] > 0
                 # - Use the 2nd moment of the named line
                 obj_dispersion[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
                                 = emission_line_moments['ELMMNTS'].data['MOM2'][:,disp_channel]
@@ -389,6 +397,9 @@ class EmissionLineModel:
                 bad_bins = numpy.append(emission_line_moments.missing_bins,
                                         emission_line_moments['ELMMNTS'].data['BINID']\
                                             [mom2_masked]).astype(int)
+                if numpy.all(bad_bins):
+                    warnings.warn('Unable to find good dispersion estimates from the measured '
+                                  'line moments!')
                 if len(bad_bins) > 0 and len(bad_bins) != self.binned_spectra.nbins:
                     nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
                                                                                   indices=True)
@@ -711,6 +722,8 @@ class EmissionLineModel:
             return None
         return self.directory_path / self.output_file
 
+    def info(self):
+        return self.hdu.info()
 
     def fit(self, binned_spectra, stellar_continuum=None, emission_line_moments=None,
             redshift=None, dispersion=None, minimum_error=None, output_path=None, output_file=None,

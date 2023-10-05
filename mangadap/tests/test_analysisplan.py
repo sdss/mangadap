@@ -51,3 +51,11 @@ def test_mangaplan():
                 'Bad qa subdirectories'
 
 
+def test_no_stellar():
+    plan = AnalysisPlan.from_toml(data_test_file('turn_off_sc.toml'))
+    assert len(plan.keys()) == 1, 'Number of example plans changed'
+    assert list(plan.keys())[0] == 'default', 'Name changed'
+    assert plan.continuum['default'] is None, 'Continuum parameters should be None'
+
+
+

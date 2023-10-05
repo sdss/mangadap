@@ -27,7 +27,7 @@ plan ``default`` and provide a keyword identifier for that plan:
 
 The optional ``key`` keyword specifies the identifier for the plan separately
 from the dictionary key.  If no ``key`` entry is provided, the name of the plan
-is the same as the top-level dictionary keyword.
+is the same as the top-level dictionary keyword (i.e., ``default`` in this case).
 
 If you want to apply more than one analysis plan, you can have multiple plans in
 a single `toml`_ file and the DAP will execute them in series.  For example, the
@@ -89,6 +89,24 @@ understand whether or not they've already been completed; see :ref:`execution`.
           A plan that mimics the survey-level plan used to produce the MaNGA DAP
           products released in DR17.
 
+Turning off analysis modules
+----------------------------
+
+In addition to altering the individual parameters, it is possible to use the
+plan file to *turn off* modules.  Beware that some modules depend on the results
+of previous modules, meaning that turning off modules may cause the code to
+fault.  In particular, do not turn off the ``rdxqa`` or ``binning`` modules.
+Also note that we have not fully explored the success all module toggling
+combinatorics.  Buyer beware!  For example, to turn off the stellar kinematics
+continuum-fitting module, set:
+
+.. code-block:: toml
+
+    [default.continuum]
+     key = 'None'
+
+Note that it *must* be ``'None'``, not ``'none'`` or ``None``.
+
 ----
 
 .. contents:: Main Module Parameters
@@ -104,7 +122,7 @@ object.  Its parameters and default values are:
 
 .. include:: tables/reductionassessmentdef.rst
 
-To `toml`_ file section used to change these parameters is ``.rdxqa``.  For
+The `toml`_ file section used to change these parameters is ``.rdxqa``.  For
 example, to change the keyword identifier for the parameter set for the
 ``default`` plan, your `toml`_ file would include
 
@@ -115,7 +133,7 @@ example, to change the keyword identifier for the parameter set for the
 
 This module has no nested parameter dictionaries.
 
-Once parsed, the paramaters for the reduction assessments are kept in the
+Once parsed, the parameters for the reduction assessments are kept in the
 ``rdxqa`` attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan`
 object; see :ref:`plan-inspect`.
 
@@ -141,7 +159,7 @@ This module has two nested parameter dictionaries, one that defines the method
 and parameters used for the spatial binning and one defining the parameters used
 for the spectral stacking.
 
-Once parsed, the paramaters for the spatial binning are kept in the ``binning``
+Once parsed, the parameters for the spatial binning are kept in the ``binning``
 attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan` object; see
 :ref:`plan-inspect`.
 
@@ -423,9 +441,9 @@ directory:
 .. code-block:: python
 
     from mangadap.tests.util import data_test_file
-    from mangadap.config.analysisplan import AnalysisPlan
+    from mangadap.config.manga import MaNGAAnalysisPlan
     plan_file = data_test_file('dr17.toml')
-    plan = AnalysisPlan.from_toml(plan_file)
+    plan = MaNGAAnalysisPlan.from_toml(plan_file)
 
 You then have access to (most of) the parameters that will be used throughout
 the analysis.  For example:

@@ -211,6 +211,10 @@ class TemplateLibraryDef(KeywordParSet):
         """
         Instantiate the template parameters using a keyword only.
         """
+        # Circumvent everything and set the library to None
+        if key in ['None', 'none']:
+            warnings.warn(f'Template library key set to {key}, meaning no library is used.')
+            return 'none'
        # Check the configuration files exist
         search_dir = defaults.dap_config_root() / 'spectral_templates'
         ini_files = sorted(list(search_dir.glob('*.ini')))

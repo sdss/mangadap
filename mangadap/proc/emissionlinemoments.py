@@ -16,7 +16,10 @@ from pathlib import Path
 import logging
 import warnings
 
+from IPython import embed
+
 import numpy
+from matplotlib import pyplot
 
 from astropy.io import fits
 import astropy.constants
@@ -125,6 +128,9 @@ class EmissionLineMomentsBitMask(DAPBitMask):
     .. include:: ../tables/emissionlinemomentsbitmask.rst
     """
     cfg_root = 'emission_line_moments_bits'
+
+    bad_kinematic_reference = ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'MAIN_EMPTY', 'BLUE_EMPTY',
+                               'RED_EMPTY', 'DIVBYZERO', 'UNDEFINED_MOM1', 'UNDEFINED_BANDS']
 
 
 class EmissionLineMomentsDataTable(DataTable):
@@ -379,12 +385,11 @@ class EmissionLineMoments:
         if unique_bins is None:
             good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
             return numpy.sort(self.binned_spectra.missing_bins + 
-                        self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
+                self.binned_spectra['BINS'].data['BINID'][numpy.logical_not(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
 
-    def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
-                          default_redshift=None):
+    def _assign_redshifts(self, redshift, good_snr, default_redshift=None):
         """
         Set the redshift to use for each spectrum for the emission-line
         moments.
@@ -406,9 +411,6 @@ class EmissionLineMoments:
         Args:
             redshift (:obj:`float`, `numpy.ndarray`_):
                 Redshifts (:math:`z`) to use for each spectrum.
-            measure_on_unbinned_spaxels (:obj:`bool`):
-                Flag that method expects to measure moments on unbinned
-                spaxels.
             good_snr (`numpy.ndarray`_):
                 Boolean array setting which spectra have sufficient S/N
                 for the measurements.
@@ -425,7 +427,7 @@ class EmissionLineMoments:
         """
 
         # Construct the binid matrix if measuring on unbinned spaxels
-        if measure_on_unbinned_spaxels:
+        if self.measure_on_unbinned_spaxels:
             binid = numpy.full(self.spatial_shape, -1, dtype=int)
             binid.ravel()[good_snr] = numpy.arange(self.nbins)
             missing = []
@@ -443,7 +445,7 @@ class EmissionLineMoments:
             self.redshift, _ = self.emission_line_model.matched_kinematics(
                                         binid, self.database['fit_vel_name'],
                                         redshift=default_redshift, nearest=True, missing=missing)
-            if measure_on_unbinned_spaxels:
+            if self.measure_on_unbinned_spaxels:
                 tmp = self.redshift.copy()
                 self.redshift = numpy.zeros(nspec, dtype=float)
                 self.redshift[good_snr] = tmp
@@ -458,8 +460,8 @@ class EmissionLineMoments:
         self.redshift = numpy.full(nspec, redshift, dtype=float) \
                                 if len(_redshift) == 1 else _redshift.copy()
 
-    def _flag_good_spectra(self, measure_on_unbinned_spaxels):
-        if measure_on_unbinned_spaxels:
+    def _flag_good_spectra(self):
+        if self.measure_on_unbinned_spaxels:
             return self.binned_spectra.check_fgoodpix()
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
 
@@ -559,7 +561,7 @@ class EmissionLineMoments:
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband)[0]
         incomplete = interval_frac < 1.0
-        empty = numpy.invert(interval_frac > 0.0)
+        empty = numpy.logical_not(interval_frac > 0.0)
         if empty:
             return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, incomplete, empty, False, True, True
 
@@ -745,8 +747,8 @@ class EmissionLineMoments:
             undefined_mom2[:] = False
 
             # Shift the sidebands to the appropriate redshift
-            _bluebands = momdb['blueside'][numpy.invert(momdb.dummy)]*(1.0+_redshift[i])
-            _redbands = momdb['redside'][numpy.invert(momdb.dummy)]*(1.0+_redshift[i])
+            _bluebands = momdb['blueside'][numpy.logical_not(momdb.dummy)]*(1.0+_redshift[i])
+            _redbands = momdb['redside'][numpy.logical_not(momdb.dummy)]*(1.0+_redshift[i])
             __err = None if _err is None else _err[i,:]
             __sres = None if _sres is None else _sres[i,:]
 
@@ -763,22 +765,22 @@ class EmissionLineMoments:
                                                 else bitmask.turn_on(measurements['MASK'][i,:],
                                                                      'NO_ABSORPTION_CORRECTION')
             else:
-                blue_fraction[numpy.invert(momdb.dummy)] \
+                blue_fraction[numpy.logical_not(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_bluebands,
                                                 log=True) / numpy.diff(_bluebands, axis=1).ravel()
                 indx = numpy.logical_and(blue_fraction > 0.0, blue_fraction < 1.0)
                 measurements['MASK'][i,indx] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,indx], 'BLUE_JUMP')
 
-                red_fraction[numpy.invert(momdb.dummy)] \
+                red_fraction[numpy.logical_not(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_redbands,
                                                 log=True) / numpy.diff(_redbands, axis=1).ravel()
                 indx = numpy.logical_and(red_fraction > 0.0, red_fraction < 1.0)
                 measurements['MASK'][i,indx] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,indx], 'RED_JUMP')
                 
-                indx = (numpy.invert(blue_fraction > 0) & (red_fraction > 0)) \
-                            | (numpy.invert(red_fraction > 0) & (blue_fraction > 0))
+                indx = (numpy.logical_not(blue_fraction > 0) & (red_fraction > 0)) \
+                            | (numpy.logical_not(red_fraction > 0) & (blue_fraction > 0))
                 measurements['MASK'][i,indx] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,indx],'JUMP_BTWN_SIDEBANDS')
 
@@ -791,7 +793,7 @@ class EmissionLineMoments:
 
                 spec = numpy.ma.append(_flux[i,:].reshape(1,-1), _fluxnc[i,:].reshape(1,-1), axis=0)
                 spec_n = numpy.zeros(nmom, dtype=int)
-                spec_n[numpy.invert(jumps)] = 1
+                spec_n[numpy.logical_not(jumps)] = 1
 
                 # Flag moment calculations as having not been corrected
                 # for stellar absorption
@@ -800,15 +802,15 @@ class EmissionLineMoments:
                                                  'NO_ABSORPTION_CORRECTION')
 
             # Get the blue pseudo continuum
-            measurements['BCEN'][i,numpy.invert(momdb.dummy)], \
-                measurements['BCONT'][i,numpy.invert(momdb.dummy)], conterr, \
-                incomplete[numpy.invert(momdb.dummy)], empty[numpy.invert(momdb.dummy)] \
+            measurements['BCEN'][i,numpy.logical_not(momdb.dummy)], \
+                measurements['BCONT'][i,numpy.logical_not(momdb.dummy)], conterr, \
+                incomplete[numpy.logical_not(momdb.dummy)], empty[numpy.logical_not(momdb.dummy)] \
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _bluebands,
                                                                   spec_n=None if spec_n is None
-                                                            else spec_n[numpy.invert(momdb.dummy)],
+                                                            else spec_n[numpy.logical_not(momdb.dummy)],
                                                                   err=__err)
             if __err is not None:
-                measurements['BCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
+                measurements['BCONTERR'][i,numpy.logical_not(momdb.dummy)] = conterr
             if numpy.sum(incomplete) > 0:
                 measurements['MASK'][i,incomplete] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,incomplete], 'BLUE_INCOMP')
@@ -817,15 +819,15 @@ class EmissionLineMoments:
                             else bitmask.turn_on(measurements['MASK'][i,empty], 'BLUE_EMPTY')
 
             # Get the red pseudo continuum
-            measurements['RCEN'][i,numpy.invert(momdb.dummy)], \
-                measurements['RCONT'][i,numpy.invert(momdb.dummy)], conterr, \
-                incomplete[numpy.invert(momdb.dummy)], empty[numpy.invert(momdb.dummy)] \
+            measurements['RCEN'][i,numpy.logical_not(momdb.dummy)], \
+                measurements['RCONT'][i,numpy.logical_not(momdb.dummy)], conterr, \
+                incomplete[numpy.logical_not(momdb.dummy)], empty[numpy.logical_not(momdb.dummy)] \
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _redbands,
                                                                   spec_n=None if spec_n is None
-                                                            else spec_n[numpy.invert(momdb.dummy)],
+                                                            else spec_n[numpy.logical_not(momdb.dummy)],
                                                                   err=__err)
             if __err is not None:
-                measurements['RCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
+                measurements['RCONTERR'][i,numpy.logical_not(momdb.dummy)] = conterr
             if numpy.sum(incomplete) > 0:
                 measurements['MASK'][i,incomplete] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,incomplete], 'RED_INCOMP')
@@ -835,8 +837,8 @@ class EmissionLineMoments:
 
             # Get the main passband integral after subtracting the
             # continuum
-            indx = numpy.invert(momdb.dummy) \
-                        & numpy.invert(measurements['MASK'][i,:] if bitmask is None
+            indx = numpy.logical_not(momdb.dummy) \
+                        & numpy.logical_not(measurements['MASK'][i,:] if bitmask is None
                                         else bitmask.flagged(measurements['MASK'][i,:],
                                                              flag=['BLUE_EMPTY', 'RED_EMPTY',
                                                                    'BLUE_JUMP', 'RED_JUMP']))
@@ -885,6 +887,44 @@ class EmissionLineMoments:
         if self.directory_path is None or self.output_file is None:
             return None
         return self.directory_path / self.output_file
+
+    def info(self):
+        return self.hdu.info()
+
+    @property
+    def eml_stellar_continuum_available(self):
+        # What stellar continuum is available?
+        #  - Assume the stellar continuum can always be extracted if a
+        #    StellarContinuumModel object is provided
+        #  - Check if the EmissionLineModel fitter has the appropriate
+        #    function; True for Sasuke, not currently true for Elric
+        return self.emission_line_model is not None \
+                and self.emission_line_model.stellar_continuum is not None \
+                and callable(self.emission_line_model.method['fitclass'].construct_continuum_models)
+
+    @property
+    def measure_on_unbinned_spaxels(self):
+        # What spectra to use?
+        #  - Assume StellarContinuumModel always fits the binned spectra
+        #  - The EmissionLineModel fits the binned spectra or unbinned
+        #    spaxels as specified by its deconstruct_bins flag
+        return self.emission_line_model is not None \
+                and self.emission_line_model.method['fitpar']['deconstruct_bins'] != 'ignore'
+
+    def _get_continuum(self, good_snr):
+        # Get the continuum if there is any
+        if self.eml_stellar_continuum_available:
+            if self.measure_on_unbinned_spaxels:
+                binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
+                binid.ravel()[good_snr] = numpy.arange(self.nbins)
+                return self.emission_line_model.fill_continuum_to_match(binid)
+            return self.emission_line_model.fill_continuum_to_match(
+                        self.binned_spectra['BINID'].data,
+                        missing=self.binned_spectra.missing_bins)
+        elif self.stellar_continuum is not None:
+            return self.stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
+                                                        missing=self.binned_spectra.missing_bins)
+        return None
 
     def measure(self, binned_spectra, stellar_continuum=None, emission_line_model=None,
                 redshift=None, output_path=None, output_file=None, hardcopy=True, overwrite=None,
@@ -978,37 +1018,21 @@ class EmissionLineMoments:
                 raise ValueError('Provided EmissionLineModel is undefined!')
             self.emission_line_model = emission_line_model
 
-        # What stellar continuum is available?
-        #  - Assume the stellar continuum can always be extracted if a
-        #    StellarContinuumModel object is provided
-        #  - Check if the EmissionLineModel fitter has the appropriate
-        #    function; True for Sasuke, not currently true for Elric
-        eml_stellar_continuum_available = self.emission_line_model is not None \
-                and self.emission_line_model.stellar_continuum is not None \
-                and callable(self.emission_line_model.method['fitclass'].construct_continuum_models)
-
-        # What spectra to use?
-        #  - Assume StellarContinuumModel always fits the binned spectra
-        #  - The EmissionLineModel fits the binned spectra or unbinned
-        #    spaxels as specified by its deconstruct_bins flag
-        measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['fitpar']['deconstruct_bins'] != 'ignore'
-
         self.spatial_shape =self.binned_spectra.spatial_shape
-        self.nspec = self.binned_spectra.cube.nspec if measure_on_unbinned_spaxels \
+        self.nspec = self.binned_spectra.cube.nspec if self.measure_on_unbinned_spaxels \
                             else self.binned_spectra.nbins
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
         #---------------------------------------------------------------
         # Get the good spectra
-        good_snr = self._flag_good_spectra(measure_on_unbinned_spaxels)
+        good_snr = self._flag_good_spectra()
 
         # Set the number of bins measured and missing bins
         self.nbins = numpy.sum(good_snr)
-        self.missing_bins = [] if measure_on_unbinned_spaxels else self._get_missing_bins()
+        self.missing_bins = [] if self.measure_on_unbinned_spaxels else self._get_missing_bins()
 
         # Get the redshifts to apply
-        self._assign_redshifts(redshift, measure_on_unbinned_spaxels, good_snr)
+        self._assign_redshifts(redshift, good_snr)
 
         # Report
         if not self.quiet:
@@ -1017,17 +1041,18 @@ class EmissionLineMoments:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Measurements for {0}'.format(
-                        'unbinned spaxels' if measure_on_unbinned_spaxels else 'binned spectra'))
+                        'unbinned spaxels' if self.measure_on_unbinned_spaxels
+                        else 'binned spectra'))
             if self.stellar_continuum is None and self.emission_line_model is None:
                 log_output(self.loggers, 1, logging.INFO, 'No stellar continuum available.')
-            elif self.emission_line_model is not None and eml_stellar_continuum_available:
+            elif self.emission_line_model is not None and self.eml_stellar_continuum_available:
                 log_output(self.loggers, 1, logging.INFO,
                            'Using stellar continuum from emission-line model fit.')
             else:
                 log_output(self.loggers, 1, logging.INFO,
                            'Using stellar continuum from stellar-continuum model fit.')
             log_output(self.loggers, 1, logging.INFO, f'Number of spectra: {self.nspec}')
-            if not measure_on_unbinned_spaxels and len(self.binned_spectra.missing_bins) > 0:
+            if not self.measure_on_unbinned_spaxels and len(self.binned_spectra.missing_bins) > 0:
                 log_output(self.loggers, 1, logging.INFO,
                            f'Missing bins: {len(self.binned_spectra.missing_bins)}')
             log_output(self.loggers, 1, logging.INFO,
@@ -1076,26 +1101,10 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
-        wave, flux, ivar, sres \
-                = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                     pixelmask=self.database['pixelmask'],
-                                                     select=good_snr,
-                                                     original_spaxels=measure_on_unbinned_spaxels)
-
-        # Get the continuum if there is any
-        continuum = None
-        if eml_stellar_continuum_available:
-            if measure_on_unbinned_spaxels:
-                binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
-                binid.ravel()[good_snr] = numpy.arange(self.nbins)
-                continuum = self.emission_line_model.fill_continuum_to_match(binid)
-            else:
-                continuum = self.emission_line_model.fill_continuum_to_match(
-                                                self.binned_spectra['BINID'].data,
-                                                missing=self.binned_spectra.missing_bins)
-        elif self.stellar_continuum is not None:
-            continuum = self.stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
-                                                        missing=self.binned_spectra.missing_bins)
+        wave, flux, ivar, sres = EmissionLineFit.get_spectra_to_fit(
+                self.binned_spectra, pixelmask=self.database['pixelmask'], select=good_snr,
+                original_spaxels=self.measure_on_unbinned_spaxels)
+        continuum = self._get_continuum(good_snr)
 
         #---------------------------------------------------------------
         # Perform the moment measurements
@@ -1106,8 +1115,8 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Perform the equivalent width measurements
-        include_band = numpy.array([numpy.invert(self.database.momdb.dummy)]*self.nbins) \
-                        & numpy.invert(self.bitmask.flagged(measurements['MASK'],
+        include_band = numpy.array([numpy.logical_not(self.database.momdb.dummy)]*self.nbins) \
+                        & numpy.logical_not(self.bitmask.flagged(measurements['MASK'],
                                                             flag=['BLUE_EMPTY', 'RED_EMPTY']))
 
         # Set the line center at the center of the primary passband
@@ -1123,18 +1132,18 @@ class EmissionLineMoments:
                                                          include_band=include_band)
 
         # Flag non-positive measurements
-        measurements['MASK'][include_band & numpy.invert(pos)] \
-                    = self.bitmask.turn_on(measurements['MASK'][include_band & numpy.invert(pos)],
-                                           'NON_POSITIVE_CONTINUUM')
+        indx = include_band & numpy.logical_not(pos)
+        measurements['MASK'][indx] = self.bitmask.turn_on(measurements['MASK'][indx],
+                                                          'NON_POSITIVE_CONTINUUM')
 
         #---------------------------------------------------------------
         # Set the number of bins measured, missing bins, and bin IDs
-        measurements['BINID'] = numpy.arange(self.nbins) if measure_on_unbinned_spaxels \
+        measurements['BINID'] = numpy.arange(self.nbins) if self.measure_on_unbinned_spaxels \
                                     else self.binned_spectra['BINS'].data['BINID'][good_snr]
-        measurements['BINID_INDEX'] = numpy.arange(self.nbins) if measure_on_unbinned_spaxels \
+        measurements['BINID_INDEX'] = numpy.arange(self.nbins) if self.measure_on_unbinned_spaxels \
                                         else numpy.arange(self.binned_spectra.nbins)[good_snr]
         measurements_binid = None
-        if measure_on_unbinned_spaxels:
+        if self.measure_on_unbinned_spaxels:
             measurements_binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
             measurements_binid.ravel()[good_snr] = numpy.arange(self.nbins)
 
@@ -1159,7 +1168,7 @@ class EmissionLineMoments:
                                                        'FORESTAR')
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
             # Get the bins that were below the S/N limit
-            indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+            indx = numpy.logical_not(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                         self.binned_spectra['BINID'].data.ravel(),
                                                         good_snr, dtype='bool')) & (map_mask == 0)
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
@@ -1175,7 +1184,7 @@ class EmissionLineMoments:
 
             # The number of valid bins MUST match the number of
             # measurements
-            nvalid = numpy.sum(numpy.invert(indx))
+            nvalid = numpy.sum(numpy.logical_not(indx))
             if nvalid != len(measurements):
                 raise ValueError('Provided id does not match the number of measurements.')
 
@@ -1241,4 +1250,66 @@ class EmissionLineMoments:
         return numpy.array([ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(self['ELMBAND'].data['NAME'],
                                        self['ELMBAND'].data['RESTWAVE']) ])
+
+    def qa(self, indx=None):
+        """
+        QA plot for spectrum indx.
+        """
+        # Prep the spectra
+        good_snr = self._flag_good_spectra()
+        wave, flux, ivar, sres = EmissionLineFit.get_spectra_to_fit(
+                self.binned_spectra, pixelmask=self.database['pixelmask'], select=good_snr,
+                original_spaxels=self.measure_on_unbinned_spaxels)
+        continuum = self._get_continuum(good_snr)
+
+        # Prepare the spectra for the measurements
+        _flux, _err, _sres, _continuum, _redshift, _ \
+                    = EmissionLineFit.check_and_prep_input(wave, flux, ivar=ivar, sres=sres,
+                                                           continuum=continuum,
+                                                           redshift=self.redshift[good_snr])
+
+        nspec = _flux.shape[0]
+        _indx = numpy.ones(nspec, dtype=bool) if indx is None else _indx
+        momdb = self.database.momdb
+        measurements = self['ELMMNTS'].data
+        for i in numpy.where(_indx)[0]:
+
+            w,h = pyplot.figaspect(1)
+            fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+            ax = fig.add_axes([0.1, 0.3, 0.8, 0.4])
+
+            ax.step(wave, _flux[i], where='mid', color='k', lw=0.5, zorder=2)
+            if _continuum is not None:
+                ax.step(wave, _continuum[i], where='mid', color='C3', lw=0.5, zorder=3)
+        
+            good_bands = numpy.logical_not(self.bitmask.flagged(measurements['MASK'][i],
+                                ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'UNDEFINED_BANDS']))
+
+            _bluebands = momdb['blueside'][good_bands]*(1.0+_redshift[i])
+            _redbands = momdb['redside'][good_bands]*(1.0+_redshift[i])
+            _mainbands = momdb['primary'][good_bands]*(1.0+_redshift[i])
+
+            for b, m, r, n, w, mom1, mom2 in zip(_bluebands, _mainbands, _redbands,
+                                           momdb['name'][good_bands],
+                                           momdb['restwave'][good_bands],
+                                           measurements['MOM1'][i][good_bands],
+                                           measurements['MOM2'][i][good_bands]):
+                ax.axvspan(b[0], b[1], color='C0', alpha=0.3, zorder=1)
+                ax.axvspan(m[0], m[1], color='k', alpha=0.3, zorder=1)
+                ax.axvspan(r[0], r[1], color='C3', alpha=0.3, zorder=1)
+
+                cen = w * (1 + mom1/astropy.constants.c.to('km/s').value)
+                sigp = w * (1 + (mom1+mom2)/astropy.constants.c.to('km/s').value)
+                sign = w * (1 + (mom1-mom2)/astropy.constants.c.to('km/s').value)
+
+                ax.axvline(cen, color='k', zorder=4, ls='-')
+                ax.axvline(sigp, color='k', zorder=4, ls=':')
+                ax.axvline(sign, color='k', zorder=4, ls=':')
+
+                ax.text(cen, 5., n, ha='center', va='center')
+
+            pyplot.show()
+            fig.clear()
+            pyplot.close(fig)
+
 

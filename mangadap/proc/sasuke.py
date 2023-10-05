@@ -87,13 +87,11 @@ class SasukePar(KeywordParSet):
 
     .. include:: ../tables/sasukepar.rst
     """
-#     stellar_continuum=None, emission_lines=None, template_library=None,
-
     def __init__(self, guess_redshift=0., guess_dispersion=100., emission_lines='ELPMPL11',
                  etpl_line_sigma_mode='default', etpl_line_sigma_min=0.0,
                  deconstruct_bins='ignore', template_library='MASTARSSP', stellar_velocity=None,
-                 stellar_dispersion=None, pixelmask=None, reject_boxcar=101, velscale_ratio=1,
-                 degree=-1, mdegree=0, reddening=None):
+                 stellar_dispersion=None, stellar_tied=None, pixelmask=None, reject_boxcar=101,
+                 velscale_ratio=1, degree=-1, mdegree=0, reddening=None):
 
         # Use the signature to get the parameters and the default values
         sig = inspect.signature(self.__class__)
@@ -109,12 +107,12 @@ class SasukePar(KeywordParSet):
 
         values = [guess_redshift, guess_dispersion, emission_lines, etpl_line_sigma_mode,
                   etpl_line_sigma_min, deconstruct_bins, template_library, stellar_velocity,
-                  stellar_dispersion, pixelmask, reject_boxcar, velscale_ratio, degree, mdegree,
-                  reddening]
+                  stellar_dispersion, stellar_tied, pixelmask, reject_boxcar, velscale_ratio,
+                  degree, mdegree, reddening]
         options = [None, None, None, etpl_mode_options, None, deconstruct_options, None, None,
-                   None, None, None, None, None, None, None]
+                   None, None, None, None, None, None, None, None]
         dtypes = [arr_in_fl, arr_in_fl, str, str, in_fl, str, [str, TemplateLibraryDef],
-                  arr_in_fl, arr_in_fl, SpectralPixelMask, int, int, int, int, in_fl]
+                  arr_in_fl, arr_in_fl, arr_like, SpectralPixelMask, int, int, int, int, in_fl]
         descr = ['Single or per-binned-spectrum redshift to use as the initial velocity guess.',
                  'Single or per-binned-spectrum velocity dispersion to use as the initial guess.',
                  'Either a string identifying the database of emission lines to fit, ' \
@@ -129,6 +127,12 @@ class SasukePar(KeywordParSet):
                     'library used during the fit.',
                  'Single or per-binned-spectrum redshift of the stellar component',
                  'Single or per-binned-spectrum velocity dispersion of the stellar component',
+                 'Names of the gas lines to which the stellar velocity and velocity dispersion ' \
+                    'should be tied.  If None, the relevant quantity is fixed, either to the '
+                    'measurements from the continuum-only fit or to the initial guesses for the ' \
+                    'emission lines.  Each element can be None, a valid emission-line name, or ' \
+                    '"free", meaning that the emission-line module fits for the stellar ' \
+                    'kinematics, as well.',
                  'Pixel mask to include during the fitting; see ' \
                     ':func:`~mangadap.util.pixelmask.SpectralPixelMask`.',
                  'Size of the boxcar to use when rejecting fit outliers (must be odd).',
@@ -149,6 +153,8 @@ class SasukePar(KeywordParSet):
     def _validate(self):
         if self['mdegree'] > 0 and self['reddening'] is not None:
             raise ValueError('Cannot fit both multiplicative polynomials and an extinction curve.')
+        if self['stellar_tied'] is not None and len(self['stellar_tied']) != 2:
+            raise ValueError('Must provide two and only two values for stellar_tied.')
 
         if self['emission_lines'] is None:
             raise ValueError('Must define an emission-line database.')
@@ -168,9 +174,9 @@ class SasukePar(KeywordParSet):
         """
         # Copy over the primary keywords
         _d = {}
-        for key in ['guess_redshift', 'guess_dispersion', 'etpl_line_sigma_mode',
-                    'etpl_line_sigma_min', 'deconstruct_bins', 'reject_boxcar', 'velscale_ratio',
-                    'degree', 'mdegree', 'reddening']:
+        for key in ['guess_redshift', 'guess_dispersion', 'emission_lines', 'etpl_line_sigma_mode',
+                    'etpl_line_sigma_min', 'deconstruct_bins', 'stellar_tied', 'reject_boxcar',
+                    'velscale_ratio', 'degree', 'mdegree', 'reddening']:
             if key in d.keys():
                 _d[key] = d[key]
 
@@ -231,6 +237,14 @@ class SasukePar(KeywordParSet):
         tpl_key = self['template_library']
         if isinstance(tpl_key, TemplateLibraryDef):
             tpl_key = tpl_key['key']
+
+        # Stellar continuum is *not* being fit!
+        if tpl_key in [None, 'None', 'none']:
+            self.templates = None
+            self['stellar_velocity'] = None
+            self['stellar_dispersion'] = None
+            self['template_library'] = None
+            return
 
         if stellar_continuum is not None and not hasattr(stellar_continuum.method['fitpar'], 'templates'):
             warnings.warn('Unable to pull stellar continuum templates from provided '
@@ -1376,7 +1390,7 @@ class Sasuke(EmissionLineFit):
                 Spectra to fit.
             par (:class:`SasukePar`):
                 Parameters provided from the DAP to the general Sasuke
-                fitting algorithm (:func:`fit`).  Althought technically
+                fitting algorithm (:func:`fit`).  Although technically
                 optional given that it is a keyword parameter, the
                 :class:`SasukePar` parameter must be provided for proper
                 execution of the function.
@@ -1455,19 +1469,24 @@ class Sasuke(EmissionLineFit):
         # Get the stellar templates
         stellar_templates = par.templates
         velscale_ratio = par['velscale_ratio']
-
-        stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
-        stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
-        if not quiet:
-            warnings.warn('Adopting mean spectral resolution of all templates!')
-        stpl_sres = None if stellar_templates is None \
-                        else numpy.mean(stellar_templates['SPECRES'].data, axis=0).ravel()
-
-        # Get the stellar kinematics
-        stellar_kinematics = None if par['stellar_velocity'] is None \
-                                        or par['stellar_dispersion'] is None \
-                                else numpy.array([par['stellar_velocity'],
-                                                  par['stellar_dispersion']]).T
+        if stellar_templates is None:
+            stpl_wave = None
+            stpl_flux = None
+            stpl_sres = None
+            stellar_kinematics = None
+            if par['degree'] < 0:
+                warnings.warn('No stellar continuum or additive polynomial is being fit!  '
+                              'Only viable if the data have been continuum-subtracted.')
+        else:
+            stpl_wave = stellar_templates['WAVE'].data
+            stpl_flux = stellar_templates['FLUX'].data
+            if not quiet:
+                warnings.warn('Adopting mean spectral resolution of all templates!')
+            stpl_sres = numpy.mean(stellar_templates['SPECRES'].data, axis=0).ravel()
+            stellar_kinematics = None if par['stellar_velocity'] is None \
+                                            or par['stellar_dispersion'] is None \
+                                    else numpy.array([par['stellar_velocity'],
+                                                    par['stellar_dispersion']]).T
 
         # Set which stellar templates to use for each spectrum
         # TODO: Template modes:
@@ -1554,6 +1573,7 @@ class Sasuke(EmissionLineFit):
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
                                stpl_flux=stpl_flux, stpl_sres=stpl_sres, stpl_to_use=stpl_to_use,
                                stellar_kinematics=stellar_kinematics,
+                               stellar_tied=par['stellar_tied'],
                                etpl_sinst_mode=par['etpl_line_sigma_mode'],
                                etpl_sinst_min=par['etpl_line_sigma_min'],
                                remapid=binid, remap_flux=spaxel_flux, remap_ferr=spaxel_ferr,
@@ -1586,6 +1606,7 @@ class Sasuke(EmissionLineFit):
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
                                stpl_flux=stpl_flux, stpl_sres=stpl_sres, stpl_to_use=stpl_to_use,
                                stellar_kinematics=stellar_kinematics,
+                               stellar_tied=par['stellar_tied'],
                                etpl_sinst_mode=par['etpl_line_sigma_mode'],
                                etpl_sinst_min=par['etpl_line_sigma_min'],
                                velscale_ratio=velscale_ratio,
@@ -1611,6 +1632,9 @@ class Sasuke(EmissionLineFit):
             EmissionLineFit.measure_equivalent_width(wave, flux, par.emldb,
                                                      model_eml_par, bitmask=self.bitmask,
                                                      checkdb=False)
+
+        embed()
+        exit()
 
         # Reset the equivalent widths to the fill value.  The error
         # values are currently reset to 0. by EmissionLineModel.
