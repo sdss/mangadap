@@ -452,7 +452,7 @@ def test_sasuke_no_stars():
             = emlfit.fit(emldb, hdu['WAVE'].data, flux, obj_ferr=ferr, obj_mask=pixelmask,
                          obj_sres=hdu['SRES'].data, guess_redshift=hdu['Z'].data,
                          guess_dispersion=numpy.full(nspec, 100.), reject_boxcar=101,
-                         etpl_sinst_mode='offset', etpl_sinst_min=10., degree=3, plot=True)
+                         etpl_sinst_mode='offset', etpl_sinst_min=10., degree=3) #, plot=True)
 
 
 def test_sasuke_tied_vel():
