@@ -1193,11 +1193,12 @@ def _combine_stellar_templates(templates, gas_template, wgts, component, vgrp=No
 
 def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, velscale_ratio,
                             inp_component, gas_template, inp_moments, inp_start, gpm=None,
-                            vgrp=None, sgrp=None, inp_fixed=None, constr_kinem=None, degree=-1,
-                            mdegree=0, reddening=None, reject_boxcar=101, tpl_to_use=None,
-                            binid=None, flux_binned=None, noise_binned=None, gpm_binned=None,
-                            x_binned=None, y_binned=None, x=None, y=None, plot=False, quiet=False,
-                            debug=False, sigma_rej=3., ppxf_faults='flag'):
+                            vgrp=None, sgrp=None, inp_fixed=None, inp_bounds=None,
+                            constr_kinem=None, degree=-1, mdegree=0, reddening=None,
+                            reject_boxcar=101, tpl_to_use=None, binid=None, flux_binned=None,
+                            noise_binned=None, gpm_binned=None, x_binned=None, y_binned=None,
+                            x=None, y=None, plot=False, quiet=False, debug=False, sigma_rej=3.,
+                            ppxf_faults='flag'):
     r"""
     Main calling function for simultaneously fitting stellar-continuum and
     nebular emission lines in many spectra using pPXF.
@@ -1327,6 +1328,13 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         sgrp (array-like, optional):
             The integer sigma group associated with each template.
             Shape is :math:`(N_{\rm tpl},)`. 
+        inp_fixed (array-like, optional):
+            Boolean array indicating which kinematic components should be fixed
+            during the fit.  Shape must match ``inp_start``.  If None, all
+            kinematic parameters are free or fixed by the sign of the
+            ``moments`` value for the relevant component.
+        inp_bounds (array-like, optional):
+            
         constr_kinem (:obj:`dict`, optional):
             A dictionary with the constraints to apply to the kinematics of
             each component; see ``constr_kinem`` in ppxf.
