@@ -16,7 +16,7 @@ Cappellari in the `ppxf`_ package.
 Here, we provide an example use of the function that demonstrates the accuracy
 of the spectral resolution matching.  This is pulled from a unit test in
 `test_resolution_matching.py
-<https://github.com/sdss/mangadap/blob/master/mangadap/tests/test_resolution_matching.py>`__.
+<https://github.com/sdss/mangadap/blob/main/mangadap/tests/test_resolution_matching.py>`__.
 
 First, we build a fake spectrum with a set of Gaussian profiles evenly
 distributed across the MaNGA wavelength range:

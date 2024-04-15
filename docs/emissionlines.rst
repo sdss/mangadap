@@ -318,7 +318,7 @@ database you wish to use is selected by the ``passbands`` parameter in the
 relevant parameter block of the :ref:`plan` file.  The keyword is simply the
 capitalized name of the file without the ".par" extension.  For example, to use
 the `elbmpl9.par
-<https://github.com/sdss/mangadap/blob/master/mangadap/data/emission_bandpass_filters/elbmpl9.par>`__
+<https://github.com/sdss/mangadap/blob/main/mangadap/data/emission_bandpass_filters/elbmpl9.par>`__
 database, the plan file would include
 
 .. code-block:: toml
@@ -521,7 +521,7 @@ wish to use is selected by the ``emission_lines`` parameter in the relevant
 parameter block of the :ref:`plan` file.  The keyword is simply the capitalized
 name of the file without the ".par" extension.  For example, to use the
 `elpmpl11.par
-<https://github.com/sdss/mangadap/blob/master/mangadap/data/emission_lines/elpmpl11.par>`__
+<https://github.com/sdss/mangadap/blob/main/mangadap/data/emission_lines/elpmpl11.par>`__
 database, the plan file would include
 
 .. code-block:: toml

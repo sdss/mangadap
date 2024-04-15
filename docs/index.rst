@@ -5,7 +5,7 @@ The MaNGA Data Analysis Pipeline
    :target: https://github.com/sdss/mangadap/actions
    :alt: Build Status
 
-.. image:: https://codecov.io/gh/sdss/mangadap/branch/master/graph/badge.svg?token=S4veEPJwS1
+.. image:: https://codecov.io/gh/sdss/mangadap/branch/main/graph/badge.svg?token=S4veEPJwS1
    :target: https://codecov.io/gh/sdss/mangadap
    :alt: Coverage Status
 
@@ -14,7 +14,7 @@ The MaNGA Data Analysis Pipeline
   :alt: Documentation Status
 
 .. image:: https://img.shields.io/github/license/sdss/mangadap
-   :target: https://github.com/sdss/mangadap/blob/master/LICENSE.md
+   :target: https://github.com/sdss/mangadap/blob/main/LICENSE.md
    :alt: License
 
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)

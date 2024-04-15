@@ -23,39 +23,39 @@ The following spectral template libraries are included with the DAP distribution
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
 | Key             |  Reference |    Type |    Pedigree | Comments                                                                                                          |
 +=================+============+=========+=============+===================================================================================================================+
-| BC03            |  [1]_ [2]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/bc03_mpajhu/README>`__     |
+| BC03            |  [1]_ [2]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/bc03_mpajhu/README>`__     |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| BPASS           |       [3]_ |     SPS | Theoretical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/bpass/README>`__           |
+| BPASS           |       [3]_ |     SPS | Theoretical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/bpass/README>`__           |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| M11ELODIE       |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/m11_elodie/README>`__      |
+| M11ELODIE       |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/m11_elodie/README>`__      |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| M11MARCS        |       [4]_ |     SPS | Theoretical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/m11_marcs/README>`__       |
+| M11MARCS        |       [4]_ |     SPS | Theoretical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/m11_marcs/README>`__       |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| M11MILES        |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/m11_miles/README>`__       |
+| M11MILES        |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/m11_miles/README>`__       |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| M11STELIB       |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/m11_stelib/README>`__      |
+| M11STELIB       |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/m11_stelib/README>`__      |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| M11STELIBZSOL   |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/m11_stelib_zsol/README>`__ |
+| M11STELIBZSOL   |       [4]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/m11_stelib_zsol/README>`__ |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MASTARHC        |       [5]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/mastarhc/README>`__        |
+| MASTARHC        |       [5]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/mastarhc/README>`__        |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MASTARHC2       |       [5]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/mastarhc_v2/README>`__     |
+| MASTARHC2       |       [5]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/mastarhc_v2/README>`__     |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MASTARSSP       |      [10]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/mastar_ssp_v1.0/README>`__ |
+| MASTARSSP       |      [10]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/mastar_ssp_v1.0/README>`__ |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MILES           |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miles/README>`__           |
+| MILES           |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/miles/README>`__           |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MILESAVG        |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miles_avg/README>`__       |
+| MILESAVG        |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/miles_avg/README>`__       |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MILESHC         |       [7]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miles_cluster/README>`__   |
+| MILESHC         |       [7]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/miles_cluster/README>`__   |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MILESTHIN       |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miles_thin/README>`__      |
+| MILESTHIN       |       [6]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/miles_thin/README>`__      |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MIUSCAT         |       [8]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miuscat/README>`__         |
+| MIUSCAT         |       [8]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/miuscat/README>`__         |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| MIUSCATTHIN     |       [8]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/miuscat_thin/README>`__    |
+| MIUSCATTHIN     |       [8]_ |     SPS |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/miuscat_thin/README>`__    |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
-| STELIB          |       [9]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/master/mangadap/data/spectral_templates/stelib/README>`__          |
+| STELIB          |       [9]_ | Stellar |   Empirical | `README <https://github.com/sdss/mangadap/blob/main/mangadap/data/spectral_templates/stelib/README>`__          |
 +-----------------+------------+---------+-------------+-------------------------------------------------------------------------------------------------------------------+
 
 Template Library Datamodel
