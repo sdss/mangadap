@@ -16,6 +16,8 @@ Binning!
 """
 import warnings
 
+from IPython import embed
+
 import numpy
 from scipy import sparse
 
@@ -433,7 +435,7 @@ class VoronoiBinningPar(KeywordParSet):
         parameters.
         """
         self['signal'] = rdxqa['SPECTRUM'].data['SIGNAL']
-        if rdxqa.correlation is None:
+        if rdxqa.correlation is None or isinstance(self['covar'], (float, numpy.floating)):
             self['noise'] = numpy.sqrt(rdxqa['SPECTRUM'].data['VARIANCE'])
             return
         # Overwrite any existing calibration coefficient
@@ -514,7 +516,7 @@ class VoronoiBinning(SpatialBinning):
         using :attr:`covar`.
 
         Args:
-            index (`numpy.ndarray`_):
+            index (:obj:`int`, `numpy.ndarray`_):
                 Indices of the measurements in a single bin.
             signal (`numpy.ndarray`_):
                 The signal measurements.
@@ -526,8 +528,9 @@ class VoronoiBinning(SpatialBinning):
             summing the measurements selected by ``index``, after
             applying the covariance calibration.
         """
+        nbin = 1 if isinstance(index, (int, numpy.integer)) else len(index)
         return numpy.sum(signal[index]) / (numpy.sqrt(numpy.sum(numpy.square(noise[index]))) \
-                        * (1.0 + self.covar*numpy.log10(len(signal[index]))))
+                        * (1.0 + self.covar*numpy.log10(nbin)))
 
     def bin_index(self, x, y, gpm=None, par=None):
         """
@@ -648,10 +651,14 @@ class VoronoiBinning(SpatialBinning):
             return binid
 
         # Call the contributed code and return the bin index
+#        _binid, xNode, yNode, xBar, yBar, sn, area, scale = \
+#            voronoi_2d_binning(_x, _y, _signal, _noise, self.par['target_snr'],
+#                               sn_func=sn_func, plot=False) #True, quiet=False)
         try:
             _binid, xNode, yNode, xBar, yBar, sn, area, scale = \
                 voronoi_2d_binning(_x, _y, _signal, _noise, self.par['target_snr'],
                                    sn_func=sn_func, plot=False) #True, quiet=False)
+        # TODO: Specify an exception type?
         except:
             warnings.warn('Binning algorithm has raised an exception.  Assume this is because '
                           'all the spaxels should be in the same bin.')
