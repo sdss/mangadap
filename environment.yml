@@ -1,0 +1,8 @@
+name: sdss-mangadap
+channels:
+  - defaults
+dependencies:
+  - python>=3.10,<3.13
+  - pip
+  - pip:
+    - sdss-mangadap

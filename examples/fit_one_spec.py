@@ -111,7 +111,7 @@ def main():
     y = 25 #37
     # Where to find the relevant datacube.  This example accesses the test data
     # that can be downloaded by executing the script here:
-    # https://github.com/sdss/mangadap/blob/master/download_test_data.py
+    # https://github.com/sdss/mangadap/blob/main/download_test_data.py
     directory_path = defaults.dap_source_dir() / 'data' / 'remote'
     # Read a spectrum
     wave, flux, ivar, sres = get_spectra(plt, ifu, x, y, directory_path=directory_path)
@@ -146,7 +146,7 @@ def main():
     # spectrum to fit.  Here that means it's a single element array
     # This example accesses the test data
     # that can be downloaded by executing the script here:
-    # https://github.com/sdss/mangadap/blob/master/download_test_data.py
+    # https://github.com/sdss/mangadap/blob/main/download_test_data.py
     drpall_file = directory_path / f'drpall-{drp_test_version}.fits'
     z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))

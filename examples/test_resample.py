@@ -48,7 +48,7 @@ def resample_test():
 
     # Read the example datacube and get the expected redshift You can download
     # these data using
-    # https://github.com/sdss/mangadap/blob/master/download_test_data.py
+    # https://github.com/sdss/mangadap/blob/main/download_test_data.py
     plt = 7815
     ifu = 3702
     drpver = 'v3_1_1'

@@ -4,13 +4,13 @@
 Dynamically build the rst documentation of the bitmasks.
 """
 
-import os
 import time
+from importlib import resources
 
 #-----------------------------------------------------------------------------
 
 def write_parset(parset_class, opath, class_link=True):
-    ofile = os.path.join(opath, '{0}.rst'.format(parset_class.__name__.lower()))
+    ofile = opath / f'{parset_class.__name__.lower()}.rst'
     lines = parset_class().to_rst_table(header=False, class_link=class_link, nested=False)
     with open(ofile, 'w') as f:
         f.write('\n'.join(lines))
@@ -18,11 +18,10 @@ def write_parset(parset_class, opath, class_link=True):
 if __name__ == '__main__':
     t = time.perf_counter()
 
-    from pkg_resources import resource_filename
-    root = os.path.dirname(resource_filename('mangadap', ''))
-    path = os.path.join(root, 'docs', 'tables')
-    if not os.path.isdir(path):
-        os.makedirs(path)
+    root = resources.files('mangadap').parent
+    path = root / 'docs' / 'tables'
+    if not path.is_dir():
+        path.mkdir(parents=True)
 
     # Tables to write:
     #
