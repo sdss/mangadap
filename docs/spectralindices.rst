@@ -198,7 +198,7 @@ located at ``$MANGADAP_DIR/mangadap/data/absorption_indices``.  The database you
 wish to use is selected by the ``absindex`` parameter in the relevant parameter
 block of the :ref:`plan` file.  The keyword is simply the capitalized name of
 the file without the ".par" extension.  For example, to use the `extindx.par
-<https://github.com/sdss/mangadap/blob/master/mangadap/data/absorption_indices/extindx.par>`__
+<https://github.com/sdss/mangadap/blob/main/mangadap/data/absorption_indices/extindx.par>`__
 database, the plan file would include
 
 .. code-block:: toml
@@ -311,7 +311,7 @@ at ``$MANGADAP_DIR/mangadap/data/bandhead_indices``.  The database you wish to
 use is selected by the ``bandhead`` parameter in the relevant parameter block of
 the :ref:`plan` file.  The keyword is simply the capitalized name of the file
 without the ".par" extension.  For example, to use the `bhbasic.par
-<https://github.com/sdss/mangadap/blob/master/mangadap/data/bandhead_indices/bhbasic.par>`__
+<https://github.com/sdss/mangadap/blob/main/mangadap/data/bandhead_indices/bhbasic.par>`__
 database, the plan file would include
 
 .. code-block:: toml

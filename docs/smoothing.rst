@@ -13,7 +13,7 @@ for exclusion of masked pixels.
 Here, we provide an example use of the function that demonstrates the accuracy
 of the spectral resolution matching.  This is pulled from a unit test in
 `test_filter.py
-<https://github.com/sdss/mangadap/blob/master/mangadap/tests/test_filter.py>`__.
+<https://github.com/sdss/mangadap/blob/main/mangadap/tests/test_filter.py>`__.
 
 First, we build a fake spectrum with noise and a set of outliers.  The seed for
 the noise is fixed so that the test is deterministic.

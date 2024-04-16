@@ -25,7 +25,7 @@ in wavelength, the DAP provides a utility to robustly resample the spectra.
     accuracy (e.g., using ``numpy.logspace``).
 
 The example script `test_resample.py
-<https://github.com/sdss/mangadap/blob/master/examples/test_resample.py>`__
+<https://github.com/sdss/mangadap/blob/main/examples/test_resample.py>`__
 illustrates how to use :class:`~mangadap.util.sampling.Resample` to resample a
 spectrum.  This class is a generalization of the ``log_rebin`` function provided
 by Michele Cappellari in the `pPXF`_ package.  The script uses the resampling

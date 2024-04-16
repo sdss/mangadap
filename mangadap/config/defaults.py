@@ -15,28 +15,25 @@ MaNGA DAP, such as paths and file names.
 .. include:: ../include/links.rst
 """
 
-from pathlib import Path
-from pkg_resources import resource_filename
-
+from importlib import resources
 
 def dap_source_dir():
-    from pkg_resources import resource_filename
-    return Path(resource_filename('mangadap', '')).resolve()
+    return resources.files('mangadap').parent
 
 
 def dap_data_root():
     """Return the root directory with the DAP data."""
-    return Path(resource_filename('mangadap', 'data')).resolve()
+    return dap_source_dir() / 'mangadap' / 'data'
 
 
 def dap_config_root():
     """Return the root directory with the DAP config data."""
-    return Path(resource_filename('mangadap', 'config')).resolve()
+    return dap_source_dir() / 'mangadap' / 'config'
 
 
 def sdss_maskbits_file():
     """Return the path to the sdss maskbits yanny file."""
     maskbits_file = dap_data_root() / 'sdss' / 'sdssMaskbits.par'
-    return maskbits_file if maskbits_file.exists() else None
+    return maskbits_file if maskbits_file.is_file() else None
 
 

@@ -88,7 +88,7 @@ executing:
     git clone https://github.com/sdss/mangadap.git
 
 This will create a ``mangadap`` directory in the current directory.
-Although we try to keep the ``master`` branch of the repository stable,
+Although we try to keep the ``main`` branch of the repository stable,
 we recommend using the most recent tag.  You can do so by executing:
 
 .. code-block:: console
