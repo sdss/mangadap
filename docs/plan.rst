@@ -78,14 +78,14 @@ understand whether or not they've already been completed; see :ref:`execution`.
 
     For examples of fully defined plan files, see:
         * `mangadap/config/default_plan.toml
-          <https://github.com/sdss/mangadap/blob/master/mangadap/config/default_plan.toml>`__:
+          <https://github.com/sdss/mangadap/blob/main/mangadap/config/default_plan.toml>`__:
           The default plan, when not overridden by the user.
         * `mangadap/data/tests/global_bin.toml
-          <https://github.com/sdss/mangadap/blob/master/mangadap/data/tests/global_bin.toml>`__:
+          <https://github.com/sdss/mangadap/blob/main/mangadap/data/tests/global_bin.toml>`__:
           A plan used by a DAP unit test to analyze a datacube by binning all
           spaxels into a single spectrum.
         * `mangadap/data/tests/dr17.toml
-          <https://github.com/sdss/mangadap/blob/master/mangadap/data/tests/dr17.toml>`__:
+          <https://github.com/sdss/mangadap/blob/main/mangadap/data/tests/dr17.toml>`__:
           A plan that mimics the survey-level plan used to produce the MaNGA DAP
           products released in DR17.
 

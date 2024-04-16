@@ -9,7 +9,7 @@ How to Fit One Spectrum
 The low-level functions in the DAP treat each spectrum independently.  As such,
 it's possible to use these functions to effectively fit any spectrum you like.
 Here, we guide you through the example script in `examples/fit_one_spec.py
-<https://github.com/sdss/mangadap/blob/master/examples/fit_one_spec.py>`_.  Note
+<https://github.com/sdss/mangadap/blob/main/examples/fit_one_spec.py>`_.  Note
 this isn't an abstracted executable included in the package distribution, but is
 meant to be something you use as a starting point for your own script.  There is
 additional guidance in the comments of the script itself that is not replicated

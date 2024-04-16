@@ -330,7 +330,7 @@ A few notes:
       code will use the "default" analysis plan; see
       :func:`~mangadap.config.analysisplan.AnalysisPlan.default`.  See
       `default_plan.toml
-      <https://github.com/sdss/mangadap/blob/master/mangadap/config/default_plan.toml>`_
+      <https://github.com/sdss/mangadap/blob/main/mangadap/config/default_plan.toml>`_
 
     - I set the top-level directory for the output to be ``./dap/``.
 
