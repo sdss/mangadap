@@ -1,4 +1,13 @@
 
+4.1.2 (16 Apr 2024)
+-------------------
+
+ - Fixed a bug when using the covariance calibration method, instead of a direct
+   calculation of the covariance matrix.  Thanks to reporter from issue #115,
+   @iandroberts.
+ - Minor package updates: bumps python support to 3.10-3.12, minor doc updates,
+   and removes use of deprecated ``pkg_resources``.
+
 4.1.1 (19 Jul 2023)
 -------------------
 
