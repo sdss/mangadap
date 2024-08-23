@@ -45,7 +45,7 @@ from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFModel, PPXFFit
 from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
-
+from ..util.filter import interpolate_masked_vector
 
 class SasukePar(KeywordParSet):
     r"""
@@ -2065,6 +2065,10 @@ class Sasuke(EmissionLineFit):
             _stellar_kinematics = stellar_kinematics.copy()
             _stellar_kinematics[:,0], _ = PPXFFit.revert_velocity(stellar_kinematics[:,0],
                                                                   numpy.zeros(self.nobj))
+
+        if not numpy.all(numpy.isfinite(etpl_sinst)):
+            etpl_sinst = interpolate_masked_vector(numpy.ma.MaskedArray(etpl_sinst,mask= ~numpy.isfinite(etpl_sinst)))
+
 
         #---------------------------------------------------------------
         # Build the emission-line templates; the EmissionLineTemplates
