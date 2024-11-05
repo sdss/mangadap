@@ -1,4 +1,10 @@
 
+4.2.0dev
+--------
+
+ - Deprecate support for python 3.10
+
+
 4.1.2 (16 Apr 2024)
 -------------------
 
