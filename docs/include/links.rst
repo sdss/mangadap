@@ -84,7 +84,6 @@
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _shapely: https://pypi.python.org/pypi/Shapely
 .. _vorbin: https://pypi.org/project/vorbin/
-.. _tomli: https://pypi.org/project/tomli/
 .. _spectres: https://pypi.org/project/spectres/
 
 .. SDSS
