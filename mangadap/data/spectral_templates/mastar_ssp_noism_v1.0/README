@@ -1,0 +1,26 @@
+#-----------------------------------------------------------------------
+# MaStar-based Simple Stellar Population Models with MW ISM Removed (v1.0)
+#-----------------------------------------------------------------------
+#
+# See: 
+#
+#   Public Website:
+#       https://www.icg.port.ac.uk/MaStar/
+#
+#   Publication: K. Rubin et al. 2024
+#
+#   This is a sub-selection of the currently available models.  SSP
+#   parameters are given in the name of the file.  The grid is limited
+#   to:
+#
+#       Age [Gyr]:    0.00316228, 0.01, 0.03162278, 0.100, 0.300,
+#                     1.000, 3.000, 9.000, 14.000
+#       log(Z/Z_sun): -1.35, -0.33, 0, 0.35
+#       IMF Slope:    2.35 (Salpeter)
+#
+#    Fluxes have been normalized by their median
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+# K.H.R. Rubin,    23 Oct 2024
+#-----------------------------------------------------------------------
+
