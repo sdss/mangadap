@@ -1,4 +1,12 @@
 
+4.2.0 (05 Nov 2024)
+-------------------
+
+ - Deprecate support for python 3.10
+ - Change TOML dependency from ``tomli`` to ``tomllib``.
+ - Verify support for numpy>=2.0 and bump dependency to pydl>=1.0
+ - Adds "MASTARHC2-NOISM" and "MASTARSSP-NOISM" templates
+
 4.1.2 (16 Apr 2024)
 -------------------
 

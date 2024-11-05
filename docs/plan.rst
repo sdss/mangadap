@@ -6,7 +6,7 @@
 Analysis Plans
 ==============
 
-The DAP uses a `toml`_ file (parsed using `tomli`_) to define one or more
+The DAP uses a `toml`_ file to define one or more
 "analysis plans," which define how the DAP will analyze the provided datacube.
 The `toml`_ file is used to instantiate an
 :class:`~mangadap.config.analysisplan.AnalysisPlan` object and parsed using 

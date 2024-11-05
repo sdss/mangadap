@@ -19,7 +19,7 @@ from copy import deepcopy
 
 from IPython import embed
 
-import tomli
+import tomllib
 
 from ..par.util import recursive_dict_str_to_None
 from . import defaults
@@ -111,7 +111,7 @@ class AnalysisPlan:
             raise FileNotFoundError(f'{_ifile} does not exist!')
 
         with open(_ifile, 'rb') as f:
-            plan = tomli.load(f)
+            plan = tomllib.load(f)
 
         return cls(plan, **kwargs)
 
