@@ -482,7 +482,8 @@ class TemplateLibrary:
     """
     # Class attribute
     supported_libraries = ['BC03', 'BPASS', 'M11ELODIE', 'M11MARCS', 'M11MILES', 'M11STELIB',   
-                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MASTARSSP', 'MILES',
+                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MASTARHC2-NOISM',
+                           'MASTARSSP', 'MASTARSSP-NOISM', 'MILES',
                            'MILESAVG', 'MILESHC', 'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
     """Provides the keywords of the supported libraries."""
 
