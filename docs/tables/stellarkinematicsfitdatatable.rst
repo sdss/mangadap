@@ -10,7 +10,7 @@ NPIXTOT         ``int64``    Total number of pixels in the spectrum to be fit.
 NPIXFIT         ``int64``    Number of pixels used by the fit.                                                                                                                   
 TPLWGT          ``float64``  Optimal weight of each template.                                                                                                                    
 TPLWGTERR       ``float64``  Nominal error in the weight of each template.                                                                                                       
-USETPL          ``bool_``    Flag that each template was included in the fit.                                                                                                    
+USETPL          ``bool``     Flag that each template was included in the fit.                                                                                                    
 ADDCOEF         ``float64``  Coefficients of the additive polynomial, if included.                                                                                               
 MULTCOEF        ``float64``  Coefficients of the multiplicative polynomial, if included.                                                                                         
 KININP          ``float64``  Input guesses for the kinematics                                                                                                                    

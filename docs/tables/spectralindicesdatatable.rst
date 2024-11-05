@@ -4,7 +4,7 @@ Key           Type         Description
 BINID         ``int64``    Spectrum/Bin ID number                                                                                                                                                                       
 BINID_INDEX   ``int64``    Index of the spectrum in the list of provided spectra.                                                                                                                                       
 REDSHIFT      ``float64``  Redshift used for shifting the passbands                                                                                                                                                     
-MASK          ``bool_``    Bad-value boolean or bit mask value for the moments                                                                                                                                          
+MASK          ``bool``     Bad-value boolean or bit mask value for the moments                                                                                                                                          
 BCEN          ``float64``  Center of the blue sideband                                                                                                                                                                  
 BCONT         ``float64``  Pseudo-continuum in the blue sideband                                                                                                                                                        
 BCONT_ERR     ``float64``  Error in the blue-sideband pseudo-continuum                                                                                                                                                  
