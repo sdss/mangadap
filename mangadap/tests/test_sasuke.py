@@ -517,4 +517,5 @@ def test_sasuke_tied_vel():
 
 
 
+test_sasuke_tied_vel()
 

@@ -23,7 +23,9 @@ import numpy as np
 
 from scipy.ndimage import rank_filter
 
-from ppxf import ppxf, capfit
+#from ppxf import ppxf, capfit
+from ppxf import ppxf
+from capfit import capfit
 
 # For debugging
 from matplotlib import pyplot as plt
