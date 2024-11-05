@@ -1,6 +1,6 @@
 
-4.2.0dev
---------
+4.2.0 (05 Nov 2024)
+-------------------
 
  - Deprecate support for python 3.10
  - Change TOML dependency from ``tomli`` to ``tomllib``.
