@@ -1,4 +1,9 @@
 
+4.2.1dev
+--------
+
+ - Add de los Reyes et al. equation for covariance noise calibration
+
 4.2.0 (05 Nov 2024)
 -------------------
 

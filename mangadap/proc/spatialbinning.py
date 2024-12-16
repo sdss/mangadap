@@ -28,6 +28,7 @@ from vorbin.voronoi_2d_binning import voronoi_2d_binning
 from ..par.parset import KeywordParSet
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.covariance import Covariance
+from .util import covariance_calibrated_noise
 
 
 # BASE CLASS -----------------------------------------------------------
@@ -359,14 +360,17 @@ class VoronoiBinningPar(KeywordParSet):
 
     .. include:: ../tables/voronoibinningpar.rst
     """
-    def __init__(self, target_snr=10., signal=None, noise=None, covar=None):
+    def __init__(self, target_snr=10., signal=None, noise=None, covar_mode=None, covar_par=None):
         in_fl = [ int, float ]
-        covar_type = [ float, numpy.ndarray, Covariance, sparse.spmatrix ]
+        covar_type = [ float, list, numpy.ndarray, Covariance, sparse.spmatrix ]
         ar_like = [ numpy.ndarray, list ]
+
+        covar_opt = ['none', 'calibrate', 'matrix']
         
-        pars =   [ 'target_snr', 'signal', 'noise',    'covar' ]
-        values = [   target_snr,   signal,   noise,      covar ]
-        dtypes = [        in_fl,  ar_like, ar_like, covar_type ]
+        pars =   ['target_snr', 'signal', 'noise', 'covar_mode', 'covar_par']
+        values = [  target_snr,   signal,   noise,   covar_mode,  covar_par ]
+        options = [       None,     None,    None,    covar_opt,        None]
+        dtypes = [       in_fl,  ar_like, ar_like,          str, covar_type ]
 
         descr = ['The target S/N for each bin.',
                  'The array of signal measurements for each on-sky position to bin.  See ' \
@@ -376,14 +380,18 @@ class VoronoiBinningPar(KeywordParSet):
                     'provided, ``covar`` must be provided and be a full covariance matrix.  See ' \
                     ':func:`fill` to fill this based on the data in the reduction assessments ' \
                     'object.',
-                 r'Covariance matrix or calibration normalization.  For the latter, the value ' \
-                    r'is used to renormalize using :math:`n_{\rm calib} = n_{\rm nominal} ' \
-                    r'(1 + \alpha\ \log\ N_{\rm bin})`, where :math:`N_{\rm bin}` is the number ' \
-                    r'of binned spaxels and :math:`\alpha` is the value provided. See ' \
-                    r':func:`fill` to fill this based on the data in the reduction assessments ' \
-                    r'object.']
+                 'The mode used to incorporate covariance into the binning algorithm.  Can be ' \
+                    '``none`` to ignore covariance, ``calibrate`` to use a calibration that ' \
+                    'adjusts the nominal error for the effect of covariance, or ``matrix`` to ' \
+                    'use a full covariance matrix in the noise calculation.',
+                 'Covariance matrix or calibration normalization parameters.  For the latter, ' \
+                    'the value is used to renormalize the noise using '\
+                    r':math:`n_{\rm calib} = \eta\ n_{\rm nominal}.  ' \
+                    'See :func:`~mangadap.proc.util.covariance_calibrated_noise`.  See' \
+                    ':func:`fill` to fill this based on the data in the reduction assessments ' \
+                    'object.']
 
-        super().__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, dtypes=dtypes, options=options, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -405,13 +413,11 @@ class VoronoiBinningPar(KeywordParSet):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
 
         hdr['BINSNR'] = (self['target_snr'], 'Voronoi binning minimum S/N')
-        if isinstance(self['covar'], float):
-            hdr['BINCOV'] = ('calib', 'Voronoi binning S/N covariance type')
-            hdr['NCALIB'] = (self['covar'], 'Noise calibration value')
-        elif isinstance(self['covar'], (numpy.ndarray, Covariance, sparse.spmatrix)):
-            hdr['BINCOV'] = ('full', 'Voronoi binning S/N covariance type')
-        else:
-            hdr['BINCOV'] = ('none', 'Voronoi binning S/N covariance type')
+        hdr['BINCOV'] = (self['covar_mode'], 'Voronoi binning S/N covariance mode')
+        if self['covar_mode'] == 'calibrate':
+            _par = [self['covar_par']] if isinstance(self['covar_par'], (float, numpy.floating)) \
+                    else self['covar_par']
+            hdr['NCALIB'] = (','.join([str(c) for c in _par]), 'Noise calibration parameters')
         return hdr
 
     def fromheader(self, hdr):
@@ -426,8 +432,14 @@ class VoronoiBinningPar(KeywordParSet):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
 
         self['target_snr'] = hdr['BINSNR']
-        if hdr['BINCOV'] == 'calib':
-            self['covar'] = hdr['NCALIB']
+        self['covar_mode'] = hdr['BINCOV']
+        if self['covar_mode'] == 'calibrate':
+            if isinstance(hdr['NCALIB'], (float, numpy.floating)):
+                self['covar_par'] = hdr['NCALIB']
+            else:
+                self['covar_par'] = [eval(c) for c in hdr['NCALIB'].split(',')]
+                if len(self['covar_par']) == 1:
+                    self['covar_par'] = self['covar_par'][0]
 
     def fill(self, rdxqa):
         """
@@ -435,7 +447,7 @@ class VoronoiBinningPar(KeywordParSet):
         parameters.
         """
         self['signal'] = rdxqa['SPECTRUM'].data['SIGNAL']
-        if rdxqa.correlation is None or isinstance(self['covar'], (float, numpy.floating)):
+        if rdxqa.correlation is None or self['covar_mode'] == 'calibrate':
             self['noise'] = numpy.sqrt(rdxqa['SPECTRUM'].data['VARIANCE'])
             return
         # Overwrite any existing calibration coefficient
@@ -443,9 +455,9 @@ class VoronoiBinningPar(KeywordParSet):
         covar = rdxqa.correlation.toarray()
         rdxqa.correlation.to_correlation()
         i, j = numpy.meshgrid(numpy.arange(covar.shape[0]), numpy.arange(covar.shape[1]))
-        self['covar'] = Covariance(inp=sparse.coo_matrix((covar[covar > 0].ravel(),
-                                   (i[covar > 0].ravel(), j[covar > 0].ravel())),
-                                   shape=covar.shape).tocsr())
+        self['covar_par'] = Covariance(inp=sparse.coo_matrix((covar[covar > 0].ravel(),
+                                       (i[covar > 0].ravel(), j[covar > 0].ravel())),
+                                       shape=covar.shape).tocsr())
 
 
 class VoronoiBinning(SpatialBinning):
@@ -501,19 +513,12 @@ class VoronoiBinning(SpatialBinning):
         return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[_index,:][:,_index]))
 
     def sn_calculation_calibrate_noise(self, index, signal, noise):
-        r"""
-        Calculate the S/N using a calibration of the S/N following:
+        """
+        Calculate the S/N using a calibration of the S/N to account for
+        covariance.  See
+        :func:`~mangadap.proc.util.covariance_calibrated_noise`.
 
-        .. math::
-
-            N_{\rm calib} = N_{\rm nominal} (1 + \alpha\ \log N_{\rm bin})
-
-        where :math:`N_{\rm bin}` is the number of binned spaxels and
-        :math:`\alpha` is an empirically derived constant used to adjust
-        the noise for the affects of covariance.
-
-        The calibration constant, :math:`\alpha`, is kept internally
-        using :attr:`covar`.
+        The calibration parametrs are kept internally using :attr:`covar`.
 
         Args:
             index (:obj:`int`, `numpy.ndarray`_):
@@ -529,8 +534,10 @@ class VoronoiBinning(SpatialBinning):
             applying the covariance calibration.
         """
         nbin = 1 if isinstance(index, (int, numpy.integer)) else len(index)
-        return numpy.sum(signal[index]) / (numpy.sqrt(numpy.sum(numpy.square(noise[index]))) \
-                        * (1.0 + self.covar*numpy.log10(nbin)))
+        eta = covariance_calibrated_noise(nbin, self.covar)
+        return numpy.sum(signal[index]) / (eta * numpy.sqrt(numpy.sum(numpy.square(noise[index]))))
+#        return numpy.sum(signal[index]) / (numpy.sqrt(numpy.sum(numpy.square(noise[index]))) \
+#                        * (1.0 + self.covar*numpy.log10(nbin)))
 
     def bin_index(self, x, y, gpm=None, par=None):
         """
@@ -581,40 +588,38 @@ class VoronoiBinning(SpatialBinning):
             raise ValueError('Dimensionality of signal does not match on-sky coordinates.')
 
         # Construct the covariance input if provided
-        self.covar = None
-        sn_func = self.sn_calculation_no_covariance
-        if self.par['covar'] is not None:
-            if isinstance(self.par['covar'], Covariance):
+        if self.par['covar_mode'] == 'calibrate':
+            self.covar = self.par['covar_par']
+            sn_func = self.sn_calculation_calibrate_noise
+            _noise = self.par['noise']
+        elif self.par['covar_mode'] == 'matrix':
+            if isinstance(self.par['covar_par'], Covariance):
                 # Check dimensionality
-                if self.par['covar'].dim == 3:
+                if self.par['covar_par'].dim == 3:
                     raise ValueError('Input Covariance object must be two-dimensional')
                 # Make sure the object is a full covariance matrix
-                if self.par['covar'].is_correlation:
-                    self.par['covar'].revert_correlation()
-            # Fill the full array if necessary
-            if not isinstance(self.par['covar'], (numpy.ndarray,float)):
-                self.covar = self.par['covar'].toarray()
-                sn_func = self.sn_calculation_covariance_matrix
+                if self.par['covar_par'].is_correlation:
+                    self.par['covar_par'].revert_correlation()
+                self.covar = self.par['covar_par'].toarray()
             else:
-                self.covar = self.par['covar']
-                sn_func = self.sn_calculation_calibrate_noise
-
-            if isinstance(self.covar, numpy.ndarray):
-                # Check that the size matches the input signal array
-                if self.covar.shape[0] != self.par['signal'].size:
-                    raise ValueError('Dimensionality of covariance does not match signal.')
-                _noise = numpy.sqrt(numpy.diag(self.covar))
+                self.covar = numpy.asarray(self.par['covar_par'])
+            sn_func = self.sn_calculation_covariance_matrix
+            # Check that the size matches the input signal array
+            if self.covar.ndim != 2 or self.covar.shape[0] != self.par['signal'].size:
+                raise ValueError('Dimensionality of covariance does not match signal.')
+            _noise = numpy.sqrt(numpy.diag(self.covar))
+        else:
+            self.covar = None
+            _noise = self.par['noise']
+            sn_func = self.sn_calculation_no_covariance
 
         # Make sure the noise vector is available
-        if self.covar is None or isinstance(self.covar, float):
-            _noise = self.par['noise']
         if _noise is None:
             raise ValueError('Could not construct noise measurements for Voronoi binning.')
         if _noise.size != self.par['signal'].size:
             raise ValueError('Dimensionality of noise does not match signal.')
 
         # Down-select to the valid spaxels
-        revert_covar = False
         if gpm is None:
             _x = x
             _y = y
@@ -624,9 +629,7 @@ class VoronoiBinning(SpatialBinning):
             _y = y[gpm]
             _signal = self.par['signal'][gpm]
             _noise = _noise[gpm]
-            if self.covar is not None and isinstance(self.covar, numpy.ndarray):
-                revert_covar = True
-                _covar = self.covar.copy()
+            if self.covar is not None and self.par['covar_mode'] == 'matrix':
                 self.covar = self.covar[gpm,:][:,gpm]
 
         # All spaxels have S/N greater than threshold, so return each

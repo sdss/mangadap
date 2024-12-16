@@ -16,6 +16,7 @@ Provides a set of processing utility functions for the MaNGA DAP.
 import os
 import glob
 import warnings
+from IPython import embed
 
 import numpy
 
@@ -149,6 +150,7 @@ def get_database_key(f):
     """
     return os.path.split(f)[1].split('.')[0].upper()
 
+
 def select_database(key, directory_path):
     r"""
     Select a database using a keyword and directory path.
@@ -179,15 +181,6 @@ def select_database(key, directory_path):
         raise KeyError('No database found to associate with {0}.'.format(key))
 
     return files[numpy.where(numpy.array(keys) == key)[0][0]]
-
-
-#def _fill_vector(v, length, missing, value):
-#    if v.size == length:
-#        v[missing] = value
-#        return v
-#    _v = numpy.full(length, value, dtype=v.dtype)
-#    _v[ list(set( numpy.arange(length) ) - set(missing)) ] = v
-#    return _v
 
 
 def flux_to_fnu(wave, flambda, unit_norm=1e-17):
@@ -232,44 +225,6 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
         raise ValueError('Wavelength and flux arrays must have the same shape.')
     fnu = _flambda*numpy.square(_wave)*unit_norm*1e29/astropy.constants.c.to('angstrom/s').value
     return fnu[0] if isinstance(flambda, float) else fnu
-
-
-        # TODO: Requires a spectrum in each bin!
-#        if any(numpy.diff(bin_indx[srt]) > 1):
-#            rep = numpy.ones(bin_change.size, dtype=int)
-#            i = 1
-#            while any(numpy.diff(bin_indx[srt]) > i):
-#                rep[ numpy.where(numpy.diff(bin_indx[srt]) > i)[0]+1 == bin_change ] += 1
-#                i += 1
-#            bin_change = numpy.repeat(bin_change, rep)
-
-
-# OLD VERSION
-#def residual_growth(resid, growth_samples):
-#    """
-#    Interpolate the growth curve at distinct fractions, bracketed by the
-#    minimum and maximum.
-#    """
-#    np = resid.size
-#    grw = numpy.arange(np).astype(float)/np
-#    resid_sort = numpy.sort(numpy.absolute(resid))
-#    interp = interpolate.interp1d(grw, resid_sort, fill_value='extrapolate')
-#    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])
-
-
-#def residual_growth(resid, growth_samples):
-#    """
-#    Sample a set of residuals at specific the growth intervals.  No
-#    interpolation is performed.
-#    """
-#    np = resid.size
-#    resid_sort = numpy.sort(numpy.absolute(resid))
-#    i = numpy.zeros(len(growth_samples)+2, dtype=float)
-#    i[1:-1] = np*numpy.asarray(growth_samples)
-#    i[-1] = np-1
-#    i[i < 0] = 0
-#    i[i >= np] = np-1
-#    return resid_sort[i.astype(int)]
 
 
 def sample_growth(a, samples, default=-9999., use_interpolate=True):
@@ -458,3 +413,51 @@ def inverse(d):
     m = _d != 0.0
     return m/(_d + numpy.logical_not(m))
 
+
+def covariance_calibrated_noise(nbin, par):
+    r"""
+    Calculate the noise calibration coefficient.
+
+    This follows the parameterizations used by Husemann et al. (2013, A&A, 549,
+    A87) and modified by de los Reyes et al. (2023, ApJ, 951, 52):
+
+    .. math::
+
+        n_{\rm calib} = \eta\ n_{\rm nominal}
+
+    where :math:`n_{\rm calib}` is the noise calibrated for the influence of
+    covariance, :math:`n_{\rm nominal}` is the noise ignoring the covariance,
+
+    .. math::
+
+        \eta = \left\{
+            \begin{array}{ll}
+                \beta\ (1 + \alpha \log\ N_{\rm bin}), & N_{\rm bin} \leq N_{\rm thresh} \\[3pt]
+                \beta\ (1 + \alpha \log\ N_{\rm thresh}), & N_{\rm bin} > N_{\rm thresh}
+            \end{array}\right.,
+
+    and :math:`\alpha`, :math:`\beta`, and :math:`N_{\rm thresh}` are the
+    provided parameters.  If ``par`` is a float or an array-like object with one
+    element, the code assumes :math:`\beta = 1` and :math:`N_{\rm thresh} =
+    \infty`.
+
+    Args:
+        nbin (:obj:`int`, `numpy.ndarray`_):
+            Number of binned values.
+        par (:obj:`float`, array-like):
+            The value for :math:`\alpha` or the list of values for
+            :math:`\alpha`, :math:`\beta`, and :math:`N_{\rm thresh}`.
+
+    Returns:
+        :obj:`float`: The calibration coefficient, :math:`\eta`.
+    """
+    _par = numpy.atleast_1d(par)
+    if len(_par) not in [1, 3]:
+        raise ValueError(f'Must provide 1 or 3 elements in par, not {len(_par)}.')
+    _nbin = numpy.atleast_1d(nbin).astype(float)
+    if len(_par) == 3:
+        _nbin[_nbin > _par[2]] = _par[2]
+    c = (1 + _par[0] * numpy.ma.log10(_nbin).filled(0.0))
+    if isinstance(nbin, (int, numpy.integer)):
+        c = c[0]
+    return c if len(_par) == 1 else _par[1] * c
