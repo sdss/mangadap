@@ -87,7 +87,8 @@ class SpectralStackPar(KeywordParSet):
         hdr['STCKOP'] = (self['operation'], 'Stacking operation')
         hdr['STCKVREG'] = (str(self['register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
-        _par = [self['covar_par']] if isinstance(self['covar_par'], (float, numpy.floating)) \
+        _par = [self['covar_par']] \
+                    if isinstance(self['covar_par'], (int, numpy.integer, float, numpy.floating)) \
                     else self['covar_par']
         hdr['STCKCRPR'] = (','.join([str(c) for c in _par]), 'Covariance parameter(s)')
         return hdr
@@ -104,7 +105,7 @@ class SpectralStackPar(KeywordParSet):
         self['register'] = eval(hdr['STCKVREG'])
         self['covar_mode'] = hdr['STCKCRMD']
         if self['covar_mode'] == 'calibrate':
-            if isinstance(hdr['STCKCRPR'], (float, numpy.floating)):
+            if isinstance(hdr['STCKCRPR'], (int, numpy.integer, float, numpy.floating)):
                 self['covar_par'] = hdr['STCKCRPR']
             else:
                 self['covar_par'] = [eval(c) for c in hdr['NCALIB'].split(',')]
