@@ -649,8 +649,6 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
     _component, component_map = _reset_components(component, valid)
     _moments = moments[component_map]
     indx = kin_indices(moments, select=component_map)
-#    _start = [start[cm] for cm in component_map]
-#    _fixed = [fixed[cm] for cm in component_map]
     _start = start[indx]
     _fixed = fixed[indx]
     # Reset velocity groups
@@ -729,20 +727,6 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
     _err[indx] = _pperr
 
     return split_start(_sol, moments), split_start(_err, moments)
-
-#    # Rearrange the output to match the input components
-#    new_start = []
-#    new_error = []
-#    for i in range(ncomp):
-#        indx = component_map == i
-#        if np.sum(indx) == 0:
-#            new_start += ([[fill_value]*abs(moments[i])] if start is None else [start[i]])
-#            new_error += [[fill_value]*abs(moments[i])]
-#            continue
-#        indx = np.arange(_ncomp)[indx][0]
-#        new_start += [ppsol[indx]]
-#        new_error += [pperr[indx]]
-#    return new_start, new_error
 
 
 def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, moments, component,
@@ -876,7 +860,6 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
     nspec, npix = flux.shape
     nkin = start.shape[1]
     ntpl = templates.shape[0]
-    # nkin = np.sum(np.absolute(moments))
 
     # Establish which templates should be used
     _tpl_to_use = np.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use.copy()

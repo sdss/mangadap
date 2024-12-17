@@ -658,8 +658,7 @@ class EmissionLineMoments:
             # the code to continue with a warning
             if spec_n is None:
                 warnings.warn('Multiple spectra entered, but no designation for which to use!')
-                # TODO: This will barf!  What should nmom actually be?
-                _spec_n = numpy.zeros(self.nmom, dtype=int)
+                _spec_n = numpy.zeros(nbands, dtype=int)
             else:
                 _spec_n = spec_n
 
@@ -737,6 +736,7 @@ class EmissionLineMoments:
 
         # Perform the measurements for each spectrum
         for i in range(nspec):
+            # TODO: Change statements like this to use tqdm
             print('Measuring emission-line moments in spectrum: {0}/{1}'.format(i+1,nspec),
                   end='\r')
 

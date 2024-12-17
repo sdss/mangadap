@@ -386,7 +386,6 @@ class EmissionLineModel:
                 mom2_masked = emission_line_moments.bitmask.flagged(
                                 emission_line_moments['ELMMNTS'].data['MASK'][:,disp_channel],
                                 emission_line_moments.bitmask.bad_kinematic_reference)
-#                mom2_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,disp_channel] > 0
                 # - Use the 2nd moment of the named line
                 obj_dispersion[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
                                 = emission_line_moments['ELMMNTS'].data['MOM2'][:,disp_channel]

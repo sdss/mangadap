@@ -261,23 +261,23 @@ class construct_maps_file:
 #                    = self.bitmask.turn_on(self.hdu['STELLAR_SIGMA_MASK'].data[indx], 'UNRELIABLE')
 
         # TODO: FIX THIS !!!!!!!!!!!!!
-#        # Flag any inverse variances that are not positive as DONOTUSE
-#        # and MATHERROR
-#        ext = ['BIN_MFLUX', 'STELLAR_VEL', 'STELLAR_SIGMA', 'EMLINE_SFLUX', 'EMLINE_SEW',
-#               'EMLINE_GFLUX', 'EMLINE_GEW', 'EMLINE_GVEL', 'EMLINE_GSIGMA', 'SPECINDEX']
-#        for e in ext:
-#            if '{0}_MASK'.format(e) not in extensions \
-#                    or '{0}_IVAR'.format(e) not in extensions \
-#                    or self.hdu['{0}_MASK'.format(e)].data is None \
-#                    or self.hdu['{0}_IVAR'.format(e)].data is None:
-#                continue
-#            indx = numpy.invert(self.bitmask.flagged(self.hdu['{0}_MASK'.format(e)].data)) \
-#                            & numpy.invert(self.hdu['{0}_IVAR'.format(e)].data > 0)
-#            if numpy.sum(indx) > 0:
-#                self.hdu['{0}_MASK'.format(e)].data[indx] \
-#                    = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'MATHERROR')
-#                self.hdu['{0}_MASK'.format(e)].data[indx] \
-#                    = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'DONOTUSE')
+        # Flag any inverse variances that are not positive as DONOTUSE
+        # and MATHERROR
+        ext = ['BIN_MFLUX', 'STELLAR_VEL', 'STELLAR_SIGMA', 'EMLINE_SFLUX', 'EMLINE_SEW',
+               'EMLINE_GFLUX', 'EMLINE_GEW', 'EMLINE_GVEL', 'EMLINE_GSIGMA', 'SPECINDEX']
+        for e in ext:
+            if f'{e}_MASK' not in extensions \
+                    or f'{e}_IVAR' not in extensions \
+                    or self.hdu[f'{e}_MASK'].data is None \
+                    or self.hdu[f'{e}_IVAR'].data is None:
+                continue
+            indx = numpy.invert(self.bitmask.flagged(self.hdu['{0}_MASK'.format(e)].data)) \
+                            & numpy.invert(self.hdu['{0}_IVAR'.format(e)].data > 0)
+            if numpy.sum(indx) > 0:
+                self.hdu['{0}_MASK'.format(e)].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'MATHERROR')
+                self.hdu['{0}_MASK'.format(e)].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'DONOTUSE')
 
         #---------------------------------------------------------------
         # Check that the path exists

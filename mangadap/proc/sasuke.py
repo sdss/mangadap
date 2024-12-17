@@ -148,8 +148,9 @@ class SasukePar(KeywordParSet):
                     r'on a Calzetti law.',
                  'pPXF error handling, which must be (1) "flag" to log the error and continue ' \
                     'or (2) "raise" to raise the exception and cause the code to fault.',
-                 'Tread the set of spectra to be fit as an ensemble, meaning they are masked ' \
-                    'to the same wavelength range when fitting.']
+                 'Treat the set of spectra to be fit as an ensemble, meaning they are masked ' \
+                    'to the same wavelength range when fitting.  If the spectra are not at the ' \
+                    'same redshift, this should be set to False.']
 
         super().__init__(pars, values=values, defaults=defaults, options=options, dtypes=dtypes,
                          descr=descr)
@@ -2186,9 +2187,6 @@ class Sasuke(EmissionLineFit):
             self.tpl_to_use = numpy.append(self.tpl_to_use,
                                            numpy.ones((self.nobj,etpl.ntpl), dtype=bool),
                                            axis=1)
-#            self.tpl_comp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.comp+1)
-#            self.tpl_vgrp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.vgrp+1)
-#            self.tpl_sgrp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.sgrp+1)
             self.eml_tpli[self.fit_eml] += self.nstpl
             self.eml_compi[self.fit_eml] += 1
             self.ncomp = numpy.amax(self.tpl_comp)+1
@@ -2211,12 +2209,6 @@ class Sasuke(EmissionLineFit):
         # Maximum number of free kinematic parameters
         tied = numpy.concatenate(tuple(ppxf_tied_parameters(self.tpl_comp, self.tpl_vgrp,
                                                             self.tpl_sgrp, self.comp_moments)))
-
-        # TODO: This calculation was wrong!  It should have taken the absolute
-        # value of the comp_moments in the last term.
-#        self.nfree_kin = numpy.sum(self.comp_moments[self.comp_moments > 0]) \
-#                            if tied is None else numpy.sum([len(t) == 0 for t in tied]) \
-#                            - numpy.sum(self.comp_moments[self.comp_moments < 0]) 
         self.nfree_kin = numpy.sum(self.comp_fixed) if tied is None \
                                 else numpy.sum([len(t) == 0 for t in tied]) \
                                         - numpy.sum(self.comp_fixed) 
