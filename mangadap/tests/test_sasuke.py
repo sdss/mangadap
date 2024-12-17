@@ -516,6 +516,3 @@ def test_sasuke_tied_vel():
             'All velocities should be identical'
 
 
-
-test_sasuke_tied_vel()
-

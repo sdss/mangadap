@@ -199,7 +199,7 @@ def plate_target_files():
 
     # Default search string
     search_str =  core_dir / 'platedesign' / 'platetargets'
-    file_list = sorted(list(search_path.glob('plateTargets*.par')))
+    file_list = sorted(list(search_str.glob('plateTargets*.par')))
     nfiles = len(file_list)
     if nfiles == 0:
         raise ValueError('Unable to find any plateTargets files!')
@@ -236,44 +236,6 @@ def parse_plate_ifu_from_file(name):
     Parse the plate and ifu numbers from the file name of a MaNGA DRP file.
     """
     return tuple([int(n) for n in name.split('-')[1:3]])
-
-
-# USED BY:
-#   - scripts/rundap.py
-def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
-               directory_path=None):
-    """
-    Return the full path to the DAP configuration file.
-
-    The configuration file provides the input data necessary to
-    instantiate a :class:`mangadap.datacube.manga.MaNGADataCube`.
-    
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        ifudesign (:obj:`int`):
-            IFU design number
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version. Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional): 
-            Path to the root analysis directory. Default is to use
-            :func:`dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            Path to the directory with the DAP output files. Default
-            is to use :func:`dap_common_path`
-
-    Returns:
-        :obj:`str`: Full path to the DAP par file
-    """
-    # Make sure the directory path is defined
-    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
-                                      dapver=dapver, analysis_path=analysis_path) \
-                            if directory_path is None else Path(directory_path).resolve()
-    # Set the name of the par file; put this in its own function?
-    # TODO: Does this barf?  I.e., where does dap_file_root come from!
-    return _directory_path /  f'{dap_file_root(plate, ifudesign, mode="CUBE")}.ini'
 
 
 # USED BY:

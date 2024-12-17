@@ -36,8 +36,11 @@ DAPEML  12  Hb      4862.691   vac  f   { None    None } {   19    = } { None No
 DAPEML  13  OIII    4960.295   vac  f   {   14   =0.34 } {   14    = } {   14    = }  { 4930.3  4950.3 } { 4970.3  4990.3 }
 DAPEML  14  OIII    5008.240   vac  f   { None    None } {   19    = } { None None }  { 4978.2  4998.2 } { 5018.2  5038.2 }
 DAPEML  18  NII     6549.86    vac  f   {   20  =0.327 } {   20    = } {   20    = }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  24  NIIb    6549.86    vac  f   {   25  =0.327 } {   25    = } {   25    = }  { 6483.0  6513.0 } { 6623.0  6653.0 }
 DAPEML  19  Ha      6564.632   vac  f   { None    None } { None None } { None None }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  23  Hab     6564.632   vac  f   { None    None } {   19    < } {   19 >1.4 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
 DAPEML  20  NII     6585.271   vac  f   { None    None } {   19    = } { None None }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  25  NIIb    6585.271   vac  f   { None    None } {   23    = } {   20    > }  { 6483.0  6513.0 } { 6623.0  6653.0 }
 DAPEML  21  SII     6718.294   vac  f   { None    None } {   19    = } { None None }  { 6673.0  6703.0 } { 6748.0  6778.0 }
 DAPEML  22  SII     6732.674   vac  f   { None    None } {   19    = } { None None }  { 6673.0  6703.0 } { 6748.0  6778.0 }
 

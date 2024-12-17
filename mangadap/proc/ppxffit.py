@@ -31,9 +31,10 @@ from matplotlib import pyplot
 
 import astropy.constants
 
-#from ppxf import ppxf, capfit
-from ppxf import ppxf
-from capfit import capfit
+from ppxf import ppxf, capfit
+# TODO: When upgrading ppxf, may need to change to this...
+#from ppxf import ppxf
+#from capfit import capfit
 
 from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB

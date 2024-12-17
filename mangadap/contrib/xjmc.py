@@ -15,20 +15,17 @@ Implements an emission-line fitting function using pPXF.
 """
 
 import warnings
-from copy import deepcopy
 
 from IPython import embed
 
 import numpy as np
-
 from scipy.ndimage import rank_filter
+from matplotlib import pyplot
 
-#from ppxf import ppxf, capfit
-from ppxf import ppxf
-from capfit import capfit
-
-# For debugging
-from matplotlib import pyplot as plt
+from ppxf import ppxf, capfit
+# TODO: When upgrading ppxf, may need to change to this...
+#from ppxf import ppxf
+#from capfit import capfit
 
 
 ## Array manipulation that allows me to keep the set of kinematic parameters in a
@@ -244,7 +241,7 @@ def calculate_noise(residuals, width=101):
         ValueError: Raised if the width is not an odd number or if it is
             less than 11 elements.
     """
-    if width%2 != 1:
+    if width % 2 != 1:
         raise ValueError('Must provided odd number width.')
     if width < 10:
         raise ValueError('Width must be 11 or higher.')
@@ -254,9 +251,7 @@ def calculate_noise(residuals, width=101):
 
     upper = rank_filter(residuals, rank=up, size=width)
     lower = rank_filter(residuals, rank=lo, size=width)
-    noise = (upper - lower)/2
-
-    return noise
+    return (upper - lower)/2
 
 
 def _ppxf_component_setup(component, moments, gas_template, start, fixed,
@@ -951,7 +946,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
         # NOTE: lsq_box is the default in ppxf 7.4.0, so no need to
         # define it here.
         if plot:
-            plt.clf()
+            pyplot.clf()
         try:
             # Note that use of constr_kinem requires method='capfit'; if
             # constr_templ is ever used, this would require a switch to
@@ -972,7 +967,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
             fault[i] = True
             continue
         if plot:
-            plt.show()
+            pyplot.show()
 
         # Reject 3-sigma outliers and refit, if requested by a provided
         # boxcar width
@@ -1027,7 +1022,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
             # Refit using best-fit kinematics from previous fit as
             # initial guesses
             if plot:
-                plt.clf()
+                pyplot.clf()
             try:
                 # Note that use of constr_kinem requires method='capfit'; if
                 # constr_templ is ever used, this would require a switch to
@@ -1048,7 +1043,7 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
                 fault[i] = True
                 continue
             if plot:
-                plt.show()
+                pyplot.show()
 
         # Reorder the output; sets any omitted components to a default
         # value of -999.
@@ -1581,7 +1576,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         kininp = np.array([np.concatenate(tuple(inp_start[0]))]*nspec)
         kin = kininp
         kin_err = kin/10
-        return model_flux, model_eml_flux, model_gpm, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
+        return model_flux, model_eml_flux, model_gpm, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
                     ebv, kininp, kin, kin_err, _binid #nearest_bin
 
     # Fit the binned data
