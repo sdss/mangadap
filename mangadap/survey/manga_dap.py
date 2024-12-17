@@ -171,7 +171,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
                     SpatiallyBinnedSpectra(plan.binning[key], cube, rdxqa, reff=cube.meta['reff'],
                                            ebv=cube.meta['ebv'], output_path=common_dir,
                                            symlink_dir=method_ref_dir, loggers=loggers)
-        
+
         #---------------------------------------------------------------
         # Stellar Continuum Fit: placed in the common/ directory
         #---------------------------------------------------------------

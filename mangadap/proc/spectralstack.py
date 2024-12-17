@@ -631,47 +631,6 @@ class SpectralStack:
             return modes
         return modes + ['none', 'full']
 
-#    @staticmethod
-#    def parse_covariance_parameters(mode, par):
-#        """
-#        Parse the parameters needed for the treatment of the
-#        covariance when stacking spectra.
-#    
-#        Args:
-#            mode (:obj:`str`):
-#                Mode to use. Must be an allowed mode; see
-#                :func:`covariance_mode_options`.
-#            par (:obj:`str`):
-#                String representation of the parameters for the
-#                specified mode.
-#
-#        Returns:
-#            :obj:`float`, :obj:`list`: Parameters parsed from the
-#            input string for the designated covariance mode.
-#
-#        Raises:
-#            TypeError:
-#                Raised if the input parameter could not be converted
-#                to a float as needed by the specified mode.
-#            ValueError:
-#                Raised if the mode is not recognized.
-#        """
-#        mode_options = SpectralStack.covariance_mode_options()
-#        if mode not in mode_options:
-#            raise ValueError('Mode not among valid options: {0}.\nOptions are: {1}'.format(mode,
-#                                                                                    mode_options))
-#        if mode in ['none', 'full']:
-#            return None
-#        if mode in ['calibrate', 'approx_correlation']:
-#            try:
-#                return float(par)
-#            except:
-#                raise TypeError('Could not convert to float: {0}'.format(par))
-#        if mode == 'channels':
-#            return int(par) #[ int(e.strip()) for e in par.split(',') ]
-#        if mode == 'wavelengths':
-#            return [ float(e.strip()) for e in par.split(',') ]
-
     @staticmethod
     def min_max_wave(wave, cz):
         r"""
