@@ -2,7 +2,8 @@
 4.2.1dev
 --------
 
- - Add de los Reyes et al. equation for covariance noise calibration
+ - Add [de los Reyes et al.](https://ui.adsabs.harvard.edu/abs/2023ApJ...951...52D/abstract)
+   equation for covariance noise calibration
 
 4.2.0 (05 Nov 2024)
 -------------------
