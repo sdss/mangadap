@@ -28,7 +28,7 @@ from ..par.parset import KeywordParSet
 from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
-
+from .util import covariance_calibrated_noise
 
 class SpectralStackPar(KeywordParSet):
     r"""
@@ -87,7 +87,10 @@ class SpectralStackPar(KeywordParSet):
         hdr['STCKOP'] = (self['operation'], 'Stacking operation')
         hdr['STCKVREG'] = (str(self['register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
-        hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
+        _par = [self['covar_par']] \
+                    if isinstance(self['covar_par'], (int, numpy.integer, float, numpy.floating)) \
+                    else self['covar_par']
+        hdr['STCKCRPR'] = (','.join([str(c) for c in _par]), 'Covariance parameter(s)')
         return hdr
 
     def fromheader(self, hdr):
@@ -101,7 +104,13 @@ class SpectralStackPar(KeywordParSet):
         self['operation'] = hdr['STCKOP']
         self['register'] = eval(hdr['STCKVREG'])
         self['covar_mode'] = hdr['STCKCRMD']
-        self['covar_par'] = eval(hdr['STCKCRPR'])
+        if self['covar_mode'] == 'calibrate':
+            if isinstance(hdr['STCKCRPR'], (int, numpy.integer, float, numpy.floating)):
+                self['covar_par'] = hdr['STCKCRPR']
+            else:
+                self['covar_par'] = [eval(c) for c in hdr['NCALIB'].split(',')]
+                if len(self['covar_par']) == 1:
+                    self['covar_par'] = self['covar_par'][0]
 
 
 class SpectralStack:
@@ -145,7 +154,7 @@ class SpectralStack:
             covariance_mode (:obj:`str`):
                 Covariance handling mode; see
                 :func:`covariance_mode_options`.
-            covar (None, :obj:`float`, :class:`mangadap.util.covariance.Covariance`):
+            covar (:obj:`float`, :obj:`int`, :obj:`list`, :class:`mangadap.util.covariance.Covariance`):
                 The object to check the type against the covariance
                 handling mode.
             ivar (None, object):
@@ -156,13 +165,17 @@ class SpectralStack:
             :obj:`bool`: Flag that type is correct.
         """
         if covariance_mode == 'none':
+            # Covariance is not used, so any value is fine
             return True
         if covariance_mode in ['calibrate', 'channels', 'wavelengths'] and ivar is None:
-            return False
-        if covariance_mode == 'calibrate' and not isinstance(covar, float):
+            # The inverse variances *must* be available for these modes
             return False
         if covariance_mode == 'calibrate':
-            return True
+            # The covariance must be one or more calibration parameters.  This
+            # just checks the types; more detailed checks are done later in the
+            # code.
+            allowed_types = (int, numpy.integer, float, numpy.floating, list, numpy.ndarray)
+            return isinstance(covar, allowed_types)
         if not isinstance(covar, Covariance):
             return False
         return covar.dim == 3
@@ -424,12 +437,10 @@ class SpectralStack:
         # self.fluxsqr, self.npix, self.ivar, self.sres.
         self._stack_without_covariance(flux, ivar=ivar, sres=sres)
 
-        # If calibrating the noise based on the equation,
-        #   Noise_corrected = Noise_nocovar * (1 + f * log10(N))
-        # apply it and return
+        # If calibrating the noise, apply it and return
         if covariance_mode == 'calibrate':
             if self.ivar is not None:
-                self.ivar /= numpy.square(1.0 + covar*numpy.ma.log10(self.npix))
+                self.ivar /= numpy.square(covariance_calibrated_noise(self.npix, covar))
             return
 
         # Check that the code knows what to do otherwise
@@ -579,14 +590,11 @@ class SpectralStack:
               nominal propagation of the error assuming no
               covariance. No parameters needed.
 
-            - ``calibrate``: Where :math:`N_{\rm bin}` is the number
-              of binned spaxels and :math:`\alpha` as a provided
-              parameter, the spectral noise is calibrated following:
-
-              .. math::
-
-                    n_{\rm calib} = n_{\rm nominal} (1 + \alpha \log\
-                    N_{\rm bin})
+            - ``calibrate``: The spectral noise is calibrated following:
+              :math:`n_{\rm calib} = \eta\ n_{\rm nominal}` where :math:`\eta`
+              is a normalization factor that nominall accounts for the
+              covariance; see
+              :func:`~mangadap.proc.util.covariance_calibrated_noise`.
 
             - ``channels``: The noise vector of each stacked spectrum
               is adjusted based on the mean ratio of the nominal and
@@ -622,47 +630,6 @@ class SpectralStack:
         if par_needed:
             return modes
         return modes + ['none', 'full']
-
-    @staticmethod
-    def parse_covariance_parameters(mode, par):
-        """
-        Parse the parameters needed for the treatment of the
-        covariance when stacking spectra.
-    
-        Args:
-            mode (:obj:`str`):
-                Mode to use. Must be an allowed mode; see
-                :func:`covariance_mode_options`.
-            par (:obj:`str`):
-                String representation of the parameters for the
-                specified mode.
-
-        Returns:
-            :obj:`float`, :obj:`list`: Parameters parsed from the
-            input string for the designated covariance mode.
-
-        Raises:
-            TypeError:
-                Raised if the input parameter could not be converted
-                to a float as needed by the specified mode.
-            ValueError:
-                Raised if the mode is not recognized.
-        """
-        mode_options = SpectralStack.covariance_mode_options()
-        if mode not in mode_options:
-            raise ValueError('Mode not among valid options: {0}.\nOptions are: {1}'.format(mode,
-                                                                                    mode_options))
-        if mode in ['none', 'full']:
-            return None
-        if mode in ['calibrate', 'approx_correlation']:
-            try:
-                return float(par)
-            except:
-                raise TypeError('Could not convert to float: {0}'.format(par))
-        if mode == 'channels':
-            return int(par) #[ int(e.strip()) for e in par.split(',') ]
-        if mode == 'wavelengths':
-            return [ float(e.strip()) for e in par.split(',') ]
 
     @staticmethod
     def min_max_wave(wave, cz):

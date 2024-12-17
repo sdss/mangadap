@@ -948,7 +948,8 @@ class construct_maps_file:
 
         DIVBYZERO propagated to MATHERROR
 
-        Need to further assess \*_INCOMP to see if these lead to bad values (BADVALUE).
+        Need to further assess all the INCOMP flags to see if these lead to bad
+        values (BADVALUE).
         """
         # Consolidate everything in the map mask into NOVALUE
         indx = spectral_indices.bitmask.flagged(spectral_indices['MAPMASK'].data)

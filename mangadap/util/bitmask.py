@@ -83,9 +83,6 @@ class BitMask:
             for i in range(len(_descr)):
                 _descr[i] = _descr[i].strip()
 
-#        from IPython import embed
-#        embed()
-
         if _descr is not None:
             if not all([isinstance(d, str) for d in _descr]):
                 raise TypeError('Input descriptions must have string type.')

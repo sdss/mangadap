@@ -529,7 +529,7 @@ class MaNGAConfig:
 
     @staticmethod
     def spectral_resolution(hdu, ext=None, fill=False, median=False):
-        """
+        r"""
         Return the spectral resolution for all spectra.
 
         See :func:`spectral_resolution_extension` for a description
