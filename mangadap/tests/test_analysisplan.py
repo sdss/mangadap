@@ -58,4 +58,12 @@ def test_no_stellar():
     assert plan.continuum['default'] is None, 'Continuum parameters should be None'
 
 
+def test_waverange():
+    plan = AnalysisPlan.from_toml(data_test_file('waverange.toml'))
+    assert len(plan.keys()) == 1, 'Number of example plans changed'
+    assert list(plan.keys())[0] == 'default', 'Name changed'
+    assert plan.rdxqa['default']['response_func_file'] is None, \
+            'Response function file should not be defined'
+    assert plan.rdxqa['default']['waverange'] == [4000.0, 10000.0], 'Wavelength range is wrong.'
+
 
