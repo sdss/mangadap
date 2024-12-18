@@ -35,8 +35,17 @@ from mangadap.proc.spectralindices import SpectralIndicesDef
 class AnalysisPlan:
     """
     Container class for a set of analysis plans.
+
+    Args:
+        plan (:obj:`dict`):
+            Dictionary providing the control-flow option hierarchy.
+        analysis_path (:obj:`str`, optional):
+            Path for output files.  If None, the current working directory is
+            used.
+        **kwargs (:obj:`dict`, optional):
+            Catch-all for spurious, ignored parameters.
     """
-    def __init__(self, plan, cube=None, analysis_path=None):
+    def __init__(self, plan, analysis_path=None, **kwargs):
         if not isinstance(plan, dict):
             raise TypeError('Plan must be provided as a dictionary.')
         # Copy the provided plan dictionary so that it can be changed/filled
@@ -50,7 +59,6 @@ class AnalysisPlan:
             if 'key' not in self.plan[key]:
                 self.plan['key'] = key
         self.analysis_path = Path('.' if analysis_path is None else analysis_path).resolve()
-        self.cube = cube
         self._validate()
         self.parse()
 
@@ -63,7 +71,7 @@ class AnalysisPlan:
         for key in self.plan_keys:
             for method_key in required_keys:
                 if method_key not in self[key].keys():
-                    self.plan[key][method_key] = {}
+                    self.plan[key][method_key] = {}     # TODO: Make this None instead?
 
         # Recursively convert None strings into None types
         self.plan = recursive_dict_str_to_None(self.plan)
@@ -77,12 +85,26 @@ class AnalysisPlan:
         return self.plan[key]
 
     def keys(self):
+        """
+        Return the plan keyword identifiers.
+        """
         return self.plan.keys()
 
     @classmethod
     def from_toml(cls, ifile, **kwargs):
         """
         Instantiate the plan from a TOML file.
+
+        Args:
+            ifile (:obj:`str`, `Path`_):
+                File with the runtime analysis plan options
+            kwargs (:obj:`dict`, optional):
+                Passed directly to the initialization method
+                (:class:`~mangadap.config.analysisplan.AnalysisPlan`)
+
+        Returns:
+            :class:`~mangadap.config.analysisplan.AnalysisPlan`: Constructed
+            analysis plan.
         """
         _ifile = Path(ifile).resolve()
         if not _ifile.exists():
@@ -102,6 +124,10 @@ class AnalysisPlan:
         return cls.from_toml(f, **kwargs)
 
     def parse(self):
+        """
+        Parse the provided options and instantiate the methods for each DAP
+        stage.
+        """
         self.rdxqa = {key: None if self[key]['rdxqa'] is None else
                         ReductionAssessmentDef.from_dict(self[key]['rdxqa'])
                         for key in self.plan.keys()}
@@ -125,11 +151,6 @@ class AnalysisPlan:
         """
         Return the path for data common to all plans.
 
-        Args:
-            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
-                Cube being analyzed.  Passed for cube-specific path
-                specification.  Not used by this base class.
-
         Returns:
             `Path`_: Path object for the "common" output
         """
@@ -140,9 +161,6 @@ class AnalysisPlan:
         Return the path for method-specific output.
 
         Args:
-            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
-                Cube being analyzed.  Passed for cube-specific path
-                specification.  Not used by this base class.
             plan_index (:obj:`int`, optional):
                 The index of the plan.  This is used to select the 'key' of the
                 analysis plan being used, which is used as the subdirectory for
@@ -157,8 +175,8 @@ class AnalysisPlan:
 
         Raises:
             ValueError:
-                Raised if the plan index is invalid or if both qa and ref are true.
-
+                Raised if the plan index is invalid or if both qa and ref are
+                true.
         """
         if plan_index < 0 or plan_index >= self.nplans:
             raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
@@ -176,24 +194,29 @@ class AnalysisPlan:
         """
         Return the general root name for an output file.
 
-        The default returned by this base class is::
+        The default returned by this base class is:
 
-        {cube.output_root}-{mode}-{self['key'][plan_index]}
+        .. code-block:: python
+
+            {cube.output_root}-{mode}-{self['key'][plan_index]}
         
         where ``mode`` and ``self['key'][plan_index]`` are only included if
         ``mode`` or ``plan_index`` are provided.
 
+        Derived class can, of course, use different naming conventions.
+
         Args:
             cube (:class:`~mangadap.datacube.datacube.DataCube`):
-                Cube being analyzed.  This is used to provide the primary root
-                of the output name.
+                Cube being analyzed.  In this base class, this is simply used to
+                provide the primary root of the output name; see
+                :class:`~mangadap.datacube.datacube.DataCube.output_root`.
             mode (:obj:`str`, optional):
                 An optional "mode" included in the file name.  If None, not
                 include in the output string.
             plan_index (:obj:`int`, optional):
-                The index of the plan.  This is used to select the 'key' of the
-                analysis plan being used, which is included in the file name.
-                If None, this is not included in the file name.
+                The index of the plan.  This is used to select the key of the
+                analysis plan being used, which is subsequently included in the
+                file name.  If None, this is not included in the file name.
     
         Returns:
             :obj:`str`: General root for output DAP file names.

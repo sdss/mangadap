@@ -1,0 +1,46 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 16 Mar 2016
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Line wavelengths are in: VACUUM
+#
+# The columns are described in README.
+#
+# Revisions:
+#       01 May 2016: (KBW) Changed format; 'line' removed, now
+#           considered a mode.
+#       13 Jul 2016: (KBW) Added log_bounded, blueside, and redside data
+#       01 Dec 2016: (KBW) Changed upper limit to 400 km/s
+#       10 Dec 2020: (KBW) Updated for new format
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double restwave;
+    char waveref[3];
+    char action;
+    char tie_f[2][10];
+    char tie_v[2][10];
+    char tie_s[2][10];
+    double blueside[2];
+    double redside[2];
+} DAPEML;
+
+DAPEML   1  OII     3727.092   vac  f   { None    None } {   19    = } { None None }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML   2  OII     3729.875   vac  f   { None    None } {    1    = } {    1    = }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML  12  Hb      4862.691   vac  f   { None    None } {   19    = } { None None }  { 4798.9  4838.9 } { 4885.6  4925.6 }
+DAPEML  13  OIII    4960.295   vac  f   {   14   =0.34 } {   14    = } {   14    = }  { 4930.3  4950.3 } { 4970.3  4990.3 }
+DAPEML  14  OIII    5008.240   vac  f   { None    None } {   19    = } { None None }  { 4978.2  4998.2 } { 5018.2  5038.2 }
+DAPEML  18  NII     6549.86    vac  f   {   20  =0.327 } {   20    = } {   20    = }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  24  NIIb    6549.86    vac  f   {   25  =0.327 } {   25    = } {   25    = }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  19  Ha      6564.632   vac  f   { None    None } { None None } { None None }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  23  Hab     6564.632   vac  f   { None    None } {   19    < } {   19 >1.4 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  20  NII     6585.271   vac  f   { None    None } {   19    = } { None None }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  25  NIIb    6585.271   vac  f   { None    None } {   23    = } {   20    > }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  21  SII     6718.294   vac  f   { None    None } {   19    = } { None None }  { 6673.0  6703.0 } { 6748.0  6778.0 }
+DAPEML  22  SII     6732.674   vac  f   { None    None } {   19    = } { None None }  { 6673.0  6703.0 } { 6748.0  6778.0 }
+

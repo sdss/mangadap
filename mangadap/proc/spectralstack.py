@@ -15,13 +15,13 @@ Stack some spectra!
 .. include:: ../include/links.rst
 """
 
+import warnings
 from IPython import embed
 
 import numpy
 from scipy import sparse, interpolate
 from matplotlib import pyplot, rc
 
-#from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import KeywordParSet
@@ -29,6 +29,7 @@ from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
 from .util import covariance_calibrated_noise
+
 
 class SpectralStackPar(KeywordParSet):
     r"""

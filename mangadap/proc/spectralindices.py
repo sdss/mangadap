@@ -1326,7 +1326,6 @@ class SpectralIndices:
             ivar[indx] = numpy.ma.masked
 
         # Remove the emission lines if provided        
-#        warnings.warn('DEBUG')
         if emission_line_model is not None:
             eml_model = emission_line_model.fill_to_match(binid, missing=missing)
             no_eml = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)
@@ -1342,7 +1341,8 @@ class SpectralIndices:
         # Adjust the spectral resolution
         _resolution_fwhm = -1 if resolution_fwhm is None else resolution_fwhm
         if _resolution_fwhm > 0:
-            flux, ivar = adjust_spectral_resolution(wave, flux, ivar, sres, _resolution_fwhm)
+            flux, ivar = SpectralIndices.adjust_spectral_resolution(wave, flux, ivar, sres,
+                                                                    _resolution_fwhm)
 
         return wave, flux[select,:], ivar[select,:]
 
@@ -2270,6 +2270,7 @@ class SpectralIndices:
         #  - Check if the EmissionLineModel fitter has the appropriate
         #    function; True for Sasuke, not currently true for Elric
         eml_stellar_continuum_available = self.emission_line_model is not None \
+                and self.emission_line_model.stellar_continuum is not None \
                 and callable(self.emission_line_model.method['fitclass'].construct_continuum_models)
 
         # Determine if the velocity-dispersion corrections can be
