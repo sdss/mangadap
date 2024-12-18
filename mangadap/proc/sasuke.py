@@ -1408,8 +1408,6 @@ class Sasuke(EmissionLineFit):
                 Run in debug mode.
 
         Returns:
-        return model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par,\
-                    model_binid
             tuple: The function returns: 
 
                 #. the best-fitting model spectra, containing any continuum as

@@ -66,8 +66,47 @@ at their default values.
     will not redo analysis steps that it thinks are already complete (indicated
     by the presence of the reference file), this means that the change may not
     take effect if the reference file is present.  Make sure to either change
-    the name of the reference file when changing parameters on-the-fly, or set
-    the ``overwrite`` keyword to ``true``.  See :ref:`execution`.
+    the name of the reference file when changing parameters on-the-fly, delete
+    the reference file, or set the ``overwrite`` keyword to ``true``.  See
+    :ref:`execution`.
+
+While you can simply change single parameters and use the defaults for others,
+beware that some parameters are mutually exclusive and the combination of your
+parameters and the defaults may lead to unintended results.  A key example of
+this is that you can define a wavelength range for the S/N calculation used in
+the data-reduction assessments module, like so:
+
+.. code-block:: toml
+
+    [default]
+     key = 'change_snr'
+
+    # This won't work
+    [default.rdxqa]
+     waverange = [4000.0, 10000.0]
+
+However, ``waverange`` is mutually exclusive with the filter response function
+parameter, which is set to the g-band response function by default
+(``response_func_file='gunn_2001_g_response.db'``).  This means that you **also
+need to change the response function**.
+
+.. code-block:: toml
+
+    [default]
+     key = 'change_snr'
+
+    # This will work
+    [default.rdxqa]
+     waverange = [4000.0, 10000.0]
+     response_func_file = 'none'
+
+.. important::
+
+    Note that toml syntax and python syntax are different.  In the above
+    example, we had to set ``covariance = false``, not ``covariance = False``.
+    We also had to include trailing zeros in the wavelength range, ``waverange =
+    [4000.0, 10000.0]``, not ``waverange = [4000., 10000.]``.  If you get toml
+    errors, check the syntax is correct.
 
 Below, we specify how to alter the parameters for all of the main DAP modules
 and provide their default values.  In addition to these details, make sure you
