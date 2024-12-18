@@ -8,6 +8,7 @@
 
 [default.binning.spatial]
  target_snr             = 10
+ covar_mode         = 'matrix'
 
 [default.binning.spectral]
  covar_mode         = 'channels'

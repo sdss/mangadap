@@ -8,8 +8,9 @@
  - Emission-line modeling updates:
 
     - Enable the stellar velocity to be tied to the gas velocities.  The goal is
-      to allow for fitting a stellar continuum can nominally account for stellar
-      absorption and nebular emission, even when the continuum has very low S/N.
+      to allow for fitting a stellar continuum that can nominally account for
+      stellar absorption and nebular emission, even when the continuum has very
+      low S/N.
     - Allow kinematic components to be fixed (full integration into the code is
       still in development).
     - Allow for *only* gas templates to be fit.  The continuum will be fit by a
@@ -18,7 +19,6 @@
       deprecated.  The continuum fit during the stellar-kinematics module and
       the continuum fit during the emission-line model fitting are now
       independent of each other in the reference files.
-
     - Added parameters that can be used to set how ppxf errors are treated, and
       whether or not groups of spectra should be treated as an "ensemble"; i.e.,
       part of the same galaxy at the same redshift.

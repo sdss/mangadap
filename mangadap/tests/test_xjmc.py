@@ -273,7 +273,6 @@ def test_component_setup_two_stellar():
 
 
 def test_reset_components():
-
     c = numpy.arange(5)
     valid = numpy.array([0, 1, 1, 0, 1], dtype=bool)
     _c, c_map = xjmc._reset_components(c, valid)
@@ -282,8 +281,74 @@ def test_reset_components():
     assert numpy.array_equal(c[valid], c_map), 'Bad mapping'
 
 
+def test_split_start():
+    start = numpy.array([1000., 100., 1050., 110., 0.1, 0.1, 950., 90.])
+    moments = [2, 4, 2]
+    _start = xjmc.split_start(start, moments)
+    assert len(_start) == len(moments), 'Should be one list per component'
+    assert moments == [len(s) for s in _start], \
+            'Mismatch of component list length and expected number of moments'
 
 
+def test_vel_indices():
+    moments = [2, 4, 2]
+    indx = xjmc.vel_indices(moments)
+    assert numpy.array_equal(indx, [0,2,6]), 'Indices wrong'
+    select = numpy.array([True, False, True])
+    _indx = xjmc.vel_indices(moments, select=select)
+    assert numpy.array_equal(_indx, indx[select]), 'Selected indices wrong'
+    _indx = xjmc.vel_indices(moments, select=2)
+    assert numpy.array_equal(_indx, indx[2]), 'Selected indices wrong'
+
+
+def test_disp_indices():
+    moments = [2, 4, 2]
+    indx = xjmc.disp_indices(moments)
+    assert numpy.array_equal(indx, [1,3,7]), 'Indices wrong'
+    select = numpy.array([True, False, True])
+    _indx = xjmc.disp_indices(moments, select=select)
+    assert numpy.array_equal(_indx, indx[select]), 'Selected indices wrong'
+    _indx = xjmc.disp_indices(moments, select=2)
+    assert numpy.array_equal(_indx, indx[2]), 'Selected indices wrong'
+
+
+def test_kin_indices():
+    moments = [2, 4, 2]
+    select = numpy.array([True, False, True])
+    indx = xjmc.kin_indices(moments, select)
+    assert numpy.array_equal(indx, [0,1,6,7]), 'Indices wrong'
+    indx = xjmc.kin_indices(moments, 1)
+    assert numpy.array_equal(indx, [2,3,4,5]), 'Indices wrong'
+
+
+def test_split_components():
+    # Both exist
+    component = numpy.array([0, 0, 0, 0, 0, 1, 2, 2, 3])
+    gas_template = component > 0
+    gas_component, stellar_component = xjmc.split_components(component, gas_template)
+    assert numpy.array_equal(gas_component, [1, 2, 3]), 'Incorrect gas components'
+    assert numpy.array_equal(stellar_component, [0]), 'Incorrect stellar components'
+
+    # Only gas
+    component = numpy.array([0, 0, 0, 0, 0, 1, 2, 2, 3])
+    gas_template = component >= 0
+    gas_component, stellar_component = xjmc.split_components(component, gas_template)
+    assert numpy.array_equal(gas_component, [0, 1, 2, 3]), 'Incorrect gas components'
+    assert numpy.array_equal(stellar_component, []), 'Incorrect stellar components'
+
+    # Only stars
+    component = numpy.array([0, 0, 0, 0, 0, 1, 2, 2, 3])
+    gas_template = component < 0
+    gas_component, stellar_component = xjmc.split_components(component, gas_template)
+    assert numpy.array_equal(gas_component, []), 'Incorrect gas components'
+    assert numpy.array_equal(stellar_component, [0, 1, 2, 3]), 'Incorrect stellar components'
+
+    # Both exist but they're out of order
+    component = numpy.array([0, 0, 0, 0, 0, 1, 2, 2, 3])
+    gas_template = component == 2
+    gas_component, stellar_component = xjmc.split_components(component, gas_template)
+    assert numpy.array_equal(gas_component, [2]), 'Incorrect gas components'
+    assert numpy.array_equal(stellar_component, [0, 1, 3]), 'Incorrect stellar components'
 
 
 

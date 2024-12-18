@@ -28,44 +28,91 @@ from ppxf import ppxf, capfit
 #from capfit import capfit
 
 
-## Array manipulation that allows me to keep the set of kinematic parameters in a
-## single vector
-#def array_of_split(ary, indices_or_sections, axis=0):
-#    """
-#    Convenience function to use np.split to split an array but to return the
-#    result as an object array instead of a list.
-#
-#    Args:
-#        ary (`numpy.ndarray`_):
-#            Array to split
-#        indices_or_sections (:obj:`int`, `numpy.ndarray`_):
-#            See np.split
-#        axis (:obj:`int`, optional):
-#            Axis along which to split
-#
-#    Returns:
-#        `numpy.ndarray`_: Object array with the result.
-#    """
-#    return np.array(np.split(ary, indices_or_sections, axis=axis), dtype=object)
-
-
 def vel_indices(moments, select=None):
+    """
+    Return the indices of all 1st moment (velocity) parameters in a vector of
+    ppxf kinematic parameters.
+
+    Args:
+        moments (:obj:`list`, `numpy.ndarray`_):
+            Number of moments in each kinematic component.  Length must match
+            the number of kinematic components.
+        select (:obj:`int`, `numpy.ndarray`_, optional):
+            Either an integer or a vector selecting a specific kinematic
+            component.  E.g., to select the 2nd kinematic component, set
+            ``select=1``.
+
+    Returns:
+        :obj:`int`, `numpy.ndarray`_: One or more indices in the ppxf kinematic
+        parameter set.
+    """
     indx = np.append([0], np.cumsum(moments)[:-1])
     return indx if select is None else indx[select]
 
 
 def disp_indices(moments, select=None):
+    """
+    Return the indices of all 2nd moment (velocity dispersion) parameters in a
+    vector of ppxf kinematic parameters.
+
+    Args:
+        moments (:obj:`list`, `numpy.ndarray`_):
+            Number of moments in each kinematic component.  Length must match
+            the number of kinematic components.
+        select (:obj:`int`, `numpy.ndarray`_, optional):
+            Either an integer or a vector selecting a specific kinematic
+            component.  E.g., to select the 2nd kinematic component, set
+            ``select=1``.
+
+    Returns:
+        :obj:`int`, `numpy.ndarray`_: One or more indices in the ppxf kinematic
+        parameter set.
+    """
     return vel_indices(moments, select=select) + 1
 
 
-def kin_indices(moments, select=None):
-    if select is not None and len(select) == 0:
+def kin_indices(moments, select):
+    """
+    Return the indices of all kinematic parameters associated with the selected
+    list of kinematic components.
+
+    Args:
+        moments (:obj:`list`, `numpy.ndarray`_):
+            Number of moments in each kinematic component.  Length must match
+            the number of kinematic components.
+        select (:obj:`int`, `numpy.ndarray`_):
+            Either an integer or a vector selecting a specific kinematic
+            component.  E.g., to select the 2nd kinematic component, set
+            ``select=1``.  Note, if the length of select is 0, the function
+            returns and empty numpy array.
+
+    Returns:
+        :obj:`int`, `numpy.ndarray`_: One or more indices in the ppxf kinematic
+        parameter set.
+    """
+    _select = None if select is None else np.atleast_1d(select)
+    if _select is not None and len(_select) == 0:
         return np.array([], dtype=int)
+    _moments = np.asarray(moments)
     return np.concatenate([np.arange(p,p+m) 
-                            for p,m in zip(vel_indices(moments, select=select), moments[select])])
+                for p,m in zip(vel_indices(_moments, select=_select), _moments[_select])])
 
 
 def split_start(start, moments):
+    """
+    Split a vector of kinematic parameters into a list of lists, one list of
+    parameters for each kinematic component.
+
+    Args:
+        start (`numpy.ndarray`_):
+            A 1D vector with all the kinematic parameters.
+        moments (:obj:`list`, `numpy.ndarray`_):
+            The number of moments in each kinematic component.
+
+    Returns:
+        :obj:`list`: A list of lists, where each element is the list of the
+        kinematic parameters for a given kinematic component.
+    """
     if len(moments) == 1:
         return start.tolist()
     return [a.tolist() for a in np.split(start, np.cumsum(moments)[:-1])]
@@ -73,11 +120,25 @@ def split_start(start, moments):
 
 def split_components(component, gas_template):
     """
-    Return the indices of the gas and stellar components.  Assumes all stellar
-    components are first.
+    Return the indices of the gas and stellar components.
+
+    Args:
+        component (`numpy.ndarray`_):
+            A 1D vector with the component assigned to each template.
+        gas_template (`numpy.ndarray`_):
+            A boolean vector selecting the gas template spectra.  Must have the
+            same length as ``component``.
+
+    Returns:
+        :obj:`tuple`: Two numpy arrays identifying (1) the indices of the gas
+        kinematic components (i.e., the components associate with the gas
+        templates) and (2) the indices of the stellar kinematic components.
     """
+    if len(component) != len(gas_template):
+        raise ValueError('Length of component and gas_template vectors do not match.')
+    components = np.unique(component)
     gas_components = np.unique(component[gas_template])
-    return gas_components, np.arange(np.amin(gas_components))
+    return gas_components, components[np.logical_not(np.isin(components, gas_components))]
 
 
 # NOTE: Pulled from mangadap.proc.ppxffit.PPXFFit.ppxf_tpl_obj_voff
@@ -338,7 +399,7 @@ def _ppxf_component_setup(component, moments, gas_template, start, fixed,
     # each component has shape (nmom,), which can be different for each
     # component
     # Get the indices of the stellar kinematic parameters
-    str_p = kin_indices(moments, select=str_components)
+    str_p = kin_indices(moments, str_components)
 
     # Update the moments and the "fixed" vectors
     _moments = moments.copy()
@@ -648,7 +709,7 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
     # Reset components, moments, and starting kinematics
     _component, component_map = _reset_components(component, valid)
     _moments = moments[component_map]
-    indx = kin_indices(moments, select=component_map)
+    indx = kin_indices(moments, component_map)
     _start = start[indx]
     _fixed = fixed[indx]
     # Reset velocity groups
@@ -722,7 +783,7 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
     nkin = np.sum(moments)
     _sol = np.full(nkin, fill_value, dtype=float) if start is None else start.copy()
     _err = np.full(nkin, fill_value, dtype=float)
-    indx = kin_indices(moments, select=component_map)
+    indx = kin_indices(moments, component_map)
     _sol[indx] = _ppsol
     _err[indx] = _pperr
 
@@ -1595,9 +1656,6 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
                     = _combine_stellar_templates(templates, gas_template,
                                                  binned_tpl_wgts, inp_component, vgrp, sgrp)
 
-        # TODO: MUCH OF THIS REMAINS UNTESTED AFTER ALLOWING THE CODE TO FIT
-        # SPECTRA WITHOUT A STELLAR CONTINUUM.
-
         # - Restructure the relevant arrays to prepare for the fits to
         #   the *individual* spectra.  Propagate the changes to the
         #   components and groups.
@@ -1628,7 +1686,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
             strt = 0 if len(str_components) == 0 else np.sum(np.absolute(moments[str_components]))
             gas_start = binned_kin[_binid,:][:,strt:]
             for i in range(nspec):
-                _start[i,strt:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
+                _start[i,strt:] = np.array([gas_start[i].tolist()]*n_gas_comp).ravel()
         _moments = inp_moments
     else:
         # Binned spectra were not provided, prepare to fit the
@@ -1686,7 +1744,11 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
 
     # Second fit to the individual spectra
     # - Use first fit to reset the starting estimates for the gas kinematics
-    gas_components, str_components = split_components(component, gas_template)
+    try:
+        gas_components, str_components = split_components(_component, _gas_template)
+    except:
+        embed(header='xjmc 1764')
+        exit()
     strt = np.sum(np.absolute(moments[str_components]))
     gas_start = kin[:,strt:] if constr_kinem is None else None
     component, moments, start, fixed \

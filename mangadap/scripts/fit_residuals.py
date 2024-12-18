@@ -307,7 +307,9 @@ def fom_lambda(name, wave, flux, error, model, fit='sc', wave_limits=None, ofile
     chi_lim = numpy.exp(growth_lim(numpy.ma.log(mean_chi).compressed(), 0.99, fac=2.0, midpoint=0))
 
     l0 = numpy.log10(wave[0])
-    dl = spectral_coordinate_step(wave, log=True)
+    # TODO: spectral_coordinate_step is too strict!
+#    dl = spectral_coordinate_step(wave, log=True)
+    dl = numpy.mean(numpy.diff(numpy.log10(wave)))
     wave_bins = numpy.power(10, l0-dl/2 + dl*numpy.arange(len(wave)+1))
     spec_bins = 0.5+numpy.arange(nspec+1)
 
