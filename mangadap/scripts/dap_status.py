@@ -266,6 +266,8 @@ class DapStatus(scriptbase.ScriptBase):
     @staticmethod
     def main(args):
 
+        raise NotImplementedError('dap_status script is out of date!')
+
         import time
         from mangadap.config import defaults
         from mangadap.par.analysisplan import AnalysisPlanSet

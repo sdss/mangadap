@@ -26,7 +26,6 @@ import logging
 from IPython import embed
 
 import numpy
-#from scipy import interpolate, fftpack
 from matplotlib import pyplot
 
 import astropy.constants

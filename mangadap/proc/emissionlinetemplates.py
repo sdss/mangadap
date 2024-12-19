@@ -35,8 +35,6 @@ construction would be::
 .. include:: ../include/links.rst
 """
 
-import os
-import time
 import logging
 
 from IPython import embed
@@ -51,9 +49,6 @@ from ..util.log import log_output
 from ..util.misc import is_number
 from ..util import lineprofiles
 from .spectralfitting import EmissionLineFit
-
-# For debugging
-from matplotlib import pyplot
 
 
 class EmissionLineTemplates:

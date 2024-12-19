@@ -19,16 +19,13 @@ spectra in an RSS or CUBE file.
 .. include:: ../include/links.rst
 """
 
-import os
 import numpy
 
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from .parset import KeywordParSet, ParDatabase
+from .parset import KeywordParSet
 from .spectralfeaturedb import SpectralFeatureDB
 
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 class ArtifactPar(KeywordParSet):
     """

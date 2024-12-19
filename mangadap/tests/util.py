@@ -16,8 +16,6 @@ def remote_data_file(filename=None):
 def remote_data_files():
     return ['manga-7815-3702-LINCUBE.fits.gz', 'manga-7815-3702-LINRSS.fits.gz',
             'manga-7815-3702-LOGCUBE.fits.gz', 'manga-7815-3702-LOGRSS.fits.gz']
-#    return ['manga-7815-6101-LINCUBE.fits.gz', 'manga-7815-6101-LINRSS.fits.gz',
-#            'manga-7815-6101-LOGCUBE.fits.gz', 'manga-7815-6101-LOGRSS.fits.gz']
 
 drp_test_version = 'v3_1_1'
 dap_test_version = '3.1.0'

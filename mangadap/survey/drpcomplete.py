@@ -19,7 +19,6 @@ regarding the completed DRP files.
 .. include:: ../include/links.rst
 """
 from pathlib import Path
-import os
 import warnings
 
 from IPython import embed
@@ -31,8 +30,6 @@ import astropy.constants
 
 from pydl.pydlutils.yanny import yanny
 
-from ..datacube import MaNGADataCube
-from ..spectra import MaNGARSS
 from ..config import manga
 from ..util.parser import arginp_to_list
 

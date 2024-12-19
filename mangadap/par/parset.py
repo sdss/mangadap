@@ -38,6 +38,7 @@ from configobj import ConfigObj
 
 from .util import recursive_dict_evaluate
 
+
 class ParSet:
     """
     Generic base class to handle and manipulate a list of operational
@@ -881,7 +882,7 @@ class ParSet:
 #                # Don't write Nones
 #                continue
             if isinstance(value, ParSet):
-                if verbose:
+                if not quiet:
                     warnings.warn('ParSets within ParSets are not written to headers!  '
                                   'Skipping {0}.'.format(key))
                 continue

@@ -1,9 +1,7 @@
 from IPython import embed
 
 import numpy
-from scipy import special
 from astropy.io import fits
-import astropy.constants
 
 from ppxf import ppxf, ppxf_util
 

@@ -24,7 +24,7 @@ import astropy.constants
 from ..util.bitmask import BitMask
 from ..util.datatable import DataTable
 from ..util.constants import DAPConstants
-from ..util import lineprofiles
+#from ..util import lineprofiles
 from ..util.filter import interpolate_masked_vector
 from ..par.emissionlinedb import EmissionLineDB
 from .bandpassfilter import emission_line_equivalent_width, passband_median

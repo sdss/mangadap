@@ -25,7 +25,7 @@ try:
 except:
     warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
-from ..config import manga, manga_environ, python_versions
+from ..config import manga, python_versions
 from .drpcomplete import DRPComplete
 from ..util.parser import arginp_to_list
 from ..util.fileio import create_symlink

@@ -16,14 +16,10 @@ Provides the main wrapper function for the MaNGA DAP.
 import logging
 import resource
 import time
-import os
-import warnings
 
 from IPython import embed
 
 import numpy
-
-import astropy.constants
 
 from mangadap import __version__
 

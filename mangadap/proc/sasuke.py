@@ -36,7 +36,6 @@ from ..util.sampling import spectrum_velocity_scale
 from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util.constants import DAPConstants
-#from ..util import lineprofiles
 from .templatelibrary import TemplateLibraryDef, TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel

@@ -12,9 +12,6 @@ Implements a base class that performs linear least-squares fitting of
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
-import time
-
 from IPython import embed
 
 import numpy

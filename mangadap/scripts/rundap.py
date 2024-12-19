@@ -118,6 +118,8 @@ class RunDap(scriptbase.ScriptBase):
     @staticmethod
     def main(args):
 
+        import warnings
+
         if args.print_version:
             from mangadap import __version__
             print(f'DAP Version: {__version__}')

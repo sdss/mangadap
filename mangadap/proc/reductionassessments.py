@@ -26,11 +26,8 @@ from astropy.io import fits
 
 from pydl.goddard.astro import airtovac
 
-#from ..datacube import DataCube
 from ..par.parset import KeywordParSet
-
 from ..config import defaults
-
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
 from ..util.covariance import Covariance

@@ -138,7 +138,7 @@ def split_components(component, gas_template):
         raise ValueError('Length of component and gas_template vectors do not match.')
     components = np.unique(component)
     gas_components = np.unique(component[gas_template])
-    return gas_components, components[np.logical_not(np.isin(components, gas_components))]
+    return gas_components, np.setdiff1d(components, gas_components)
 
 
 # NOTE: Pulled from mangadap.proc.ppxffit.PPXFFit.ppxf_tpl_obj_voff

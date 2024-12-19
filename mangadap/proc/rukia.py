@@ -15,21 +15,16 @@ wavelength-dependent dispersion.
 .. include:: ../include/links.rst
 """
 
-import os
-import time
 import warnings
 
 from IPython import embed
 
 import numpy
-from scipy import optimize
+from scipy import optimize, interpolate
 
 import astropy.constants
 
 from ppxf.ppxf_util import gaussian_filter1d
-from ppxf.capfit import cov_err
-# TODO: When upgrading ppxf, may need to change to this...
-#from capfit.capfit import cov_err
 
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import angstroms_per_pixel, Resample
@@ -383,14 +378,14 @@ class Rukia:
         if sigma_f is not None and len(sigma_f) != self.nsp:
             raise ValueError('Incorrect number of parameter flags for the sigma model.')
         if sigma_p0 is None and sigma_f is not None:
-            warnigns.warn('Did not provide sigma model parameters, but did provide sigma model '
+            warnings.warn('Did not provide sigma model parameters, but did provide sigma model '
                           'parameter fitting flags.  Parameters may get fixed to default guesses.')
         if add_p0 is not None and len(add_p0) != self.nap:
             raise ValueError('Incorrect number of parameters for the additive polynomial.')
         if add_f is not None and len(add_f) != self.nap:
             raise ValueError('Incorrect number of parameter flags for the additive polynomial.')
         if add_p0 is None and add_f is not None:
-            warnigns.warn('Did not provide additive polynomial parameters, but did provide '
+            warnings.warn('Did not provide additive polynomial parameters, but did provide '
                           'additive polynomial parameter fitting flags.  Parameters may get '
                           'fixed to default guesses.')
         if mul_p0 is not None and len(mul_p0) != self.nmp:
@@ -399,7 +394,7 @@ class Rukia:
             raise ValueError('Incorrect number of parameter flags for the multiplicative '
                              'polynomial.')
         if mul_p0 is None and mul_f is not None:
-            warnigns.warn('Did not provide multiplicative polynomial parameters, but did provide '
+            warnings.warn('Did not provide multiplicative polynomial parameters, but did provide '
                           'multiplicative polynomial parameter fitting flags.  Parameters may get '
                           'fixed to default guesses.')
 

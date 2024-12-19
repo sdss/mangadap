@@ -19,7 +19,7 @@ from mangadap.proc.util import growth_lim, inverse
 
 from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.filter import BoxcarFilter
-from mangadap.util.sampling import spectral_coordinate_step
+#from mangadap.util.sampling import spectral_coordinate_step
 from mangadap.util.mapping import map_extent, map_beam_patch
 from mangadap.util.fileio import channel_dictionary
 from mangadap.util.pkg import load_object

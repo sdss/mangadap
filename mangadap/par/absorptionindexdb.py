@@ -37,7 +37,6 @@ See :ref:`spectralindices` for the format of the parameter file.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
 import warnings
 import numpy
 

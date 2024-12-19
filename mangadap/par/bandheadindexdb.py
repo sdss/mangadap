@@ -38,17 +38,8 @@ See :ref:`spectralindices` for the format of the parameter file.
 .. include:: ../include/links.rst
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
 import warnings
-if sys.version > '3':
-    long = int
 
-import os.path
 import numpy
 
 from pydl.goddard.astro import airtovac
@@ -56,6 +47,7 @@ from pydl.pydlutils.yanny import yanny
 
 from .spectralfeaturedb import SpectralFeatureDB
 from ..proc.bandpassfilter import BandPassFilterPar
+
 
 class BandheadIndexDB(SpectralFeatureDB):
     r"""

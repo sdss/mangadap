@@ -42,7 +42,6 @@ The above will read the file and set the database keyword to 'MYELM'
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
 import warnings
 
 import numpy
@@ -53,10 +52,6 @@ from pydl.pydlutils.yanny import yanny
 from .spectralfeaturedb import SpectralFeatureDB
 from ..proc.bandpassfilter import BandPassFilterPar
 from ..util.datatable import DataTable
-
-#    Table includes:
-#
-#    .. include:: ../tables/emissionlinemomentsdatatable.rst
 
 
 class EmissionMomentsDefinitionTable(DataTable):

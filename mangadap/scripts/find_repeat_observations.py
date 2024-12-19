@@ -4,14 +4,13 @@ import numpy
 import os
 import warnings
 import time
-import argparse
 
 from IPython import embed
 
 from astropy.io import fits
 from astropy import constants
 
-from mangadap.util.bitmask import BitMask
+#from mangadap.util.bitmask import BitMask
 from mangadap.config import defaults
 
 from mangadap.scripts import scriptbase
@@ -103,7 +102,7 @@ class FindRepeatObservations(scriptbase.ScriptBase):
             raise FileNotFoundError(f'File does not exist: {dapall_file}')
 
         if args.output_file is not None and os.path.isfile(args.output_file):
-            if not overwrite:
+            if not args.overwrite:
                 raise FileExistsError('Output file already exists, use the -o option to overwrite.')
             warnings.warn('Output file already exists and will be overwritten.')
 

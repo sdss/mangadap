@@ -23,8 +23,6 @@ import warnings
 
 from IPython import embed
 
-from scipy import sparse
-
 from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
@@ -537,7 +535,7 @@ class DAPFitsUtil:
                     or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
                 warn = True
                 unique_bins = numpy.arange(unique_bins.size)
-        if warn and not quiet:
+        if warn:
             warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
                           'sorted by their bin number.')
 

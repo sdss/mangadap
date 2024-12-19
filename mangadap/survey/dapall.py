@@ -1095,9 +1095,9 @@ class DAPall:
             plan_indx = []
 #            use_plans = numpy.zeros(len(plan_methods), dtype=bool)
             for i, key in enumerate(plan.keys()):
-                if plan_method[i] in methods:
+                if plan_methods[i] in methods:
                     plan_indx += [i]
-                    self.methods += [plan_method[i]]
+                    self.methods += [plan_methods[i]]
                     self.deconstruct += [deconstruct[i]]
             self.methods = numpy.array(self.methods)
             self.deconstruct = numpy.array(self.deconstruct)
