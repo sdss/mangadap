@@ -23,6 +23,8 @@
       whether or not groups of spectra should be treated as an "ensemble"; i.e.,
       part of the same galaxy at the same redshift.
 
+ - Basic code maintenance
+
 
 4.2.0 (05 Nov 2024)
 -------------------
