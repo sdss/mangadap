@@ -25,11 +25,8 @@ from IPython import embed
 
 import numpy
 
-from pydl.pydlutils.yanny import yanny
-
 from ..config import defaults
 from .parset import ParDatabase
-from ..util.parser import DefaultConfig
 from ..proc import util
 
 # TODO: Enable searching of local directory

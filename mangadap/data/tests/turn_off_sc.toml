@@ -1,0 +1,8 @@
+
+[default]
+ key = 'no_stellar'
+
+[default.continuum]
+ key                    = 'None'
+
+ 

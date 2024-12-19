@@ -26,12 +26,14 @@ import logging
 from IPython import embed
 
 import numpy
-#from scipy import interpolate, fftpack
 from matplotlib import pyplot
 
 import astropy.constants
 
 from ppxf import ppxf, capfit
+# TODO: When upgrading ppxf, may need to change to this...
+#from ppxf import ppxf
+#from capfit import capfit
 
 from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
@@ -533,7 +535,7 @@ class PPXFModel:
         if self.nsky > 0:
             k = self.npoly + self.ntemp
             self.matrix[: self.npix, k : k + self.nsky] = self.sky
-            if nspec == 2:      # Sky for right spectrum
+            if self.nspec == 2:      # Sky for right spectrum
                 self.matrix[self.npix :, k + self.nsky : k + 2*self.nsky] = self.sky
 
         # return the model
@@ -775,8 +777,8 @@ class PPXFFit(StellarKinematicsFit):
 
         # Assess the regions that need to be masked during fitting
         if ensemble:
-            # Treat all spectra as part of an ensemble so mask the same
-            # region for all spectra
+            # Treat all spectra as part of an ensemble so mask the same region
+            # for all spectra
             _waverange = numpy.array([numpy.amax(_waverange[:,0]), numpy.amin(_waverange[:,1])])
             try:
                 fit_indx, waverange_mask, npix_mask, alias_mask \

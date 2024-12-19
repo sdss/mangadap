@@ -3,7 +3,7 @@ from IPython import embed
 
 import numpy
 from scipy import special
-from matplotlib import pyplot
+#from matplotlib import pyplot
 
 import astropy.constants
 

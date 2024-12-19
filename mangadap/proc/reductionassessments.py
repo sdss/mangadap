@@ -26,11 +26,8 @@ from astropy.io import fits
 
 from pydl.goddard.astro import airtovac
 
-#from ..datacube import DataCube
 from ..par.parset import KeywordParSet
-
 from ..config import defaults
-
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
 from ..util.covariance import Covariance
@@ -72,14 +69,15 @@ class ReductionAssessmentDef(KeywordParSet):
                   overwrite]
         dtypes = [str, ar_like, str, bool, bool, in_fl, bool]
         descr = ['Keyword to distinguish the assessment method.',
-                 'A two-element vector with the starting and ending wavelength within which to ' \
-                    'calculate the signal-to-noise.  Mutually exclusive with response_func_file',
+                 'A beginning and ending wavelength in angstroms within which to calculate the ' \
+                    'signal-to-noise (e.g., 3700,10000).  Mutually exclusive with ' \
+                    'response_func_file',
                  'The name of a file that defines a response function to use for the S/N ' \
                     'calculation.  Must be a local file or distributed with the DAP source code.' \
                     '  Expected to have two columns, with the wavelength and response ' \
                     'efficiency.  Mutually exclusive with waverange.',
                  'Boolean indicating that the wavelengths provided either using waverange or ' \
-                    'response_func_file are in vacuum (not air).',
+                    'response_func_file are in vacuum; False means they are in air.',
                  'Provide the fiducial spatial covariance.  If this is False, no spatial ' \
                      'covariance will be available for calculations that use the results of the ' \
                      'reduction assessments.  If True and a covariance matrix is available ' \

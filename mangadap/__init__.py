@@ -6,7 +6,7 @@ __license__ = 'BSD3'
 __author__ = 'Kyle B. Westfall'
 __maintainer__ = 'Kyle B. Westfall'
 __email__ = 'westfall@ucolick.org'
-__copyright__ = '(c) 2014-2022, SDSS-IV/MaNGA Pipeline Group'
+__copyright__ = '(c) 2014-2024, SDSS-IV/MaNGA Pipeline Group'
 __credits__ = ['Kyle B. Westfall', 'Brett H. Andrews', 'Jorge Barrera-Ballesteros',
                'Francesco Belfiore', 'Matthew A. Bershady', 'Kevin Bundy', 'Joel R. Brownstein',
                'Michele Cappellari', 'Brian Cherinka', 'Lodovico Coccato', 'Niv Drory',

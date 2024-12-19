@@ -1456,7 +1456,7 @@ class Covariance:
                     or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
                 warn = True
                 unique_bins = numpy.arange(unique_bins.size)
-        if warn and not quiet:
+        if warn:
             warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
                           'sorted by their bin number.')
 
@@ -1543,7 +1543,7 @@ class Covariance:
                     or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
                 warn = True
                 unique_bins = numpy.arange(unique_bins.size)
-        if warn and not quiet:
+        if warn:
             warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
                           'sorted by their bin number.')
 #        if unique_bins.size != unique_bins[-1]+2 \

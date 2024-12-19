@@ -14,7 +14,6 @@ from astropy.io import fits
 from mangadap.dapfits import DAPQualityBitMask
 from mangadap.config import manga
 #from mangadap.proc.util import growth_lim
-from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.fileio import channel_dictionary
 
 from mangadap.scripts import scriptbase

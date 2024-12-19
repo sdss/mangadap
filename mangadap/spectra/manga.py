@@ -11,9 +11,6 @@ Implement the derived class for MaNGA row-stacked spectra.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
-import warnings
-
 from IPython import embed
 
 import numpy
@@ -22,8 +19,7 @@ from astropy.io import fits
 
 from ..config.manga import MaNGAConfig
 from ..util.drpbitmask import DRPFitsBitMask
-from ..util.constants import DAPConstants
-from ..util.filter import interpolate_masked_vector
+from ..util.parser import DefaultConfig
 from .rowstackedspectra import RowStackedSpectra
 
 

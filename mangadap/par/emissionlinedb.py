@@ -45,9 +45,6 @@ See :ref:`emissionlines` for the format of the parameter file.
 .. include:: ../include/links.rst
 """
 
-import os
-import glob
-
 from IPython import embed
 
 import numpy
@@ -57,7 +54,6 @@ from pydl.pydlutils.yanny import yanny
 
 from .parset import KeywordParSet
 from .spectralfeaturedb import SpectralFeatureDB
-from ..proc import util
 from ..util.datatable import DataTable
 
 

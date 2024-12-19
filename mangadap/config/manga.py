@@ -199,7 +199,7 @@ def plate_target_files():
 
     # Default search string
     search_str =  core_dir / 'platedesign' / 'platetargets'
-    file_list = sorted(list(search_path.glob('plateTargets*.par')))
+    file_list = sorted(list(search_str.glob('plateTargets*.par')))
     nfiles = len(file_list)
     if nfiles == 0:
         raise ValueError('Unable to find any plateTargets files!')
@@ -236,43 +236,6 @@ def parse_plate_ifu_from_file(name):
     Parse the plate and ifu numbers from the file name of a MaNGA DRP file.
     """
     return tuple([int(n) for n in name.split('-')[1:3]])
-
-
-# USED BY:
-#   - scripts/rundap.py
-def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
-               directory_path=None):
-    """
-    Return the full path to the DAP configuration file.
-
-    The configuration file provides the input data necessary to
-    instantiate a :class:`mangadap.datacube.manga.MaNGADataCube`.
-    
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        ifudesign (:obj:`int`):
-            IFU design number
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version. Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional): 
-            Path to the root analysis directory. Default is to use
-            :func:`dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            Path to the directory with the DAP output files. Default
-            is to use :func:`dap_common_path`
-
-    Returns:
-        :obj:`str`: Full path to the DAP par file
-    """
-    # Make sure the directory path is defined
-    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
-                                      dapver=dapver, analysis_path=analysis_path) \
-                            if directory_path is None else Path(directory_path).resolve()
-    # Set the name of the par file; put this in its own function?
-    return _directory_path /  f'{dap_file_root(plate, ifudesign, mode="CUBE")}.ini'
 
 
 # USED BY:
@@ -715,44 +678,44 @@ class MaNGAAnalysisPlan(AnalysisPlan):
     Define the analysis plan and output paths for MaNGA data.
 
     This class only redefines the output paths from the base class.
+
+    Args:
+        plan (:obj:`dict`):
+            Dictionary providing the control-flow option hierarchy.
+        analysis_path (:obj:`str`, optional):
+            Path for output files.  If None, the current working directory is
+            used.
+        cube (:class:`~mangadap.datacube.manga.MaNGADataCube`):
+            Datacube being analyzed.  Used to set the output root.
     """
-    def __init__(self, planlist, cube=None, analysis_path=None):
-#        if cube is None:
-#            raise ValueError('For a MaNGA analysis plan, you must provide the cube because it '
-#                             'is used to define the output paths.')
+    def __init__(self, plan, analysis_path=None, cube=None, **kwargs):
         self.cube = cube
         if self.cube is None:
             warnings.warn('Instantiation of the MaNGA analysis plan did not include the cube.  '
                           'Directories will be *undefined*, meaning the code may fault.')
         if analysis_path is None:
-            analysis_path = dap_analysis_path(drpver=cube.drpver)
-        super().__init__(planlist, cube=cube, analysis_path=analysis_path)
+            analysis_path \
+                    = dap_analysis_path(drpver=None if self.cube is None else self.cube.drpver)
+        super().__init__(plan, analysis_path=analysis_path)
 
     def common_path(self):
         """
-        Return the path for data common to all plans.
-
-        Args:
-            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
-                Cube being analyzed.  Passed for cube-specific path
-                specification.  Not used by this base class.
+        Override base class to return MaNGA-specific common path.
 
         Returns:
             `Path`_: Path object for the "common" output
         """
         if self.cube is None:
+            # TODO: Revert to base class method instead of faulting?
             raise ValueError('Path undefined because cube being processed was not provided '
                              'when MaNGAAnalysisPlan was instantiated!')
         return self.analysis_path / 'common' / str(self.cube.plate) / str(self.cube.ifudesign)
 
     def method_path(self, plan_index=0, qa=False, ref=False):
         """
-        Return the path for method-specific output.
+        Override base class to return MaNGA-specific method path.
 
         Args:
-            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
-                Cube being analyzed.  Passed for cube-specific path
-                specification.  Not used by this base class.
             plan_index (:obj:`int`, optional):
                 The index of the plan.  This is used to select the 'key' of the
                 analysis plan being used, which is used as the subdirectory for
@@ -773,12 +736,9 @@ class MaNGAAnalysisPlan(AnalysisPlan):
         if self.cube is None:
             raise ValueError('Path undefined because cube being processed was not provided '
                              'when MaNGAAnalysisPlan was instantiated!')
-        if plan_index < 0 or plan_index >= self.nplans:
-            raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
-        if qa and ref:
-            raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
-
-        root = self.analysis_path / self.plan[self.plan_keys[plan_index]]['key'] \
+        # Use the base class to get the root and then add the plate/ifu
+        # sub-directories.
+        root = super().method_path(plan_index=plan_index, qa=False, ref=False) \
                     / str(self.cube.plate) / str(self.cube.ifudesign)
         if not qa and not ref:
             return root

@@ -169,12 +169,11 @@ class MangaSynthDatacube(scriptbase.ScriptBase):
         from pathlib import Path
 
         import numpy
-        from scipy import sparse, spatial, interpolate
+        from scipy import sparse
 
         from astropy.io import fits
 
         from mangadap.datacube import MaNGADataCube
-        from mangadap.spectra import MaNGARSS
         from mangadap.proc.templatelibrary import TemplateLibrary
         from mangadap.proc.ppxffit import PPXFFit
         from mangadap.proc.spectralfitting import StellarKinematicsFit

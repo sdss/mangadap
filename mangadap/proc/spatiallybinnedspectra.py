@@ -28,7 +28,6 @@ from scipy import spatial
 
 from astropy.io import fits
 
-#from ..datacube import DataCube
 from ..par.parset import KeywordParSet, ParSet
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil

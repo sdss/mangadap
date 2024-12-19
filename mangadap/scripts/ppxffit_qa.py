@@ -1,5 +1,6 @@
 import time
 import warnings
+from pathlib import Path
 
 from IPython import embed
 
@@ -11,7 +12,6 @@ from astropy.io import fits
 
 from mangadap.datacube import DataCube
 from mangadap.config.analysisplan import AnalysisPlan
-from mangadap.proc.templatelibrary import TemplateLibraryDef
 from mangadap.proc.reductionassessments import ReductionAssessment, ReductionAssessmentDef
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectraDef
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelDef
@@ -509,7 +509,9 @@ def gmr_data(cube, min_frac=0.8):
 
     flux = cube.copy_to_masked_array()
     # Fix the ordering
-    flux = flux.reshape(cube.flux.shape).T.reshape(npix,-1)
+    # TODO: Not sure if the use of cube.nwave is correct!  The code doesn't get
+    # here for MaNGA data.  Need to test on other datacubes.
+    flux = flux.reshape(cube.flux.shape).T.reshape(cube.nwave,-1)
     gpm = numpy.logical_not(numpy.ma.getmaskarray(flux)).astype(float)
 
     # Wavelengths in these files are in angstroms

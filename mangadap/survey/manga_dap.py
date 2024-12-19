@@ -16,14 +16,10 @@ Provides the main wrapper function for the MaNGA DAP.
 import logging
 import resource
 import time
-import os
-import warnings
 
 from IPython import embed
 
 import numpy
-
-import astropy.constants
 
 from mangadap import __version__
 
@@ -199,6 +195,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
                                         stellar_continuum=stellar_continuum,
                                         redshift=cube.meta['z'], output_path=method_ref_dir,
                                         loggers=loggers)
+
+        # emission_line_moments.qa()
 
         #---------------------------------------------------------------
         # Emission-line Fit: placed in the DAPTYPE/ref/ directory

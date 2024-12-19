@@ -15,7 +15,6 @@ from mangadap.util.bitmask import BitMask
 from mangadap.dapfits import DAPQualityBitMask
 from mangadap.config import defaults, manga
 from mangadap.proc.util import growth_lim
-from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.fileio import channel_dictionary
 
 from mangadap.scripts import scriptbase

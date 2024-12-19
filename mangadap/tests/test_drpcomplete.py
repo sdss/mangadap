@@ -17,8 +17,6 @@ def test_write_cfg():
         os.remove(ofile)
 
     # Read the test DRPComplete file.
-    # TODO: Temporarily override
-    drp_test_version = 'v3_1_1'
     drpc = DRPComplete(drpver=drp_test_version, directory_path=remote_data_file(), readonly=True)
 
     # Write the base-level configuration file

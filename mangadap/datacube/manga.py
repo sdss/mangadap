@@ -27,13 +27,9 @@ Implement the derived class for MaNGA datacubes.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import time
-from pathlib import Path
 import warnings
 
 from IPython import embed
-
-import numpy
 
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -41,7 +37,6 @@ from astropy.wcs import WCS
 from ..config.manga import MaNGAConfig
 from ..util.drpbitmask import DRPFitsBitMask, DRPQuality3DBitMask
 from ..util.parser import DefaultConfig
-from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
 from ..spectra import MaNGARSS
 from .datacube import DataCube
@@ -303,10 +298,10 @@ class MaNGADataCube(MaNGAConfig, DataCube):
                               directory_path=self.directory_path)
         if not rss_cfg.file_path.exists():
             # Not in this directory.  Check the nominal directory
-            warnings.warn(f'Could not find: {rss_file_path}.  Trying the default path.')
+            warnings.warn(f'Could not find: {rss_cfg.file_path}.  Trying the default path.')
             rss_cfg = MaNGAConfig(self.plate, self.ifudesign, mode='RSS', log=self.log)
         if not rss_cfg.file_path.exists():
-            raise FileNotFoundError(f'Could not find: {rss_file_path}')
+            raise FileNotFoundError(f'Could not find: {rss_cfg.file_path}')
 
         self.rss = MaNGARSS(str(rss_cfg.file_path), sres_ext=self.sres_ext,
                             sres_fill=self.sres_fill)

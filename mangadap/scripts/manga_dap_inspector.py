@@ -1,7 +1,4 @@
 from pathlib import Path
-import os
-import time
-import argparse
 
 from IPython import embed
 
@@ -143,14 +140,13 @@ def pull_maps(hdu, ext, toerr=False):
 
 def build_maps(hdu, ext=['BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']):
 
-    # TODO: Deal with the transpose
-
     # Always get the bin ID extension
     binid = hdu['BINID'].data
 
     # Build the maps cube
     _ext = numpy.array([ 'BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']) \
                 if ext is None else numpy.asarray(ext)
+    _ext = numpy.array([e for e in _ext if hdu[e].data is not None])
 
     print('Building maps from extensions: {0}'.format(_ext))
 
@@ -177,13 +173,15 @@ def build_maps(hdu, ext=['BIN_MFLUX', 'BIN_SNR', 'STELLAR_VEL', 'STELLAR_SIGMA']
                     if numpy.sum(_maps_mask>0) < _maps_mask.size else numpy.ma.MaskedArray(_maps)
         mins = numpy.ma.amin(_maps) if _maps.ndim == 2 else numpy.ma.amin(_maps, axis=(1,2))
         maxs = numpy.ma.amax(_maps) if _maps.ndim == 2 else numpy.ma.amax(_maps, axis=(1,2))
-        zmin = numpy.append(zmin, mins)
-        zmax = numpy.append(zmax, maxs)
+        zmin = numpy.append(zmin, mins.filled(-1.))
+        zmax = numpy.append(zmax, maxs.filled(1.))
 
     return binid, channel_name, channel_bits, map_cube, map_cube_ivar, map_cube_mask, zmin, zmax
 
 
 def build_model_spectra(hdu, masked=True):
+
+    stellar_continuum = 0. if hdu['STELLAR'].data is None else hdu['STELLAR'].data
 
     if masked:
         bm = DAPCubeBitMask()
@@ -196,7 +194,7 @@ def build_model_spectra(hdu, masked=True):
                                           mask=bm.flagged(hdu['MASK'].data,
                                                           flag=['FITIGNORED', 'FITFAILED']))
 
-        model_emission = numpy.ma.MaskedArray(hdu['MODEL'].data - hdu['STELLAR'].data,
+        model_emission = numpy.ma.MaskedArray(hdu['MODEL'].data - stellar_continuum,
                                               mask=bm.flagged(hdu['MASK'].data,
                                                               flag=['FITIGNORED', 'FITFAILED',
                                                                     'ELIGNORED', 'ELFAILED']))
@@ -208,7 +206,7 @@ def build_model_spectra(hdu, masked=True):
     else:
         masked_spec = hdu['FLUX'].data
         model_spec = hdu['MODEL'].data
-        model_emission = hdu['MODEL'].data - hdu['STELLAR'].data
+        model_emission = hdu['MODEL'].data - stellar_continuum
         model_continuum = hdu['MODEL'].data - hdu['EMLINE'].data
 
     return hdu['WAVE'].data, masked_spec, model_spec, model_continuum, model_emission
@@ -522,7 +520,7 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
     # ------------------------------------------------------------------
 
 
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------
     # Add the image marker
     coo_pointer = Pointer(im.axes, pos, color='C3', lw=0.5, alpha=0.5)
     coo_selector = ImageMarker(marker, coo_pointer)

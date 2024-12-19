@@ -25,7 +25,7 @@ from scipy import sparse, interpolate
 from astropy.io import fits
 
 try:
-    from shapely.ops import cascaded_union
+    from shapely.ops import unary_union
     from shapely.geometry import Point
 except ImportError:
     warnings.warn('Could not import shapely!', ImportWarning)
@@ -543,7 +543,7 @@ class RowStackedSpectra:
 
         try:
             # Test that shapely was imported
-            cascaded_union
+            unary_union
         except:
             # It wasn't, so do the stupid calculation
             warnings.warn('Could not use \'shapely\' package to compute overlapping fiber area.' \
@@ -561,7 +561,7 @@ class RowStackedSpectra:
         for i, b in enumerate(good_bins):
             _x = x[bin_indx == b]
             _y = y[bin_indx == b]
-            bin_area[i] = cascaded_union([Point(xx,yy).buffer(r,64) \
+            bin_area[i] = unary_union([Point(xx,yy).buffer(r,64) \
                                                     for xx, yy, r in zip(_x,_y,radius)]).area
         return good_bins, bin_area
 

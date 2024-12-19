@@ -54,8 +54,5 @@ class DAPConstants:
     """
 
     def __init__(self):
-        self.sig2fwhm = constants.sig2fwhm
-        self.rad2arcs = constants.rad2arcs
-        self.sidereal_year = constants.sidereal_year
-
+        pass
 

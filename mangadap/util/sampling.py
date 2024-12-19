@@ -157,8 +157,8 @@ def grid_npix(rng=None, dx=None, log=False, base=10.0, default=None):
         raise ValueError('Range must be a 2-element vector.')
 
     _rng = numpy.atleast_1d(rng).copy()
-    npix = int(numpy.floor(numpy.diff(numpy.log(_rng))/numpy.log(base)/dx) + 1) if log else \
-                    int(numpy.floor(numpy.diff(_rng)/dx) + 1)
+    npix = int(numpy.floor(numpy.diff(numpy.log(_rng))[0]/numpy.log(base)/dx) + 1) if log else \
+                    int(numpy.floor(numpy.diff(_rng)[0]/dx) + 1)
     _rng[1] = numpy.power(base, numpy.log(_rng[0])/numpy.log(base) + dx*(npix-1)) \
                             if log else _rng[0] + dx*(npix-1)
 

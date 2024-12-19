@@ -1,0 +1,22 @@
+
+[default]
+ key = 'waverange'
+
+[default.rdxqa]
+ key = 'BBSNR'
+ waverange = [4000.0,10000.0]
+ response_func_file = 'none'
+
+[default.continuum]
+ key                    = 'None'
+
+[default.eline_moments]
+ key                    = 'None'
+
+[default.eline_fits]
+ key                    = 'None'
+
+[default.indices]
+ key                    = 'None'
+
+ 

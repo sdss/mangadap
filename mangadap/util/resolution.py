@@ -660,7 +660,7 @@ class SpectralResolution:
         sig2_vo = self.sig_vo*numpy.absolute(self.sig_vo) + off2
         self.sig_vo = 0.0 if numpy.isclose(sig2_vo, 0.0) \
                           else sig2_vo/numpy.sqrt(numpy.absolute(sig2_vo))
-        sig2_vd = self._convert_pd2vd(self.sig_pd*numpy.absolute(sig_pd)) + off2
+        sig2_vd = self._convert_pd2vd(self.sig_pd*numpy.absolute(self.sig_pd)) + off2
         self._finalize_GaussianKernelDifference(self._convert_vd2pd(sig2_vd))
 
 

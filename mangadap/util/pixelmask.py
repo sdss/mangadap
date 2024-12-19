@@ -20,8 +20,6 @@ from .bitmask import BitMask
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 
-from matplotlib import pyplot
-
 
 class PixelMask:
     """

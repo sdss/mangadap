@@ -1,9 +1,7 @@
 from IPython import embed
 
 import numpy
-from scipy import special
 from astropy.io import fits
-import astropy.constants
 
 from ppxf import ppxf, ppxf_util
 
@@ -27,6 +25,7 @@ from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 from mangadap.util.sampling import spectrum_velocity_scale
 from mangadap.proc.emissionlinetemplates import EmissionLineTemplates
 from mangadap.contrib.xjmc import ppxf_tied_parameters
+
 
 def test_sasuke():
     # Read the data
@@ -400,5 +399,118 @@ def test_multicomp_manga():
 
     # TODO: Add tests of the results!
 
+
+def test_stellar_tied():
+    wave = numpy.logspace(*numpy.log10([3600., 10000.]), 4563)
+    velscale = spectrum_velocity_scale(wave)
+    emldb = EmissionLineDB(data_test_file('elp_ha_tied.par'))
+    etpl = EmissionLineTemplates(wave, velscale, emldb=emldb)
+
+    assert Sasuke._parse_stellar_tied(etpl, None) == (None, None, None), 'Bad empty parse'
+    assert Sasuke._parse_stellar_tied(etpl, ['free',None]) == (None, -1, None), \
+                'Bad free velocity'
+    assert Sasuke._parse_stellar_tied(etpl, ['Ha-6564',None]) == (None, 0, None), \
+                'Bad tied velocity'
+    assert Sasuke._parse_stellar_tied(etpl, [None,'Ha-6564']) == (None, None, 0), \
+                'Bad tied dispersion'
+    assert Sasuke._parse_stellar_tied(etpl, ['Ha-6564','Ha-6564']) == (0, 0, 0), 'Bad tied both'
+    assert Sasuke._parse_stellar_tied(etpl, ['free','free']) == (None, -1, -1), 'Bad both free'
+    assert Sasuke._parse_stellar_tied(etpl, ['Ha-6564','NII-6585']) == (1, 0, 1), 'Bad tied both'
+
+
+
+def test_sasuke_no_stars():
+    """
+    This is a basic test of functionality.  Nearly all spectra have good S/N in
+    the continuum, meaning the emission line fits will be strongly affected by
+    just fitting to a simple polynomial continuum.
+    """
+    # Read the data
+    specfile = data_test_file('MaNGA_test_spectra.fits.gz')
+    hdu = fits.open(specfile)
+    drpbm = DRPFitsBitMask()
+    flux = numpy.ma.MaskedArray(hdu['FLUX'].data, mask=drpbm.flagged(hdu['MASK'].data,
+                                                                MaNGADataCube.do_not_fit_flags()))
+    ferr = numpy.ma.power(hdu['IVAR'].data, -0.5)
+    flux[ferr.mask] = numpy.ma.masked
+    ferr[flux.mask] = numpy.ma.masked
+    nspec = flux.shape[0]
+
+    # Mask the 5577 sky line
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
+
+    # Read the emission line fitting database
+    emldb = EmissionLineDB.from_key('ELPSTRONG')
+
+    # Instantiate the fitting class
+    emlfit = Sasuke(EmissionLineModelBitMask())
+
+    # Perform the fit
+    el_wave, model, el_flux, el_mask, el_fit, el_par \
+            = emlfit.fit(emldb, hdu['WAVE'].data, flux, obj_ferr=ferr, obj_mask=pixelmask,
+                         obj_sres=hdu['SRES'].data, guess_redshift=hdu['Z'].data,
+                         guess_dispersion=numpy.full(nspec, 100.), reject_boxcar=101,
+                         etpl_sinst_mode='offset', etpl_sinst_min=10., degree=3) #, plot=True)
+
+
+def test_sasuke_tied_vel():
+    # Read the data
+    specfile = data_test_file('MaNGA_test_spectra.fits.gz')
+    hdu = fits.open(specfile)
+    drpbm = DRPFitsBitMask()
+    flux = numpy.ma.MaskedArray(hdu['FLUX'].data, mask=drpbm.flagged(hdu['MASK'].data,
+                                                                MaNGADataCube.do_not_fit_flags()))
+    ferr = numpy.ma.power(hdu['IVAR'].data, -0.5)
+    flux[ferr.mask] = numpy.ma.masked
+    ferr[flux.mask] = numpy.ma.masked
+    nspec = flux.shape[0]
+
+    # Instantiate the template libary
+    velscale_ratio = 2
+    tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=velscale_ratio,
+                          spectral_step=1e-4, log=True, hardcopy=False)
+    tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
+
+    # Get the pixel mask
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPSCMSK'))
+
+    # Instantiate the fitting class
+    ppxf = PPXFFit(StellarContinuumModelBitMask())
+
+    # Perform the fit
+    sc_wave, sc_flux, sc_mask, sc_par \
+        = ppxf.fit(tpl['WAVE'].data.copy(), tpl['FLUX'].data.copy(), hdu['WAVE'].data, flux, ferr,
+                   hdu['Z'].data, numpy.full(nspec, 100.), iteration_mode='no_global_wrej',
+                   reject_boxcar=100, ensemble=False, velscale_ratio=velscale_ratio,
+                   mask=pixelmask, matched_resolution=False, tpl_sres=tpl_sres,
+                   obj_sres=hdu['SRES'].data, degree=8, moments=2)
+
+    # Mask the 5577 sky line
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
+
+    # Read the emission line fitting database
+    emldb = EmissionLineDB.from_key('ELPSTRONG')
+
+    # Instantiate the fitting class
+    emlfit = Sasuke(EmissionLineModelBitMask())
+
+    emlfit_kwargs = dict(mdegree=14, stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data,
+                         stpl_sres=tpl_sres, stellar_kinematics=sc_par['KIN'],
+                         stellar_tied=['Ha-6564', None])
+
+    # Perform the fit
+    el_wave, model, el_flux, el_mask, el_fit, el_par \
+            = emlfit.fit(emldb, hdu['WAVE'].data, flux, obj_ferr=ferr, obj_mask=pixelmask,
+                         obj_sres=hdu['SRES'].data, guess_redshift=hdu['Z'].data,
+                         guess_dispersion=numpy.full(nspec, 100.), reject_boxcar=101,
+                         etpl_sinst_mode='offset', etpl_sinst_min=10.,
+                         velscale_ratio=velscale_ratio, #plot=True,
+                         **emlfit_kwargs)
+
+    # Make sure that all components, including the stars, have the same velocity
+    v = el_fit['KIN'].reshape(el_fit['KIN'].shape[0],-1,2)[...,0]
+    assert numpy.array_equal(v, numpy.tile(v[:,0], (v.shape[1],1)).T), \
+            'All velocities should be identical'
 
 
