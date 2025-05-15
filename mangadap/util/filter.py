@@ -246,7 +246,7 @@ class BoxcarFilter():
 
 
     def _apply(self):
-        self.smoothed_n = numpy.add.reduceat(numpy.invert(self.output_mask), self.rdx_index, axis=1,
+        self.smoothed_n = numpy.add.reduceat(numpy.logical_not(self.output_mask), self.rdx_index, axis=1,
                                              dtype=int)[:,::2]
         self.smoothed_wgt = numpy.add.reduceat(self.input_wgt, self.rdx_index, axis=1,
                                              dtype=float)[:,::2]
@@ -324,7 +324,7 @@ class BoxcarFilter():
         badpix = numpy.ma.getmaskarray(self.smoothed_y)
 
         # Deal with any vectors that are fully masked
-        goodvec = numpy.sum(numpy.invert(badpix), axis=1) > 0
+        goodvec = numpy.sum(numpy.logical_not(badpix), axis=1) > 0
         ngood = numpy.sum(goodvec)
         veci = numpy.arange(self.nvec)[goodvec]
 
@@ -349,13 +349,13 @@ class BoxcarFilter():
         interpolator = interpolate.interp1d(x.compressed(), self.smoothed_y.compressed(),
                                             assume_sorted=True, fill_value='extrapolate')
         self.smoothed_y.ravel()[badpix.ravel()] = interpolator(x.data[badpix.ravel()])
-        self.smoothed_y[numpy.invert(goodvec),:] = 0.0
+        self.smoothed_y[numpy.logical_not(goodvec),:] = 0.0
 
         # Interpolate the sigma array
         interpolator = interpolate.interp1d(x.compressed(), self.sigma_y.compressed(),
                                             assume_sorted=True, fill_value='extrapolate')
         self.sigma_y.ravel()[badpix.ravel()] = interpolator(x.data[badpix.ravel()])
-        self.sigma_y[numpy.invert(goodvec),:] = 0.0
+        self.sigma_y[numpy.logical_not(goodvec),:] = 0.0
 
 
     def smooth(self, y, wgt=None, mask=None, boxcar=None, lo=None, hi=None, niter=None,
@@ -440,9 +440,9 @@ def smooth_masked_vector(x, nsmooth):
     """
     Smooth a masked vector by a box of size nsmooth.
     """
-    n = off_diagonal_identity(x.size, nsmooth)*numpy.invert(numpy.ma.getmaskarray(x))[None,:]
+    n = off_diagonal_identity(x.size, nsmooth)*numpy.logical_not(numpy.ma.getmaskarray(x))[None,:]
     nn = numpy.sum(n,axis=1)
-    return numpy.ma.MaskedArray(numpy.dot(n,x.data), mask=numpy.invert(nn>0) | x.mask)/nn
+    return numpy.ma.MaskedArray(numpy.dot(n,x.data), mask=numpy.logical_not(nn>0) | x.mask)/nn
 
 
 def interpolate_masked_vector(y, quiet=True, extrap_with_median=False):
@@ -465,11 +465,11 @@ def interpolate_masked_vector(y, quiet=True, extrap_with_median=False):
     """
     x = numpy.arange(y.size)
     indx = numpy.ma.getmaskarray(y)
-    if numpy.sum(numpy.invert(indx)) < 2:
+    if numpy.sum(numpy.logical_not(indx)) < 2:
         if not quiet:
             warnings.warn('Input vector has fewer than 2 unmasked values!  Returning zero vector.')
         return numpy.zeros(y.size, dtype=y.dtype.name)
-    interpolator = interpolate.interp1d(x[numpy.invert(indx)], y[numpy.invert(indx)],
+    interpolator = interpolate.interp1d(x[numpy.logical_not(indx)], y[numpy.logical_not(indx)],
                                         fill_value='extrapolate')
     _y = y.data.copy()
     _y[indx] = interpolator(x[indx])

@@ -573,7 +573,7 @@ class Resample:
             # The mask and errors are always interpolated as a step function
             self.oute = None if self.e is None else self._resample_step(self.e, quad=True)
         
-            self.outf = self._resample_step(numpy.invert(self.m).astype(int)) \
+            self.outf = self._resample_step(numpy.logical_not(self.m).astype(int)) \
                             / numpy.diff(self.outborders)
 
         # Do not conserve the integral over the size of the pixel
@@ -745,7 +745,7 @@ class Resample:
         # Get the indices where the data should be reduced
         border = numpy.insert(numpy.zeros(_x.size, dtype=bool), indx,
                               numpy.ones(self.outborders.size, dtype=bool))
-        nn = numpy.where(numpy.invert(border))[0][::2]
+        nn = numpy.where(numpy.logical_not(border))[0][::2]
         k = numpy.zeros(len(combinedX), dtype=int)
         k[border] = numpy.arange(numpy.sum(border))
         k[nn-1] = k[nn-2]

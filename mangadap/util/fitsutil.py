@@ -442,16 +442,16 @@ class DAPFitsUtil:
         for i in range(narr):
             new_arr[i] = numpy.zeros(map_shape, dtype=_dtype[i])
             new_arr[i].ravel()[indx] = _arr[i][unique_bins[reconstruct[indx]]].copy()
-            s = numpy.sum(numpy.invert(numpy.isfinite(new_arr[i])))
+            s = numpy.sum(numpy.logical_not(numpy.isfinite(new_arr[i])))
             if s > 0:
                 print(i+1, narr)
                 print('dtype: ', _dtype[i])
-                a = numpy.sum(numpy.invert(numpy.isfinite(_arr[i][unique_bins[reconstruct[indx]]])))
+                a = numpy.sum(numpy.logical_not(numpy.isfinite(_arr[i][unique_bins[reconstruct[indx]]])))
                 print('not finite input:', a)
                 print('not finite output ravel:',
-                      numpy.sum(numpy.invert(numpy.isfinite(new_arr[i].ravel()[indx]))))
+                      numpy.sum(numpy.logical_not(numpy.isfinite(new_arr[i].ravel()[indx]))))
                 print('not finite output:', s)
-                nf = numpy.invert(numpy.isfinite(new_arr[i].ravel()[indx]))
+                nf = numpy.logical_not(numpy.isfinite(new_arr[i].ravel()[indx]))
                 print('inp: ', _arr[i][unique_bins[reconstruct[indx]]][nf])
                 print('out: ', new_arr[i].ravel()[indx][nf])
                 new_arr[i].ravel()[indx][nf] = 0.0
@@ -647,7 +647,7 @@ class DAPFitsUtil:
                                                        unique_bins=unique_bins)
         # For this approach, the wavelengths masked should be
         # *identical* for all spectra
-        nwave = numpy.sum(numpy.invert(numpy.ma.getmaskarray(masked_data))[0,:])
+        nwave = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(masked_data))[0,:])
         if nwave == 0:
             raise ValueError('Full wavelength range has been masked!')
         # Compression returns a flattened array, so it needs to be

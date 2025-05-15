@@ -68,8 +68,8 @@ def polygon_winding_number(polygon, point):
     indx_r = dr[:,:,1] > 0
 
     wind = numpy.zeros((np, nvert), dtype=int)
-    wind[indx_l & numpy.invert(indx_r) & (dx < 0)] = -1
-    wind[numpy.invert(indx_l) & indx_r & (dx > 0)] = 1
+    wind[indx_l & numpy.logical_not(indx_r) & (dx < 0)] = -1
+    wind[numpy.logical_not(indx_l) & indx_r & (dx > 0)] = 1
 
     return numpy.sum(wind, axis=1)[0] if point.ndim == 1 else numpy.sum(wind, axis=1)
 

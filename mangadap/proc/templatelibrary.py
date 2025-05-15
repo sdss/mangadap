@@ -681,7 +681,7 @@ class TemplateLibrary:
             if wave_.size != npix:
                 mask[i,wave_.size:] = self.bitmask.turn_on(mask[i,wave_.size:],'NO_DATA')
             if self.library['lower_flux_limit'] is not None:
-                indx = numpy.invert( flux_ > self.library['lower_flux_limit'] )
+                indx = numpy.logical_not( flux_ > self.library['lower_flux_limit'] )
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'FLUX_INVALID')
             if self.library['wave_limit'] is not None \
                     and self.library['wave_limit'][0] is not None:
@@ -773,7 +773,7 @@ class TemplateLibrary:
             `numpy.ndarray`_: Two-element vector with wavelengths of
             the first and last valid pixels.
         """
-        indx = numpy.where(numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag=flag)))
+        indx = numpy.where(numpy.logical_not(self.bitmask.flagged(self.hdu['MASK'].data, flag=flag)))
         return numpy.array([numpy.amin(self.hdu['WAVE'].data[indx]),
                             numpy.amax(self.hdu['WAVE'].data[indx])]).astype(float)
 
@@ -883,7 +883,7 @@ class TemplateLibrary:
             self.bitmask.turn_on(self.hdu['MASK'].data[res_mask == 1], 'SPECRES_LOW')
 
         # Mask any pixels where the template flux is 0 or below
-        indx = numpy.invert(self.hdu['FLUX'].data > 0)
+        indx = numpy.logical_not(self.hdu['FLUX'].data > 0)
         if numpy.any(indx):
             self.hdu['MASK'].data[indx] = self.bitmask.turn_on(self.hdu['MASK'].data[indx],
                                                                'SPECRES_NOFLUX')
@@ -1075,7 +1075,7 @@ class TemplateLibrary:
         # Normalize the templates to the mean flux value after excluding
         # any flagged pixels.
         if renormalize:
-            indx = numpy.invert(self.bitmask.flagged(mask, flag=['NO_DATA', 'WAVE_INVALID', 
+            indx = numpy.logical_not(self.bitmask.flagged(mask, flag=['NO_DATA', 'WAVE_INVALID', 
                                                                  'FLUX_INVALID']))
             if numpy.sum(indx) == 0:
                 if not self.quiet:
@@ -1282,7 +1282,7 @@ class TemplateLibrary:
                 # Copy the spectral resolution to a masked array
                 self.sres = cube.copy_to_masked_array(attr='sres')
                 # Only use the spectra that are not fully masked
-                indx = numpy.sum(numpy.invert(numpy.ma.getmaskarray(self.sres)), axis=1) > 0
+                indx = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(self.sres)), axis=1) > 0
                 # Get the median resolution
                 self.sres = numpy.median(self.sres.data[indx], axis=0)
                 # Instantiate the resolution object

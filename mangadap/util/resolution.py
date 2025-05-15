@@ -343,7 +343,7 @@ class SpectralResolution:
         """
 #        print('finalize b')
         indx = numpy.isclose(sig2_pd, 0.0)
-        nindx = numpy.invert(indx)
+        nindx = numpy.logical_not(indx)
         self.sig_pd = sig2_pd.copy()
         self.sig_pd[nindx] = sig2_pd[nindx]/numpy.sqrt(numpy.absolute(sig2_pd[nindx]))
         self.sig_pd[indx] = 0.0

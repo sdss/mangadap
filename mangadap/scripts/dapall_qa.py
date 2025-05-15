@@ -73,8 +73,8 @@ def ew_d4000(drpall, dapall, daptype, eml, spi, ofile=None):
     ha_bd = ha_indx & is_critical
     hd_bd = hd_indx & is_critical
 
-    ha_gd = ha_indx & numpy.invert(is_critical)
-    hd_gd = hd_indx & numpy.invert(is_critical)
+    ha_gd = ha_indx & numpy.logical_not(is_critical)
+    hd_gd = hd_indx & numpy.logical_not(is_critical)
 
     mass_lim = [1e9, 7e11]
     d4_lim = [0.9, 2.3]
@@ -173,8 +173,8 @@ def mass_lha(drpall, dapall, daptype, eml, ofile=None):
     loew_bd =  loew_indx & is_critical
     hiew_bd =  hiew_indx & is_critical
 
-    loew_gd =  loew_indx & numpy.invert(is_critical)
-    hiew_gd =  hiew_indx & numpy.invert(is_critical)
+    loew_gd =  loew_indx & numpy.logical_not(is_critical)
+    hiew_gd =  hiew_indx & numpy.logical_not(is_critical)
 
 
     mass_lim = [1e8, 1e12]
@@ -239,7 +239,7 @@ def mass_sigma(drpall, dapall, daptype, ofile=None):
 
     is_critical = DAPQualityBitMask().flagged(dapall['DAPQUAL'], 'CRITICAL')
     bd =  indx & is_critical
-    gd =  indx & numpy.invert(is_critical)
+    gd =  indx & numpy.logical_not(is_critical)
 
     rekpc = dapall['NSA_ELPETRO_TH50_R']*numpy.radians(1/3600)*1e3*dapall['ADIST_Z']
 
@@ -327,8 +327,8 @@ def velocity_gradient(drpall, dapall, daptype, eml, ofile=None):
     ha_bd =  ha_indx & is_critical
     st_bd =  st_indx & is_critical
 
-    ha_gd =  ha_indx & numpy.invert(is_critical)
-    st_gd =  st_indx & numpy.invert(is_critical)
+    ha_gd =  ha_indx & numpy.logical_not(is_critical)
+    st_gd =  st_indx & numpy.logical_not(is_critical)
 
     mass_lim = [2e8, 5e11]
     velw_lim = [30,  4000]
@@ -440,7 +440,7 @@ def mgfe_hbeta(drpall, dapall, daptype, spi, ofile=None):
 
     is_critical = DAPQualityBitMask().flagged(dapall['DAPQUAL'], 'CRITICAL')
     bd =  indx & is_critical
-    gd =  indx & numpy.invert(is_critical)
+    gd =  indx & numpy.logical_not(is_critical)
 
     mgfe = numpy.ma.sqrt(dapall['SPECINDEX_1RE'][:,spi['Mgb']]
                             * (0.72*dapall['SPECINDEX_1RE'][:,spi['Fe5270']] 
@@ -500,7 +500,7 @@ def radial_coverage_histogram(dapall, daptype, ofile=None):
     # Must have finished, be of the correct daptype, and *not* be
     # critical
     indx = (dapall['DAPDONE'] == 1) & (dapall['DAPTYPE'] == daptype) \
-                & numpy.invert(DAPQualityBitMask().flagged(dapall['DAPQUAL'], 'CRITICAL'))
+                & numpy.logical_not(DAPQualityBitMask().flagged(dapall['DAPQUAL'], 'CRITICAL'))
 
     # Get the range
     arcsec_rng = growth_lim(dapall['RCOV90'][indx], 0.99, fac=1.1)
@@ -516,7 +516,7 @@ def radial_coverage_histogram(dapall, daptype, ofile=None):
     primaryplus = targ1bm.flagged(dapall['MNGTARG1'][indx],
                                   flag=['PRIMARY_v1_2_0', 'COLOR_ENHANCED_v1_2_0'])
     secondary = targ1bm.flagged(dapall['MNGTARG1'][indx], flag='SECONDARY_v1_2_0')
-    other = numpy.invert(ancillary) & numpy.invert(primaryplus) & numpy.invert(secondary)
+    other = numpy.logical_not(ancillary) & numpy.logical_not(primaryplus) & numpy.logical_not(secondary)
 
     print('Num. of observations with 90% coverage <1 arcsec: {0}'.format(
             numpy.sum(dapall['RCOV90'][indx] < 1)))
@@ -617,8 +617,8 @@ def redshift_distribution(dapall, daptype, ofile=None):
     ns_bd = ns_indx & is_critical
     gs_bd = gs_indx & is_critical
 
-    ns_gd = ns_indx & numpy.invert(is_critical)
-    gs_gd = gs_indx & numpy.invert(is_critical)
+    ns_gd = ns_indx & numpy.logical_not(is_critical)
+    gs_gd = gs_indx & numpy.logical_not(is_critical)
 
 
     font = { 'size' : 14 }

@@ -553,12 +553,12 @@ class SpatiallyBinnedSpectra:
 
         # Turn on the flag stating that the number of valid channels in
         # the spectrum was below the input fraction.
-        indx = numpy.array([numpy.invert(good_fgoodpix).reshape(self.spatial_shape).T]*self.nwave).T
+        indx = numpy.array([numpy.logical_not(good_fgoodpix).reshape(self.spatial_shape).T]*self.nwave).T
         mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SPECCOV')
 
         # Turn on the flag stating that the S/N in the spectrum was
         # below the requested limit
-        indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
+        indx = numpy.array([numpy.logical_not(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
         mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
 
         return mask
@@ -705,7 +705,7 @@ class SpatiallyBinnedSpectra:
                 else angstroms_per_pixel(self.cube.wave, log=self.cube.log)
         _response_func = self.cube.interpolate_to_match(self.rdxqa.method.response)
         # Get the signal
-        response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(_stack_flux))
+        response_integral = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(_stack_flux))
                                         * (_response_func*dw)[None,:], axis=1)
         bin_data['SIGNAL'] = numpy.ma.divide(numpy.ma.sum(_stack_flux*(_response_func*dw)[None,:],
                                                           axis=1), response_integral).filled(0.0)
@@ -921,10 +921,10 @@ class SpatiallyBinnedSpectra:
                                                         out_mask=map_mask)
         drp_bad = map_mask > 0
         # Add the spectra with low spectral coverage
-        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
+        indx = numpy.logical_not(good_fgoodpix.reshape(self.spatial_shape)) & numpy.logical_not(drp_bad)
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
         # Add the spectra with low S/N
-        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
+        indx = numpy.logical_not(good_snr.reshape(self.spatial_shape)) & numpy.logical_not(drp_bad)
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
         # Fill the covariance HDUs
@@ -1393,11 +1393,11 @@ class SpatiallyBinnedSpectra:
 
         # Construct the mask
         stack_mask = numpy.zeros(stack_flux.shape, dtype=self.bitmask.minimum_dtype())
-        indx = numpy.invert(stack_npix>0)
+        indx = numpy.logical_not(stack_npix>0)
         stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], ['NONE_IN_STACK', 'NO_STDDEV'])
-        indx = numpy.invert(stack_npix>1)
+        indx = numpy.logical_not(stack_npix>1)
         stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], 'NO_STDDEV')
-        indx = numpy.invert(stack_ivar>0)
+        indx = numpy.logical_not(stack_ivar>0)
         stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], ['IVARINVALID', 'DIDNOTUSE'])
 
         #---------------------------------------------------------------
@@ -1719,7 +1719,7 @@ class SpatiallyBinnedSpectra:
 
         # Account for any missing bins
         valid_input_bin = numpy.ones(_input_bins.size, dtype=bool) if len(self.missing_bins) == 0 \
-                            else numpy.invert([ ib in self.missing_bins for ib in _input_bins ])
+                            else numpy.logical_not([ ib in self.missing_bins for ib in _input_bins ])
         if not numpy.all(valid_input_bin):
             warnings.warn('Input bin IDs include missing bins.  Returned as -1.')
         _input_bins = _input_bins[valid_input_bin]

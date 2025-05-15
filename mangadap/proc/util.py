@@ -381,7 +381,7 @@ def replace_with_data_from_nearest_coo(coo, data, replace):
         return data.copy()
 
     # Use the coordinates to replace to set the KDTree reference grid
-    do_not_replace = numpy.invert(_replace)
+    do_not_replace = numpy.logical_not(_replace)
     kd = spatial.KDTree(_coo[do_not_replace,:])
 
     # Get the indices of the nearest data points

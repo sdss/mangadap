@@ -1168,8 +1168,8 @@ class Sasuke(EmissionLineFit):
         # - Otherwise, flag the full fit (parameters and model) as
         #   NEAR_BOUND if all the parameters are near the boundary but
         #   not the lower sigma boundary
-        indx = numpy.all( (near_lower_bound & numpy.invert(sig_indx)[None,:])
-                            | (near_bound & numpy.invert(near_lower_bound)), axis=1)
+        indx = numpy.all( (near_lower_bound & numpy.logical_not(sig_indx)[None,:])
+                            | (near_bound & numpy.logical_not(near_lower_bound)), axis=1)
         if numpy.sum(indx) > 0:
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
                                                                'NEAR_BOUND')
@@ -1177,7 +1177,7 @@ class Sasuke(EmissionLineFit):
 
         # - Flag the spectrum was not fit
         if not numpy.all(spec_to_fit):
-            indx = numpy.invert(spec_to_fit)
+            indx = numpy.logical_not(spec_to_fit)
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
                                                                'NO_FIT')
 #            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NO_FIT')
@@ -1235,8 +1235,8 @@ class Sasuke(EmissionLineFit):
             # - Determine if any of the kinematic parameters are near
             #   the bound (excluding the lower velocity dispersion
             #   limit)
-            flg = numpy.any((near_lower_bound[:,indx] & numpy.invert(sig_indx)[None,indx])
-                                | (near_bound[:,indx] & numpy.invert(near_lower_bound[:,indx])),
+            flg = numpy.any((near_lower_bound[:,indx] & numpy.logical_not(sig_indx)[None,indx])
+                                | (near_bound[:,indx] & numpy.logical_not(near_lower_bound[:,indx])),
                             axis=1)
             if numpy.sum(flg) > 0:
                 model_eml_par['MASK'][flg,j] = self.bitmask.turn_on(model_eml_par['MASK'][flg,j],
@@ -1246,8 +1246,8 @@ class Sasuke(EmissionLineFit):
         model_mask[flux.mask] = self.bitmask.turn_on(model_mask[flux.mask], flag='DIDNOTUSE')
 
         # Mask any lines that were not fit
-        model_eml_par['MASK'][:,numpy.invert(self.fit_eml)] \
-                    = self.bitmask.turn_on(model_eml_par['MASK'][:,numpy.invert(self.fit_eml)],
+        model_eml_par['MASK'][:,numpy.logical_not(self.fit_eml)] \
+                    = self.bitmask.turn_on(model_eml_par['MASK'][:,numpy.logical_not(self.fit_eml)],
                                            flag='NO_FIT')
 
         #---------------------------------------------------------------
@@ -2370,7 +2370,11 @@ class Sasuke(EmissionLineFit):
         for i,(s,e) in enumerate(zip(start,end)):
             if not spec_to_fit[i]:
                 continue
-            model_mask[i,:s] = self.bitmask.turn_on(model_mask[i,:s], 'DIDNOTUSE')
+            try:
+                model_mask[i,:s] = self.bitmask.turn_on(model_mask[i,:s], 'DIDNOTUSE')
+            except:
+                embed()
+                exit()
             model_mask[i,e:] = self.bitmask.turn_on(model_mask[i,e:], 'DIDNOTUSE')
 
         #---------------------------------------------------------------
@@ -2451,7 +2455,7 @@ class Sasuke(EmissionLineFit):
 
         # Flag pixels that weren't in the fitted range
         if not numpy.all(spec_to_fit):
-            indx = numpy.invert(spec_to_fit)
+            indx = numpy.logical_not(spec_to_fit)
             model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'DIDNOTUSE')
 
         # Flag failed fits
@@ -2563,7 +2567,7 @@ class Sasuke(EmissionLineFit):
         smoments = model_fit_par['KIN'].shape[1] - 2*ngas_comp
 
         # Only produce selected models
-        skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
+        skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.logical_not(select)
 
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=float)

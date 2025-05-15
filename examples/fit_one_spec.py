@@ -338,7 +338,7 @@ def main():
 
     # Get the stellar continuum that was fit for the emission lines
     elcmask = eml_mask.ravel() > 0
-    goodpix = numpy.arange(elcmask.size)[numpy.invert(elcmask)]
+    goodpix = numpy.arange(elcmask.size)[numpy.logical_not(elcmask)]
     start, end = goodpix[0], goodpix[-1]+1
     elcmask[start:end] = False
     el_continuum = numpy.ma.MaskedArray(model_flux - eml_flux,

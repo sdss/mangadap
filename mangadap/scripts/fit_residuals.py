@@ -78,9 +78,9 @@ def gmr_data(cube, min_frac=0.8):
         ext_list = [h.name for h in hdu]
         if 'GIMG' in ext_list and 'RIMG' in ext_list:
             return -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
-                                                            mask=numpy.invert(hdu['GIMG'].data>0))
+                                                            mask=numpy.logical_not(hdu['GIMG'].data>0))
                                     / numpy.ma.MaskedArray(hdu['RIMG'].data,
-                                                           mask=numpy.invert(hdu['RIMG'].data>0)))
+                                                           mask=numpy.logical_not(hdu['RIMG'].data>0)))
 
     # Next, try to create it from scratch
     g_file = defaults.dap_data_root() / 'filter_response' / 'gunn_2001_g_response.db'
@@ -176,7 +176,7 @@ def get_stellar_continuum_fom_maps(cube, dapmaps):
     # Get the associated S/N and fit metrics
     maps_hdu = fits.open(str(dapmaps))
     snrg = numpy.ma.MaskedArray(maps_hdu['BIN_SNR'].data,
-                                mask=numpy.invert(maps_hdu['BIN_SNR'].data > 0))
+                                mask=numpy.logical_not(maps_hdu['BIN_SNR'].data > 0))
     mask = maps_hdu['STELLAR_VEL_MASK'].data > 0
     rms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[0,:,:], mask=mask)
     frms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[1,:,:], mask=mask)
@@ -257,13 +257,13 @@ def get_emission_line_fom_maps(dapmaps):
 
     # Get the associated S/N and fit metrics
     rms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[0,:,:])
-    rms[numpy.invert(rms > 0)] = numpy.ma.masked
+    rms[numpy.logical_not(rms > 0)] = numpy.ma.masked
     frms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[1,:,:])
-    frms[numpy.invert(frms > 0)] = numpy.ma.masked
+    frms[numpy.logical_not(frms > 0)] = numpy.ma.masked
     rchi2 = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[2,:,:])
-    rchi2[numpy.invert(rchi2 > 0)] = numpy.ma.masked
+    rchi2[numpy.logical_not(rchi2 > 0)] = numpy.ma.masked
     chi_grw = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[6:,:,:])
-    chi_grw[numpy.invert(chi_grw > 0)] = numpy.ma.masked
+    chi_grw[numpy.logical_not(chi_grw > 0)] = numpy.ma.masked
 
     extent = map_extent(maps_hdu, 'SPX_MFLUX')
 
@@ -278,7 +278,7 @@ def fom_lambda(name, wave, flux, error, model, fit='sc', wave_limits=None, ofile
         error[indx,:] = numpy.ma.masked
         model[indx,:] = numpy.ma.masked
     else:
-        indx = numpy.arange(len(wave))[numpy.any(numpy.invert(model.mask), axis=1)]
+        indx = numpy.arange(len(wave))[numpy.any(numpy.logical_not(model.mask), axis=1)]
         wave_limits = [wave[indx[0]], wave[indx[-1]]]
 
     nspec = flux.shape[1]

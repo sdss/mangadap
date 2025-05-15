@@ -280,7 +280,7 @@ class RowStackedSpectra:
                                                 missing_bins=missing_bins, unique_bins=unique_bins)
         # For this approach, the wavelengths masked should be
         # *identical* for all spectra
-        nwave = numpy.sum(numpy.invert(numpy.ma.getmaskarray(masked_data)), axis=1)
+        nwave = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(masked_data)), axis=1)
         # No masking should be present except for the wavelength range
         # meaning that the number of unmasked pixels at all spatial
         # positions should be the same.
@@ -492,7 +492,7 @@ class RowStackedSpectra:
             return numpy.ma.sum(flux*xpos*_response_func[None,:]*dw[None,:],axis=1)/norm, \
                     numpy.ma.sum(flux*ypos*_response_func[None,:]*dw[None,:],axis=1)/norm
 
-        norm = numpy.sum(numpy.invert(numpy.ma.getmaskarray(xpos))*_response_func[None,:]
+        norm = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(xpos))*_response_func[None,:]
                                 *dw[None,:], axis=1)
         return numpy.ma.sum(xpos*_response_func[None,:]*dw[None,:],axis=1)/norm, \
                     numpy.ma.sum(ypos*_response_func[None,:]*dw[None,:],axis=1)/norm
@@ -621,9 +621,9 @@ class RowStackedSpectra:
                                     axis=1) / norm
             return numpy.mean(cen_wave)
 
-        norm = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+        norm = numpy.ma.sum(numpy.logical_not(numpy.ma.getmaskarray(flux))
                             * _response_func[None,:] * dw[None,:], axis=1)
-        cen_wave = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux)) * self.wave[None,:]
+        cen_wave = numpy.ma.sum(numpy.logical_not(numpy.ma.getmaskarray(flux)) * self.wave[None,:]
                                 * _response_func[None,:] * dw[None,:], axis=1) / norm
         return numpy.mean(cen_wave)
 
@@ -686,7 +686,7 @@ class RowStackedSpectra:
         _response_func = self.interpolate_to_match(response_func)
 
         # Get the moments
-        response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+        response_integral = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(flux))
                                         * (_response_func*dw)[None,:], axis=1)
         signal = numpy.ma.divide(numpy.ma.sum(flux*(_response_func*dw)[None,:], axis=1),
                                  response_integral)
@@ -935,7 +935,7 @@ class RowStackedSpectra:
         # Do not include any pixels with zero inverse variance or
         # pixels that have been masked (either by the boolean mask
         # attribute or flagged with the provided mask bits)
-        mask = numpy.invert(self.ivar[:,self.rect_channel] > 0.0)
+        mask = numpy.logical_not(self.ivar[:,self.rect_channel] > 0.0)
         if rej_flag is not None and self.bitmask is not None:
             _rej_flag = rej_flag if isinstance(rej_flag, list) or rej_flag != 'any' else None
             mask |= self.bitmask.flagged(self.mask[:,self.rect_channel], flag=_rej_flag)
@@ -1414,7 +1414,7 @@ class RowStackedSpectra:
 
         # Rectify the data
         Tc = self.rect_T.sum(axis=1).flatten()
-        Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
+        Tc[numpy.logical_not(Tc>0)] = 1.0                # Control for zeros
         # NOTE: This returns a numpy.ndarray instead of a numpy.matrix
         return numpy.asarray(numpy.sqrt(self.rect_T.dot(numpy.square(disp)) 
                                 / Tc).reshape(self.nx, self.ny))

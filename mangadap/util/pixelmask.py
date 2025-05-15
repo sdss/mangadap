@@ -142,7 +142,7 @@ class SpectralPixelMask(PixelMask):
         """
         if self.waverange is None:
             return self._empty_mask(wave, ny=nspec)
-        return numpy.invert(self._mask_coordinate_ranges(wave, self.waverange, ny=nspec))
+        return numpy.logical_not(self._mask_coordinate_ranges(wave, self.waverange, ny=nspec))
 
 
     def _artifact_mask(self, wave, nspec=None):
@@ -239,7 +239,7 @@ class SpectralPixelMask(PixelMask):
         """
 
         # Mask everything but the lines to ignore
-        indx = numpy.invert(self.emldb['action'] == 'i')
+        indx = numpy.logical_not(self.emldb['action'] == 'i')
         nbands = numpy.sum(indx)
         # No lines to mask
         if nbands == 0:
@@ -249,7 +249,7 @@ class SpectralPixelMask(PixelMask):
         _nsigma = self._check_eml_kin_argument(self.nsig)   # used to be (nsigma)
         if _nsigma is None:
             raise ValueError('Must provide the number of sigma to cover with the mask.')
-        if numpy.any(numpy.invert(_nsigma > 0)):
+        if numpy.any(numpy.logical_not(_nsigma > 0)):
             raise ValueError('Must provide a non-zero number of sigma for mask hal-fwidth.')
 
         # Get the mask centers
@@ -262,7 +262,7 @@ class SpectralPixelMask(PixelMask):
         # Get the mask widths
         _sigma = self._check_eml_kin_argument(sigma)
         halfwidth = _nsigma[indx] * (self.emldb['sig'][indx] if _sigma is None else _sigma[indx])
-        if numpy.any(numpy.invert(halfwidth > 0)):
+        if numpy.any(numpy.logical_not(halfwidth > 0)):
             raise ValueError('All emission-line mask half-widths must be larger than 0.')
 
         return numpy.array([ center*(1.0-halfwidth/astropy.constants.c.to('km/s').value),

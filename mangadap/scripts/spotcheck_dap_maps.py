@@ -129,61 +129,61 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
 
     # 68% growth of the absolute value of the fractional residuals
     scfres = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data.copy()[3,:,:],
-                                  mask=numpy.invert(hdu['STELLAR_FOM'].data[3,:,:] > 0))
+                                  mask=numpy.logical_not(hdu['STELLAR_FOM'].data[3,:,:] > 0))
     # Reduced chi-square
     scrchi = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data.copy()[2,:,:],
-                                  mask=numpy.invert(hdu['STELLAR_FOM'].data[2,:,:] > 0))
+                                  mask=numpy.logical_not(hdu['STELLAR_FOM'].data[2,:,:] > 0))
 
     strvel = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data.copy(),
                                   mask=bm.flagged(hdu['STELLAR_VEL_MASK'].data, 'DONOTUSE'))
     ustrvel = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data.copy(),
-                                  mask=numpy.invert(bm.flagged(hdu['STELLAR_VEL_MASK'].data,
+                                  mask=numpy.logical_not(bm.flagged(hdu['STELLAR_VEL_MASK'].data,
                                                                'UNRELIABLE')))
-    ustrvel[numpy.invert(numpy.ma.getmaskarray(ustrvel))] = 0.0
+    ustrvel[numpy.logical_not(numpy.ma.getmaskarray(ustrvel))] = 0.0
     strsig = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data.copy(),
                                   mask=bm.flagged(hdu['STELLAR_SIGMA_MASK'].data, 'DONOTUSE'))
     ustrsig = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data.copy(),
-                                  mask=numpy.invert(bm.flagged(hdu['STELLAR_SIGMA_MASK'].data,
+                                  mask=numpy.logical_not(bm.flagged(hdu['STELLAR_SIGMA_MASK'].data,
                                                                'UNRELIABLE')))
-    ustrsig[numpy.invert(numpy.ma.getmaskarray(ustrsig))] = 0.0
+    ustrsig[numpy.logical_not(numpy.ma.getmaskarray(ustrsig))] = 0.0
 
     hasflx = numpy.ma.MaskedArray(hdu['EMLINE_SFLUX'].data.copy()[emline['Ha-6564'],:,:],
             mask=bm.flagged(hdu['EMLINE_SFLUX_MASK'].data[emline['Ha-6564'],:,:], 'DONOTUSE'))
     uhasflx = numpy.ma.MaskedArray(hdu['EMLINE_SFLUX'].data.copy()[emline['Ha-6564'],:,:],
-          mask=numpy.invert(bm.flagged(hdu['EMLINE_SFLUX_MASK'].data[emline['Ha-6564'],:,:],
+          mask=numpy.logical_not(bm.flagged(hdu['EMLINE_SFLUX_MASK'].data[emline['Ha-6564'],:,:],
                                        'UNRELIABLE')))
-    uhasflx[numpy.invert(numpy.ma.getmaskarray(uhasflx))] = 0.0
+    uhasflx[numpy.logical_not(numpy.ma.getmaskarray(uhasflx))] = 0.0
     hagflx = numpy.ma.MaskedArray(hdu['EMLINE_GFLUX'].data.copy()[emline['Ha-6564'],:,:],
           mask=bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Ha-6564'],:,:], 'DONOTUSE'))
     uhagflx = numpy.ma.MaskedArray(hdu['EMLINE_GFLUX'].data.copy()[emline['Ha-6564'],:,:],
-          mask=numpy.invert(bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Ha-6564'],:,:],
+          mask=numpy.logical_not(bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Ha-6564'],:,:],
                                        'UNRELIABLE')))
-    uhagflx[numpy.invert(numpy.ma.getmaskarray(uhagflx))] = 0.0
+    uhagflx[numpy.logical_not(numpy.ma.getmaskarray(uhagflx))] = 0.0
     hagvel = numpy.ma.MaskedArray(hdu['EMLINE_GVEL'].data.copy()[emline['Ha-6564'],:,:],
           mask=bm.flagged(hdu['EMLINE_GVEL_MASK'].data[emline['Ha-6564'],:,:], 'DONOTUSE'))
     uhagvel = numpy.ma.MaskedArray(hdu['EMLINE_GVEL'].data.copy()[emline['Ha-6564'],:,:],
-          mask=numpy.invert(bm.flagged(hdu['EMLINE_GVEL_MASK'].data[emline['Ha-6564'],:,:],
+          mask=numpy.logical_not(bm.flagged(hdu['EMLINE_GVEL_MASK'].data[emline['Ha-6564'],:,:],
                                        'UNRELIABLE')))
-    uhagvel[numpy.invert(numpy.ma.getmaskarray(uhagvel))] = 0.0
+    uhagvel[numpy.logical_not(numpy.ma.getmaskarray(uhagvel))] = 0.0
     hagsig = numpy.ma.MaskedArray(hdu['EMLINE_GSIGMA'].data.copy()[emline['Ha-6564'],:,:],
         mask=bm.flagged(hdu['EMLINE_GSIGMA_MASK'].data[emline['Ha-6564'],:,:], 'DONOTUSE'))
     uhagsig = numpy.ma.MaskedArray(hdu['EMLINE_GSIGMA'].data.copy()[emline['Ha-6564'],:,:],
-        mask=numpy.invert(bm.flagged(hdu['EMLINE_GSIGMA_MASK'].data[emline['Ha-6564'],:,:],
+        mask=numpy.logical_not(bm.flagged(hdu['EMLINE_GSIGMA_MASK'].data[emline['Ha-6564'],:,:],
                                      'UNRELIABLE')))
-    uhagsig[numpy.invert(numpy.ma.getmaskarray(uhagsig))] = 0.0
+    uhagsig[numpy.logical_not(numpy.ma.getmaskarray(uhagsig))] = 0.0
 
     hbsflx = numpy.ma.MaskedArray(hdu['EMLINE_SFLUX'].data.copy()[emline['Hb-4862'],:,:],
           mask=bm.flagged(hdu['EMLINE_SFLUX_MASK'].data[emline['Hb-4862'],:,:], 'DONOTUSE'))
     uhbsflx = numpy.ma.MaskedArray(hdu['EMLINE_SFLUX'].data.copy()[emline['Hb-4862'],:,:],
-          mask=numpy.invert(bm.flagged(hdu['EMLINE_SFLUX_MASK'].data[emline['Hb-4862'],:,:],
+          mask=numpy.logical_not(bm.flagged(hdu['EMLINE_SFLUX_MASK'].data[emline['Hb-4862'],:,:],
                                        'UNRELIABLE')))
-    uhbsflx[numpy.invert(numpy.ma.getmaskarray(uhbsflx))] = 0.0
+    uhbsflx[numpy.logical_not(numpy.ma.getmaskarray(uhbsflx))] = 0.0
     hbgflx = numpy.ma.MaskedArray(hdu['EMLINE_GFLUX'].data.copy()[emline['Hb-4862'],:,:],
           mask=bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Hb-4862'],:,:], 'DONOTUSE'))
     uhbgflx = numpy.ma.MaskedArray(hdu['EMLINE_GFLUX'].data.copy()[emline['Hb-4862'],:,:],
-          mask=numpy.invert(bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Hb-4862'],:,:],
+          mask=numpy.logical_not(bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Hb-4862'],:,:],
                                        'UNRELIABLE')))
-    uhbgflx[numpy.invert(numpy.ma.getmaskarray(uhbgflx))] = 0.0
+    uhbgflx[numpy.logical_not(numpy.ma.getmaskarray(uhbgflx))] = 0.0
 
     specindex_available = True
     try:
@@ -197,17 +197,17 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                                 mask=bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['D4000'],:,:],
                                                 'DONOTUSE'))
         ud4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['D4000'],:,:],
-                                mask=numpy.invert(bm.flagged(hdu['SPECINDEX_MASK'].data[
+                                mask=numpy.logical_not(bm.flagged(hdu['SPECINDEX_MASK'].data[
                                                       specindex['D4000'],:,:], 'UNRELIABLE')))
-        ud4000[numpy.invert(numpy.ma.getmaskarray(ud4000))] = 0.0
+        ud4000[numpy.logical_not(numpy.ma.getmaskarray(ud4000))] = 0.0
         dn4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['Dn4000'],:,:],
                                 mask=bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['Dn4000'],:,:],
                                                 'DONOTUSE'))
         udn4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['Dn4000'],:,:],
-                                mask=numpy.invert(bm.flagged(
+                                mask=numpy.logical_not(bm.flagged(
                                         hdu['SPECINDEX_MASK'].data[specindex['Dn4000'],:,:],
                                         'UNRELIABLE')))
-        udn4000[numpy.invert(numpy.ma.getmaskarray(udn4000))] = 0.0
+        udn4000[numpy.logical_not(numpy.ma.getmaskarray(udn4000))] = 0.0
     else:
         output_shape = spxflx.shape
         d4000 = numpy.ma.masked_all(output_shape)
