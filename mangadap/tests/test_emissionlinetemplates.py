@@ -118,4 +118,9 @@ def test_multicomp_broadv():
             'There should be two groups of tied velocities; this is the second group'
 
 
+def test_build():
+    tpl_wave = numpy.logspace(*numpy.log10([3500., 10600.]), 6000)
+    etpl_sinst = numpy.full(tpl_wave.shape, 10., dtype=float)
+    emldb = EmissionLineDB.from_key('ELPMPL11')
+    etpl = EmissionLineTemplates(tpl_wave, etpl_sinst, emldb=emldb)
 

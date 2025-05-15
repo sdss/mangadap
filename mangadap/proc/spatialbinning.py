@@ -315,7 +315,7 @@ class RadialBinning(SpatialBinning):
 
         if gpm is not None:
             # Remove any masked pixels
-            binid[gpm] = -1
+            binid[numpy.logical_not(gpm)] = -1
 
         return binid
 
