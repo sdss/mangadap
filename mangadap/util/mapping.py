@@ -408,7 +408,7 @@ def _match_map_arrays_sub_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=False
     # Pad and copy the array and its mask
     _arr2 = numpy.ma.masked_all(newshape, dtype=float)
     _arr2[add//2:add//2+arr2.shape[0],add//2:add//2+arr2.shape[1]] = arr2[:,:]
-    _gpm = numpy.invert(numpy.ma.getmaskarray(_arr2)).astype(float)
+    _gpm = numpy.logical_not(numpy.ma.getmaskarray(_arr2)).astype(float)
     # Shifts are in pixels, so adjust given the new coordinates
     dx -= add//2
     dy -= add//2

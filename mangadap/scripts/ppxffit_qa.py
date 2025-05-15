@@ -492,9 +492,9 @@ def gmr_data(cube, min_frac=0.8):
         ext_list = [h.name for h in hdu]
         if 'GIMG' in ext_list and 'RIMG' in ext_list:
             return -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
-                                                            mask=numpy.invert(hdu['GIMG'].data>0))
+                                                            mask=numpy.logical_not(hdu['GIMG'].data>0))
                                     / numpy.ma.MaskedArray(hdu['RIMG'].data,
-                                                           mask=numpy.invert(hdu['RIMG'].data>0)))
+                                                           mask=numpy.logical_not(hdu['RIMG'].data>0)))
 
     # Next, try to create it from scratch
     g_file = defaults.dap_data_root() / 'filter_response' / 'gunn_2001_g_response.db'
@@ -562,9 +562,9 @@ def rdxqa_data(cube, rdxqa_method, output_path):
         spatial_shape = (int(numpy.sqrt(hdu['SPECTRUM'].data['SNR'].size)),)*2
         fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
         signal_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SIGNAL'].reshape(spatial_shape).T,
-                                          mask=numpy.invert(fgood_map > 0))
+                                          mask=numpy.logical_not(fgood_map > 0))
         snr_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SNR'].reshape(spatial_shape).T,
-                                       mask=numpy.invert(fgood_map > 0))
+                                       mask=numpy.logical_not(fgood_map > 0))
     return signal_map, snr_map
 
     
@@ -710,28 +710,28 @@ def ppxffit_qa_plot(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None, tpl_flux
 
     # Map the continuum component data
     t_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), t, quiet=True)
-    t_map = numpy.ma.MaskedArray(t_map, mask=numpy.invert(t_map > 0))
+    t_map = numpy.ma.MaskedArray(t_map, mask=numpy.logical_not(t_map > 0))
 
     dt_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dt, quiet=True)
-    dt_map = numpy.ma.MaskedArray(dt_map, mask=numpy.invert(dt_map > 0)) #/t_map
+    dt_map = numpy.ma.MaskedArray(dt_map, mask=numpy.logical_not(dt_map > 0)) #/t_map
 
     tn_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), tn, quiet=True)
-    tn_map = numpy.ma.MaskedArray(tn_map, mask=numpy.invert(tn_map > 0))
+    tn_map = numpy.ma.MaskedArray(tn_map, mask=numpy.logical_not(tn_map > 0))
 
     dtn_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dtn, quiet=True)
-    dtn_map = numpy.ma.MaskedArray(dtn_map, mask=numpy.invert(dtn_map > 0)) #/tn_map
+    dtn_map = numpy.ma.MaskedArray(dtn_map, mask=numpy.logical_not(dtn_map > 0)) #/tn_map
 
     a_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), a, quiet=True)
-    a_map = numpy.ma.MaskedArray(a_map, mask=numpy.invert(a_map > 0))
+    a_map = numpy.ma.MaskedArray(a_map, mask=numpy.logical_not(a_map > 0))
 
     da_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), da, quiet=True)
-    da_map = numpy.ma.MaskedArray(da_map, mask=numpy.invert(da_map > 0)) #/a_map
+    da_map = numpy.ma.MaskedArray(da_map, mask=numpy.logical_not(da_map > 0)) #/a_map
 
     an_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), an, quiet=True)
-    an_map = numpy.ma.MaskedArray(an_map, mask=numpy.invert(an_map > 0))
+    an_map = numpy.ma.MaskedArray(an_map, mask=numpy.logical_not(an_map > 0))
 
     dan_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dan, quiet=True)
-    dan_map = numpy.ma.MaskedArray(dan_map, mask=numpy.invert(dan_map > 0)) #/an_map
+    dan_map = numpy.ma.MaskedArray(dan_map, mask=numpy.logical_not(dan_map > 0)) #/an_map
 
     _, directory, file = dapfits.default_paths(cube, method=plan['key'], output_path=method_dir)
     maps_file = directory / file

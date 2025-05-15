@@ -539,7 +539,7 @@ class MaNGAConfig:
 
         # Build the spectral resolution vectors
         if 'SPECRES' in _ext:
-            sres = numpy.ma.MaskedArray(hdu[_ext].data, mask=numpy.invert(hdu[_ext].data > 0))
+            sres = numpy.ma.MaskedArray(hdu[_ext].data, mask=numpy.logical_not(hdu[_ext].data > 0))
             if fill:
                 sres = numpy.ma.MaskedArray(interpolate_masked_vector(sres))
             if not median:
@@ -550,7 +550,7 @@ class MaNGAConfig:
         # Otherwise dealing with the DISP data
         sres = numpy.ma.MaskedArray(hdu[_ext].data)
         # Mask any non-positive value
-        sres[numpy.invert(sres > 0)] = numpy.ma.masked
+        sres[numpy.logical_not(sres > 0)] = numpy.ma.masked
         # Convert from sigma in angstroms to spectral resolution (based
         # on FWHM). Make sure to treat array shapes correctly for the
         # different modes.

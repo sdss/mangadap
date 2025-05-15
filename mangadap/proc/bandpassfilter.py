@@ -377,7 +377,7 @@ def passband_integrated_width(x, y, passband=None, borders=False, log=False, bas
     Determine the integrated width of the passband, accounting for masked pixels.
     """
     unity = y.copy()
-    unity[numpy.invert(numpy.ma.getmaskarray(y))] = 1.0
+    unity[numpy.logical_not(numpy.ma.getmaskarray(y))] = 1.0
     return passband_integral(x, unity, passband=passband, borders=borders, log=log, base=base)
 
 
@@ -389,7 +389,7 @@ def passband_integrated_mean(x, y, err=None, passband=None, borders=False, log=F
     # Get the passband interval, accounting for masked pixels
     interval = passband_integrated_width(x, y, passband=passband, borders=borders, log=log,
                                          base=base)
-    interval = numpy.ma.MaskedArray(interval, mask=numpy.invert(numpy.absolute(interval) > 0))
+    interval = numpy.ma.MaskedArray(interval, mask=numpy.logical_not(numpy.absolute(interval) > 0))
 
     # Get the integral of y over the passband
     integral = numpy.ma.MaskedArray(passband_integral(x, y, passband=passband, borders=borders,
@@ -442,7 +442,7 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
     weighted_integral = passband_integral(x, z*y, passband=passband, borders=borders, log=log,
                                           base=base)
     integral = passband_integral(x, y, passband=passband, borders=borders, log=log, base=base)
-    integral = numpy.ma.MaskedArray(integral, mask=numpy.invert(numpy.absolute(integral) > 0))
+    integral = numpy.ma.MaskedArray(integral, mask=numpy.logical_not(numpy.absolute(integral) > 0))
 
     if yerr is None and zerr is None:
         return numpy.ma.divide(weighted_integral,integral), None
@@ -577,7 +577,7 @@ def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=Fal
                             / numpy.diff(passband, axis=1).ravel()
 
     return band_center, continuum, continuum_error, interval_frac < 1.0, \
-                numpy.invert(interval_frac > 0.0)
+                numpy.logical_not(interval_frac > 0.0)
 
 
 def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroid, line_flux,

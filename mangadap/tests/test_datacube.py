@@ -91,7 +91,7 @@ def test_copyto():
 #    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
 #    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
     sig, var, snr = cube.flux_stats(response_func=method.response)
-    indx = ((sig > 0) & numpy.invert(numpy.ma.getmaskarray(sig))).data.ravel()
+    indx = ((sig > 0) & numpy.logical_not(numpy.ma.getmaskarray(sig))).data.ravel()
     ngood = numpy.sum(indx)
 
     # Select the spaxels with non-zero signal

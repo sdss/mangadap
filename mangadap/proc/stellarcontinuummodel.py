@@ -517,7 +517,7 @@ class StellarContinuumModel:
             `numpy.ndarray`_: Sorted list of missing models.
         """
         good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'], debug=debug)
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
+        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.logical_not(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
 
     def _construct_2d_hdu(self, good_snr, model_flux, model_mask, model_par):
@@ -555,7 +555,7 @@ class StellarContinuumModel:
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
         # Get the bins that were blow the S/N limit
-        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+        indx = numpy.logical_not(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                         self.binned_spectra['BINID'].data.ravel(),
                                                         good_snr, dtype='bool')) & (map_mask == 0)
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
@@ -1075,7 +1075,7 @@ class StellarContinuumModel:
             raise TypeError('Provided template replacements must have type TemplateLibrary.')
 
         # Only the selected models are constructed, others are masked
-        select = numpy.invert(self.bitmask.flagged(self.hdu['PAR'].data['MASK'],
+        select = numpy.logical_not(self.bitmask.flagged(self.hdu['PAR'].data['MASK'],
                                             flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
         templates = self.method['fitpar']['template_library'] if replacement_templates is None \
                                             else replacement_templates

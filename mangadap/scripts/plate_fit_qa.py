@@ -89,7 +89,7 @@ def compile_data(dapver, analysis_path, daptype, plt):
             indx = indx[1:]
 
         mask = hdu['STELLAR_VEL_MASK'].data.ravel()[indx] > 0
-        indx = indx[numpy.invert(mask)]
+        indx = indx[numpy.logical_not(mask)]
 
         if len(indx) > 0:
             sc_pltifu += [ '{0}-{1}'.format(plt, ifu) ]
@@ -106,7 +106,7 @@ def compile_data(dapver, analysis_path, daptype, plt):
             uniq = uniq[1:]
             indx = indx[1:]
         mask = hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],:,:].ravel()[indx] > 0
-        indx = indx[numpy.invert(mask)]
+        indx = indx[numpy.logical_not(mask)]
 
         if len(indx) > 0:
             el_pltifu += [ '{0}-{1}'.format(plt, ifu) ]

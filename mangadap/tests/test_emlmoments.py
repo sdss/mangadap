@@ -43,8 +43,8 @@ def test_moments():
                                                 redshift=hdu['Z'].data, bitmask=elmombm)
 
     # Measure the EW based on the moments
-    include_band = numpy.array([numpy.invert(momdb.dummy)]*nspec) \
-                        & numpy.invert(elmombm.flagged(elmom['MASK'],
+    include_band = numpy.array([numpy.logical_not(momdb.dummy)]*nspec) \
+                        & numpy.logical_not(elmombm.flagged(elmom['MASK'],
                                                        flag=['BLUE_EMPTY', 'RED_EMPTY']))
     line_center = (1.0+hdu['Z'].data)[:,None]*momdb['restwave'][None,:]
     elmom['BMED'], elmom['RMED'], pos, elmom['EWCONT'], elmom['EW'], elmom['EWERR'] \
@@ -159,8 +159,8 @@ def test_moments_with_continuum():
                                                 bitmask=elmombm)
 
     # Measure the EW based on the moments
-    include_band = numpy.array([numpy.invert(momdb.dummy)]*nspec) \
-                        & numpy.invert(elmombm.flagged(elmom['MASK'],
+    include_band = numpy.array([numpy.logical_not(momdb.dummy)]*nspec) \
+                        & numpy.logical_not(elmombm.flagged(elmom['MASK'],
                                                        flag=['BLUE_EMPTY', 'RED_EMPTY']))
     line_center = (1.0+hdu['Z'].data)[:,None]*momdb['restwave'][None,:]
     elmom['BMED'], elmom['RMED'], pos, elmom['EWCONT'], elmom['EW'], elmom['EWERR'] \

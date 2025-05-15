@@ -680,7 +680,7 @@ class DataCube:
                                                 missing_bins=missing_bins, unique_bins=unique_bins)
         # For this approach, the wavelengths masked should be
         # *identical* for all spectra
-        nwave = numpy.sum(numpy.invert(numpy.ma.getmaskarray(masked_data)), axis=1)
+        nwave = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(masked_data)), axis=1)
         # No masking should be present except for the wavelength range
         # meaning that the number of unmasked pixels at all spatial
         # positions should be the same.
@@ -969,9 +969,9 @@ class DataCube:
                                     axis=1) / norm
             return float(numpy.ma.mean(cen_wave))
 
-        norm = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+        norm = numpy.ma.sum(numpy.logical_not(numpy.ma.getmaskarray(flux))
                             * _response_func[None,:] * dw[None,:], axis=1)
-        cen_wave = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux)) * self.wave[None,:]
+        cen_wave = numpy.ma.sum(numpy.logical_not(numpy.ma.getmaskarray(flux)) * self.wave[None,:]
                                 * _response_func[None,:] * dw[None,:], axis=1) / norm
         return float(numpy.ma.mean(cen_wave))
 
@@ -1034,7 +1034,7 @@ class DataCube:
         _response_func = self.interpolate_to_match(response_func)
 
         # Calculate the statistics and return
-        response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+        response_integral = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(flux))
                                         * (_response_func*dw)[None,:], axis=1)
         signal = numpy.ma.divide(numpy.ma.sum(flux*(_response_func*dw)[None,:], axis=1),
                                  response_integral).reshape(self.spatial_shape)

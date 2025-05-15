@@ -219,7 +219,7 @@ class LineProfileFit:
         self.bounds = (-numpy.inf, numpy.inf) if bounds is None else bounds
 
         # Get the number of free parameters
-        self.nfitpar = numpy.sum(numpy.invert(self.fixed))
+        self.nfitpar = numpy.sum(numpy.logical_not(self.fixed))
 
         # Construct the model
         self.model = _profile_list[0].profile
@@ -252,7 +252,7 @@ class LineProfileFit:
         """
         if len(par) not in [ self.npar, self.nfitpar ]:
             raise ValueError('Incorrect number of parameters provided')
-        self.par[numpy.invert(self.fixed)] = par[numpy.invert(self.fixed)] \
+        self.par[numpy.logical_not(self.fixed)] = par[numpy.logical_not(self.fixed)] \
                                                     if len(par) == self.npar else par
         # Then tie parameters...
 
@@ -320,7 +320,7 @@ class LineProfileFit:
             _mask |= mask
 
         # Set the internal vectors to be numpy.ndarrays that only include the unmasked values
-        indx = numpy.invert(_mask)
+        indx = numpy.logical_not(_mask)
         self.x = numpy.array(x[indx])
         self.y = numpy.array(y[indx])
         self.err = None if error is None else numpy.array(error[indx])
@@ -885,22 +885,22 @@ class Elric(EmissionLineFit):
         """
 #        print('par: ', par)
 #        print('lbnd: ', lbnd)
-        lbounded = numpy.invert(numpy.isinf(lbnd))
+        lbounded = numpy.logical_not(numpy.isinf(lbnd))
 #        print('L bounded: ', lbounded)
 
 #        print('ubnd: ', ubnd)
-        ubounded = numpy.invert(numpy.isinf(ubnd))
+        ubounded = numpy.logical_not(numpy.isinf(ubnd))
 #        print('U bounded: ', ubounded)
 
         if numpy.sum(lbounded) == 0 and numpy.sum(ubounded) == 0:
 #            print('No bounds')
             return False
 
-        if numpy.any(lbounded & numpy.invert(ubounded) & (par - lbnd < atol)):
+        if numpy.any(lbounded & numpy.logical_not(ubounded) & (par - lbnd < atol)):
 #            print('Near lower bound')
             return True
 
-        if numpy.any(numpy.invert(lbounded) & ubounded & (ubnd - par < atol)):
+        if numpy.any(numpy.logical_not(lbounded) & ubounded & (ubnd - par < atol)):
 #            print('Near upper bound')
             return True
 
@@ -916,7 +916,7 @@ class Elric(EmissionLineFit):
         Dp = numpy.zeros(ulbounded.size, dtype=float)
         indx = ulbounded & logbounded
         Dp[indx] = numpy.log10(ubnd[indx]) - numpy.log10(lbnd[indx])
-        indx = ulbounded & numpy.invert(logbounded)
+        indx = ulbounded & numpy.logical_not(logbounded)
         Dp[indx] = ubnd[indx] - lbnd[indx]
         tol = Dp*rtol
 #        print(tol)
@@ -933,7 +933,7 @@ class Elric(EmissionLineFit):
 #        print((par - lbnd)[ulbounded & ~logbounded])
 #        print((ubnd - par)[ulbounded & ~logbounded])
 
-        if numpy.any(ulbounded & numpy.invert(logbounded) & ((par-lbnd < tol) | (ubnd-par < tol))):
+        if numpy.any(ulbounded & numpy.logical_not(logbounded) & ((par-lbnd < tol) | (ubnd-par < tol))):
 #            print('Near boundary in linear')
             return True
 #        print('Not near boundary')
@@ -1050,7 +1050,7 @@ class Elric(EmissionLineFit):
         if self.error is not None:
             tmperr = numpy.diag(self.bestfit[i,j].cov)
             if not numpy.any(tmperr < 0):
-                model_fit_par['ERR'][i,j,numpy.invert(model_fit_par['FIXED'][i,j])] \
+                model_fit_par['ERR'][i,j,numpy.logical_not(model_fit_par['FIXED'][i,j])] \
                         = numpy.sqrt(numpy.diag(self.bestfit[i,j].cov))
             else:
                 model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
@@ -1405,7 +1405,7 @@ class Elric(EmissionLineFit):
 
             # Set the mask for any pixels that are NEVER fit for this
             # spectrum
-            indx = numpy.invert(numpy.any(fitting_mask, axis=0))
+            indx = numpy.logical_not(numpy.any(fitting_mask, axis=0))
             model_mask[i,indx] = self.bitmask.turn_on(model_mask[i,indx], 'OUTSIDE_RANGE')
 
             model_jump = numpy.array([
@@ -1593,7 +1593,7 @@ class Elric(EmissionLineFit):
                                                    self.fitting_window[j].profile_set.tolist(),
                                             error=None if self.error is None else self.error[i,:],
                                                    base_order=base_order,
-                                                   mask=numpy.invert(fitting_mask[j,:]),
+                                                   mask=numpy.logical_not(fitting_mask[j,:]),
                                                    par=_guess_par,
                                                    bounds=(_bounds[:,0], _bounds[:,1]),
                                                    construct_covariance=True)
@@ -1650,7 +1650,7 @@ class Elric(EmissionLineFit):
 #            print('Windows with parameters near boundary: {0}'.format(total_near_bound))
 
             # Determine the instrumental dispersion correction at the line centers
-            indx = numpy.invert(self.bitmask.flagged(model_eml_par['MASK'][i,:],
+            indx = numpy.logical_not(self.bitmask.flagged(model_eml_par['MASK'][i,:],
                                                      flag=['INSUFFICIENT_DATA', 'FIT_FAILED',
                                                            'NEAR_BOUND', 'UNDEFINED_COVAR' ]))
             model_eml_par['SIGMACORR'][i,indx] \

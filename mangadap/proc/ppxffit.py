@@ -774,7 +774,7 @@ class PPXFFit(StellarKinematicsFit):
         # Include the masked object pixels
         model_mask[obj_flux.mask] = True if bitmask is None else \
                                         bitmask.turn_on(model_mask[obj_flux.mask], 'DIDNOTUSE')
-
+        
         # Assess the regions that need to be masked during fitting
         if ensemble:
             # Treat all spectra as part of an ensemble so mask the same region
@@ -834,7 +834,7 @@ class PPXFFit(StellarKinematicsFit):
             model_mask[alias_mask] = bitmask.turn_on(model_mask[alias_mask], PPXFFit.trunc_flag)
 
         # Make sure that the errors are valid
-        indx = numpy.invert(obj_ferr.data > 0) | numpy.invert(numpy.isfinite(obj_ferr.data))
+        indx = numpy.logical_not(obj_ferr.data > 0) | numpy.logical_not(numpy.isfinite(obj_ferr.data))
         if numpy.sum(indx) > 0:
             model_mask[indx] = True if bitmask is None else\
                                     bitmask.turn_on(model_mask[indx], 'INVALID_ERROR')
@@ -850,7 +850,7 @@ class PPXFFit(StellarKinematicsFit):
         # TODO: does this work if all the pixels are masked in a given
         # spectrum?
         pix = numpy.ma.MaskedArray(numpy.array([numpy.arange(obj_flux.shape[1])]*nobj),
-                                   mask=numpy.invert(fit_indx))
+                                   mask=numpy.logical_not(fit_indx))
         return model_mask, err, numpy.ma.amin(pix, axis=1), numpy.ma.amax(pix, axis=1)+1
 
     def _run_fit_iteration(self, obj_flux, obj_ferr, start, end, base_velocity, tpl_flux,
@@ -934,7 +934,7 @@ class PPXFFit(StellarKinematicsFit):
                 continue
 
             # Get the pixels to fit for this spectrum
-            gpm = numpy.where(numpy.invert(obj_flux.mask[i,start[i]:end[i]]))[0]
+            gpm = numpy.where(numpy.logical_not(obj_flux.mask[i,start[i]:end[i]]))[0]
 
             # Check if there is sufficient data for the fit
             ntpl_to_use = numpy.sum(_tpl_to_use[i,:])
@@ -1131,7 +1131,7 @@ class PPXFFit(StellarKinematicsFit):
         nspec = obj_flux.shape[0]
 
         # Save which were not fit successfully
-        obj_to_fit &= numpy.invert(numpy.array([ r is None or r.fit_failed() for r in result ]))
+        obj_to_fit &= numpy.logical_not(numpy.array([ r is None or r.fit_failed() for r in result ]))
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Number of object spectra to fit (excluding failed fits): {0}/{1}'.format(
@@ -1308,7 +1308,7 @@ class PPXFFit(StellarKinematicsFit):
                                                         or rcls.reached_maxiter() 
                                         for rcl, rcls in zip(result_wlosvd, result_wlosvd_msres) ])
             dispersion_correction_err &= _obj_to_fit
-            indx = numpy.invert(dispersion_correction_err) & _obj_to_fit
+            indx = numpy.logical_not(dispersion_correction_err) & _obj_to_fit
 
             disp_wlosvd = numpy.zeros(self.nobj, dtype=float)
             disp_wlosvd[indx] = numpy.array([ rc.kin[1] for rc in result_wlosvd[indx] ])
@@ -1500,7 +1500,7 @@ class PPXFFit(StellarKinematicsFit):
             # Mask rejected pixels
             s = self.spectrum_start[i]
             e = self.spectrum_end[i]
-            original_gpm = numpy.where(numpy.invert(self.obj_flux.mask[i,s:e]))[0]
+            original_gpm = numpy.where(numpy.logical_not(self.obj_flux.mask[i,s:e]))[0]
             rejected_pixels = list(set(original_gpm) - set(result[i].gpm))
             if len(rejected_pixels) > 0:
                 model_mask[i,s:e][rejected_pixels] \
@@ -1905,7 +1905,7 @@ class PPXFFit(StellarKinematicsFit):
                 = PPXFFit.check_objects(obj_wave, obj_flux, obj_ferr=obj_ferr, obj_sres=obj_sres)
         self.nobj, self.npix_obj = self.obj_flux.shape
         self.input_obj_mask = numpy.ma.getmaskarray(self.obj_flux).copy()
-        self.obj_to_fit = numpy.any(numpy.invert(self.input_obj_mask), axis=1)
+        self.obj_to_fit = numpy.any(numpy.logical_not(self.input_obj_mask), axis=1)
 #        print('Objects to fit: {0}/{1}'.format(numpy.sum(self.obj_to_fit), self.nobj))
 
         # - Input pixel scale
@@ -2209,7 +2209,7 @@ class PPXFFit(StellarKinematicsFit):
                 raise ValueError('Selected wavelength range for analysis contains no pixels!')
         else:
             fit_indx = numpy.full(now, True, dtype=bool)
-        waverange_mask = numpy.invert(fit_indx)
+        waverange_mask = numpy.logical_not(fit_indx)
 
         # Minimum and maximum redshift about primary offsets
         c = astropy.constants.c.to('km/s').value
@@ -2267,7 +2267,7 @@ class PPXFFit(StellarKinematicsFit):
                 log_output(loggers, 1, logging.INFO, 
                            'Limit to at most the number of template pixels: {0} {1}'.format(
                                                                         numpy.sum(fit_indx), ntw))
-        npix_mask = numpy.invert(fit_indx) & numpy.invert(waverange_mask)
+        npix_mask = numpy.logical_not(fit_indx) & numpy.logical_not(waverange_mask)
 
         # 3. Limit wavelength range to avoid aliasing problems in the template convolution
         nalias = int(numpy.floor(_alias_window/velscale))            # Number of pixels to mask
@@ -2289,7 +2289,7 @@ class PPXFFit(StellarKinematicsFit):
             log_output(loggers, 1, logging.INFO,
                        'Final wavelength range to fit: {0} {1}'.format(obj_wave[fit_indx][0],
                                                                        obj_wave[fit_indx][-1]))
-        alias_mask = numpy.invert(fit_indx) & numpy.invert(npix_mask)
+        alias_mask = numpy.logical_not(fit_indx) & numpy.logical_not(npix_mask)
 
         return fit_indx, waverange_mask, npix_mask, alias_mask
 

@@ -806,7 +806,7 @@ class DAPall:
         # Get the corrected indices; Unitless and ang units are treated
         # the same.
         mag = specindex_units == 'mag'
-        ang = numpy.invert(mag)
+        ang = numpy.logical_not(mag)
         specindex_corr[ang] = specindex[ang]*specindex_corr[ang]
         specindex_corr[mag] = specindex[mag]+specindex_corr[mag]
 
@@ -956,13 +956,13 @@ class DAPall:
             # Get the SRD-based S/N metric (independent of the DAP
             # method)
             r_re = numpy.ma.MaskedArray(dapmaps['SPX_ELLCOO'].data.copy()[1,:,:],
-                                        mask=numpy.invert(dapmaps['SPX_SNR'].data > 0))
+                                        mask=numpy.logical_not(dapmaps['SPX_SNR'].data > 0))
             db['SNR_MED'][i], db['SNR_RING'][i] = self._srd_snr_metric(dapmaps)
 
             # Get the mean surface brightness within 1 Re used by the
             # stellar-continuum fitting (independent of the DAP method)
             mflux = numpy.ma.MaskedArray(dapmaps['SPX_MFLUX'].data.copy(),
-                                         mask=numpy.invert(dapmaps['SPX_SNR'].data > 0))
+                                         mask=numpy.logical_not(dapmaps['SPX_SNR'].data > 0))
             within_1re = r_re < 1
             if numpy.sum(within_1re) == 0:
                 warnings.warn('No data within 1 Re!')

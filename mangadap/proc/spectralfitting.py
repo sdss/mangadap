@@ -328,7 +328,7 @@ class EmissionLineFit(SpectralFitting):
             return bins_to_fit
 
         # Determine which spectra have a valid stellar continuum fit
-        indx = numpy.invert(stellar_continuum.bitmask.flagged(
+        indx = numpy.logical_not(stellar_continuum.bitmask.flagged(
                                     stellar_continuum['PAR'].data['MASK'],
                                     flag=[ 'NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
         with_good_continuum = numpy.zeros(binned_spectra.nbins, dtype=bool)
@@ -422,7 +422,7 @@ class EmissionLineFit(SpectralFitting):
             ivar = binned_spectra.copy_to_masked_array(ext='IVAR', flag=flags)
             sres = binned_spectra.copy_to_array(ext='SPECRES')
             sres = numpy.apply_along_axis(interpolate_masked_vector, 1,
-                                    numpy.ma.MaskedArray(sres, mask=numpy.invert(sres > 0)))
+                                    numpy.ma.MaskedArray(sres, mask=numpy.logical_not(sres > 0)))
         nspec = flux.shape[0]
 
         # Convert inverse variance to error
@@ -523,7 +523,7 @@ class EmissionLineFit(SpectralFitting):
             return flux, None
 
         # Get where the continuum is masked but the spectra are not
-        no_continuum = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(continuum)
+        no_continuum = numpy.logical_not(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(continuum)
 
         # Subtract the continuum (ensure output is a masked array)
         continuum_subtracted_flux = numpy.ma.subtract(flux, continuum)
@@ -743,8 +743,8 @@ class EmissionLineFit(SpectralFitting):
 
         # Flag non-positive measurements
         if bitmask is not None:
-            model_eml_par['MASK'][numpy.invert(pos)] \
-                    = bitmask.turn_on(model_eml_par['MASK'][numpy.invert(pos)],
+            model_eml_par['MASK'][numpy.logical_not(pos)] \
+                    = bitmask.turn_on(model_eml_par['MASK'][numpy.logical_not(pos)],
                                       'NON_POSITIVE_CONTINUUM')
 
     @staticmethod
@@ -871,7 +871,7 @@ class EmissionLineFit(SpectralFitting):
 
         # Get the fitted line amplitude
         sigma_ang = model_eml_par['KIN'][:,:,1]*sample_wave/astropy.constants.c.to('km/s').value
-        sigma_ang = numpy.ma.MaskedArray(sigma_ang, mask=numpy.invert(sigma_ang > 0))
+        sigma_ang = numpy.ma.MaskedArray(sigma_ang, mask=numpy.logical_not(sigma_ang > 0))
         model_eml_par['AMP'] = numpy.ma.divide(model_eml_par['FLUX'], sigma_ang).filled(0.0) \
                                     / numpy.sqrt(2*numpy.pi)
 
@@ -889,9 +889,9 @@ class EmissionLineFit(SpectralFitting):
         noise = numpy.zeros_like(model_eml_par['AMP'], dtype=float)
         for i in range(nspec):
             _bluenoise = passband_median(_wave, _ferr[i,:], passband=_bluebands[i,:,:])
-            _bluenoise = numpy.ma.MaskedArray(_bluenoise, mask=numpy.invert(_bluenoise > 0))
+            _bluenoise = numpy.ma.MaskedArray(_bluenoise, mask=numpy.logical_not(_bluenoise > 0))
             _rednoise = passband_median(_wave, _ferr[i,:], passband=_redbands[i,:,:])
-            _rednoise = numpy.ma.MaskedArray(_rednoise, mask=numpy.invert(_rednoise > 0))
+            _rednoise = numpy.ma.MaskedArray(_rednoise, mask=numpy.logical_not(_rednoise > 0))
             noise[i,:] = ((_bluenoise + _rednoise)/2.).filled(0.0)
         model_eml_par['ANR'] = numpy.ma.divide(model_eml_par['AMP'], noise).filled(0.0)
 

@@ -271,8 +271,8 @@ class construct_maps_file:
                     or self.hdu[f'{e}_MASK'].data is None \
                     or self.hdu[f'{e}_IVAR'].data is None:
                 continue
-            indx = numpy.invert(self.bitmask.flagged(self.hdu['{0}_MASK'.format(e)].data)) \
-                            & numpy.invert(self.hdu['{0}_IVAR'.format(e)].data > 0)
+            indx = numpy.logical_not(self.bitmask.flagged(self.hdu['{0}_MASK'.format(e)].data)) \
+                            & numpy.logical_not(self.hdu['{0}_IVAR'.format(e)].data > 0)
             if numpy.sum(indx) > 0:
                 self.hdu['{0}_MASK'.format(e)].data[indx] \
                     = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'MATHERROR')
@@ -1674,7 +1674,7 @@ class construct_cube_file:
         return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
     def _set_no_model(self, mask):
-        indx = numpy.arange(len(mask))[numpy.invert(mask > 0)]
+        indx = numpy.arange(len(mask))[numpy.logical_not(mask > 0)]
         if len(indx) == 0:
             return mask
         mask[:indx[0]] = self.bitmask.turn_on(mask[:indx[0]], 'NOMODEL')
@@ -1954,7 +1954,7 @@ def add_snr_metrics_to_header(hdr, cube, r_re):
             covar = cube.covariance_matrix(covar_channel)
 
         # Get the spaxels within the radius limits
-        indx = numpy.arange(r_re.size)[(r_re > 1) & (r_re < 1.5) & numpy.invert(signal.mask)]
+        indx = numpy.arange(r_re.size)[(r_re > 1) & (r_re < 1.5) & numpy.logical_not(signal.mask)]
         if len(indx) == 0:
             hdr[key_med[i]] = (0., com_med[i])
             hdr[key_ring[i]] = (0., com_ring[i])

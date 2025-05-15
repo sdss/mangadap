@@ -21,6 +21,7 @@ from IPython import embed
 import numpy
 
 from astropy.io import fits
+from astropy.stats import sigma_clip
 import astropy.constants
 
 from ..par.parset import KeywordParSet, ParSet
@@ -351,26 +352,33 @@ class EmissionLineModel:
             vel_channel = -1 if self.method['mom_vel_name'] is None \
                                 else numpy.arange(len(names))[self.method['mom_vel_name']
                                                                 == names][0]
-
             if vel_channel > -1:
                 obj_redshift = numpy.full(self.binned_spectra.nbins, 0.0, dtype=float)
-            
+
+                # Find the masked moments            
                 mom1_masked = emission_line_moments.bitmask.flagged(
                                 emission_line_moments['ELMMNTS'].data['MASK'][:,vel_channel],
                                 emission_line_moments.bitmask.bad_kinematic_reference)
+
                 # - Use the 1st moment of the named line
                 obj_redshift[emission_line_moments['ELMMNTS'].data['BINID_INDEX']] \
                         = emission_line_moments['ELMMNTS'].data['MOM1'][:,vel_channel] \
                                 / astropy.constants.c.to('km/s').value
 
+                # TODO: Make this optional!
+                # Also exclude very strong outliers
+                outlier = sigma_clip(obj_redshift, sigma=10., maxiters=None)
+                mom1_masked |= numpy.ma.getmaskarray(outlier)
+
                 # - For missing bins in the moment measurements and bad
                 # line moment measurements, use the value for the
                 # nearest good bin
-                bad_bins = numpy.append(emission_line_moments.missing_bins,
-                                emission_line_moments['ELMMNTS'].data['BINID'][mom1_masked]).astype(int)
+                bad_bins = numpy.append(
+                    emission_line_moments.missing_bins,
+                    emission_line_moments['ELMMNTS'].data['BINID'][mom1_masked]
+                ).astype(int)
                 if numpy.all(bad_bins):
-                    warnings.warn('Unable to find good velocity estimates from the measured '
-                                  'line moments!')
+                    warnings.warn('Some velocity estimates from the measured line moments are bad!')
                 if len(bad_bins) > 0 and len(bad_bins) != self.binned_spectra.nbins:
                     nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
                                                                                   indices=True)
@@ -526,7 +534,7 @@ class EmissionLineModel:
         if unique_bins is None:
             good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'], debug=debug)
             return numpy.sort(self.binned_spectra.missing_bins + 
-                        self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
+                        self.binned_spectra['BINS'].data['BINID'][numpy.logical_not(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
     def _get_line_fit_metrics(self, model_flux, model_mask, model_eml_par, model_binid=None,
@@ -639,7 +647,7 @@ class EmissionLineModel:
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
 
             # Get the bins that were below the S/N limit
-            indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+            indx = numpy.logical_not(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                     self.binned_spectra['BINID'].data.ravel(),
                                                     good_snr, dtype='bool')) & (map_mask == 0)
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
@@ -655,7 +663,7 @@ class EmissionLineModel:
 
             # The number of valid bins MUST match the number of
             # measurements
-            nvalid = numpy.sum(numpy.invert(indx))
+            nvalid = numpy.sum(numpy.logical_not(indx))
             if nvalid != len(model_eml_par):
                 raise ValueError('Provided model id does not match the number of measurements.')
 
@@ -1391,7 +1399,7 @@ class EmissionLineModel:
             raise TypeError('Provided template replacements must have type TemplateLibrary.')
 
         # Only the selected models are constructed, others are masked
-        select = numpy.invert(self.bitmask.flagged(self.hdu['FIT'].data['MASK'],
+        select = numpy.logical_not(self.bitmask.flagged(self.hdu['FIT'].data['MASK'],
                                             flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
 
         # Get the template library

@@ -565,8 +565,8 @@ class AbsorptionLineIndices:
                                                + numpy.square((1-dx) * self.blue_continuum_err))
 
 #        print('Number of non-finite continuum m,b: {0} {1}'.format(
-#                                numpy.sum(numpy.invert(numpy.isfinite(self.continuum_m))),
-#                                numpy.sum(numpy.invert(numpy.isfinite(self.continuum_b)))))
+#                                numpy.sum(numpy.logical_not(numpy.isfinite(self.continuum_m))),
+#                                numpy.sum(numpy.logical_not(numpy.isfinite(self.continuum_b)))))
 
         # Compute the continuum normalized indices.  This has to be done
         # in a for loop because the continuum is index-dependent
@@ -610,7 +610,7 @@ class AbsorptionLineIndices:
             interval = passband_integrated_width(wave, flux, passband=m, log=log)
             interval_frac = interval / numpy.diff(m)[0]
             self.main_incomplete[i] = interval_frac < 1.0
-            self.main_empty[i] = numpy.invert(interval_frac > 0.0)
+            self.main_empty[i] = numpy.logical_not(interval_frac > 0.0)
 
             # Common to both calculations of the BF indices
             # TODO: Need to catch divbyzero here, as well!
@@ -754,11 +754,11 @@ class BandheadIndices:
         self.index = numpy.ma.zeros(self.nindx, dtype=float)
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
-        self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
-        self.index[numpy.invert(blue_n)] = numpy.ma.divide(self.red_continuum[numpy.invert(blue_n)],
-                                              self.blue_continuum[numpy.invert(blue_n)]).filled(0.0)
-        self.divbyzero[numpy.invert(blue_n)] \
-                = numpy.invert(numpy.absolute(self.blue_continuum[numpy.invert(blue_n)])>0.0)
+        self.divbyzero[blue_n] = numpy.logical_not(numpy.absolute(self.red_continuum[blue_n])>0.0)
+        self.index[numpy.logical_not(blue_n)] = numpy.ma.divide(self.red_continuum[numpy.logical_not(blue_n)],
+                                              self.blue_continuum[numpy.logical_not(blue_n)]).filled(0.0)
+        self.divbyzero[numpy.logical_not(blue_n)] \
+                = numpy.logical_not(numpy.absolute(self.blue_continuum[numpy.logical_not(blue_n)])>0.0)
 
         # Calculate the index errors
         berr = numpy.ma.zeros(self.nindx) if self.blue_continuum_err is None \
@@ -1134,7 +1134,7 @@ class SpectralIndices:
         if unique_bins is None:
             good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
             return numpy.sort(self.binned_spectra.missing_bins + 
-                        self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
+                        self.binned_spectra['BINS'].data['BINID'][numpy.logical_not(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
     def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
@@ -1328,7 +1328,7 @@ class SpectralIndices:
         # Remove the emission lines if provided        
         if emission_line_model is not None:
             eml_model = emission_line_model.fill_to_match(binid, missing=missing)
-            no_eml = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)
+            no_eml = numpy.logical_not(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)
             flux -= eml_model
             flux.mask[no_eml] = False
 
@@ -1362,7 +1362,7 @@ class SpectralIndices:
         # TODO: This approach needs to be vetted.
         for i in range(nspec):
             mp = mask[i,:]              # Masked pixels
-            up = numpy.invert(mp)       # Unmasked pixels
+            up = numpy.logical_not(mp)       # Unmasked pixels
             if numpy.sum(mp) == 0:      # No masked pixels so continue
                 continue
             if numpy.sum(up) == 0:      # No unmasked pixels!
@@ -1549,11 +1549,11 @@ class SpectralIndices:
 
         # Determine which indices have good measurements
         ules, angu, magu = SpectralIndices.unit_selection(absdb, bhddb)
-        good_les = numpy.invert(bad_indx) & (numpy.array([ules]*nspec)) \
+        good_les = numpy.logical_not(bad_indx) & (numpy.array([ules]*nspec)) \
                         & (numpy.absolute(indx['INDX']) > 0)
-        good_ang = numpy.invert(bad_indx) & (numpy.array([angu]*nspec)) \
+        good_ang = numpy.logical_not(bad_indx) & (numpy.array([angu]*nspec)) \
                         & (numpy.absolute(indx['INDX']) > 0)
-        good_mag = numpy.invert(bad_indx) & (numpy.array([magu]*nspec))
+        good_mag = numpy.logical_not(bad_indx) & (numpy.array([magu]*nspec))
 
         print('Good unitless indices: ', numpy.sum(good_les))
         print('Good angstrom indices: ', numpy.sum(good_ang))
@@ -1923,23 +1923,23 @@ class SpectralIndices:
 
         # Get the list of good indices of each type
         abs_fnu = numpy.zeros(nabs, dtype=bool) if absdb is None \
-                        else numpy.invert(absdb.dummy) & (absdb['integrand'] == 'fnu')
+                        else numpy.logical_not(absdb.dummy) & (absdb['integrand'] == 'fnu')
         good_abs_fnu = numpy.zeros(nindx, dtype=bool)
         if nabs > 0:
             good_abs_fnu[:nabs][abs_fnu] = True
         abs_flambda = numpy.zeros(nabs, dtype=bool) if absdb is None \
-                        else numpy.invert(absdb.dummy) & (absdb['integrand'] == 'flambda')
+                        else numpy.logical_not(absdb.dummy) & (absdb['integrand'] == 'flambda')
         good_abs_flambda = numpy.zeros(nindx, dtype=bool)
         if nabs > 0:
             good_abs_flambda[:nabs][abs_flambda] = True
 
         bhd_fnu = numpy.zeros(nbhd, dtype=bool) if bhddb is None \
-                        else numpy.invert(bhddb.dummy) & (bhddb['integrand'] == 'fnu')
+                        else numpy.logical_not(bhddb.dummy) & (bhddb['integrand'] == 'fnu')
         good_bhd_fnu = numpy.zeros(nindx, dtype=bool)
         if nbhd > 0:
             good_bhd_fnu[nabs:][bhd_fnu] = True
         bhd_flambda = numpy.zeros(nbhd, dtype=bool) if bhddb is None \
-                        else numpy.invert(bhddb.dummy) & (bhddb['integrand'] == 'flambda')
+                        else numpy.logical_not(bhddb.dummy) & (bhddb['integrand'] == 'flambda')
         good_bhd_flambda = numpy.zeros(nindx, dtype=bool)
         if nbhd > 0:
             good_bhd_flambda[nabs:][bhd_flambda] = True
@@ -2437,8 +2437,8 @@ class SpectralIndices:
                                         bitmask=self.bitmask)
 
             # Flag bad corrections
-            bad_correction = numpy.invert(good_les) & numpy.invert(good_ang) \
-                                & numpy.invert(good_mag)
+            bad_correction = numpy.logical_not(good_les) & numpy.logical_not(good_ang) \
+                                & numpy.logical_not(good_mag)
             measurements['MASK'][bad_correction] = self.bitmask.turn_on(
                                                             measurements['MASK'][bad_correction],
                                                             'NO_DISPERSION_CORRECTION')
@@ -2602,7 +2602,7 @@ class SpectralIndices:
                                                        'FORESTAR')
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
             # Get the bins that were below the S/N limit
-            indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+            indx = numpy.logical_not(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                         self.binned_spectra['BINID'].data.ravel(),
                                                         good_snr, dtype='bool')) & (map_mask == 0)
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
@@ -2618,7 +2618,7 @@ class SpectralIndices:
 
             # The number of valid bins MUST match the number of
             # measurements
-            nvalid = numpy.sum(numpy.invert(indx))
+            nvalid = numpy.sum(numpy.logical_not(indx))
             if nvalid != len(measurements):
                 raise ValueError('Provided id does not match the number of measurements.')
 

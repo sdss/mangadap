@@ -88,9 +88,13 @@ class SpectralStackPar(KeywordParSet):
         hdr['STCKOP'] = (self['operation'], 'Stacking operation')
         hdr['STCKVREG'] = (str(self['register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
-        _par = [self['covar_par']] \
-                    if isinstance(self['covar_par'], (int, numpy.integer, float, numpy.floating)) \
-                    else self['covar_par']
+        # Make sure covar_par is a list and can be added to the header
+        if self['covar_par'] is None:
+            _par = [None]
+        elif isinstance(self['covar_par'], (int, numpy.integer, float, numpy.floating)):
+            _par = [self['covar_par']]
+        else:
+            _par = self['covar_par']
         hdr['STCKCRPR'] = (','.join([str(c) for c in _par]), 'Covariance parameter(s)')
         return hdr
 
@@ -102,6 +106,7 @@ class SpectralStackPar(KeywordParSet):
             hdr (`astropy.io.fits.Header`_):
                 Header object to read from.
         """
+        # TODO: Find another way to do this without using eval()!!
         self['operation'] = hdr['STCKOP']
         self['register'] = eval(hdr['STCKVREG'])
         self['covar_mode'] = hdr['STCKCRMD']
@@ -109,7 +114,7 @@ class SpectralStackPar(KeywordParSet):
             if isinstance(hdr['STCKCRPR'], (int, numpy.integer, float, numpy.floating)):
                 self['covar_par'] = hdr['STCKCRPR']
             else:
-                self['covar_par'] = [eval(c) for c in hdr['NCALIB'].split(',')]
+                self['covar_par'] = [eval(c) for c in hdr['STCKCRPR'].split(',')]
                 if len(self['covar_par']) == 1:
                     self['covar_par'] = self['covar_par'][0]
 
@@ -236,7 +241,7 @@ class SpectralStack:
         if isinstance(flux, numpy.ma.MaskedArray):
             inp_mask |= numpy.ma.getmaskarray(flux)
         if ivar is not None:
-            inp_mask |= numpy.invert(ivar>0)
+            inp_mask |= numpy.logical_not(ivar>0)
         return inp_mask.astype(dtype)
 
     @staticmethod
@@ -951,7 +956,7 @@ class SpectralStack:
         covar = SpectralStack.build_covariance_data(cube, par['covar_mode'], par['covar_par'])
 
         # Make sure all the inverse variance values are valid
-        indx = numpy.invert(ivar > 0)
+        indx = numpy.logical_not(ivar > 0)
         if numpy.any(indx):
             flux.mask |= indx
             ivar.mask |= indx
