@@ -98,7 +98,7 @@ write_dap_config = "mangadap.scripts.write_dap_config:WriteDapConfig.entry_point
 requires = [
     "setuptools",
     "setuptools_scm",
-    "extension-helpers",
+    "wheel",
     "oldest-supported-numpy",
     "cython>=0.29.14"
 ]
