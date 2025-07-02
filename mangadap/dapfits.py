@@ -1873,7 +1873,7 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
         flags = flags if isinstance(flags, list) else [flags]
         for flag in flags:
             if numpy.any(cube.bitmask.flagged(cube.mask, flag=flag)):
-                if flag in dapqual.keys():
+                if flag in dapqualbm.keys():
                     dapqual = dapqualbm.turn_on(dapqual, flag)
                 warnings.warn(f'{flag} is not a flag in {dapqualbm.__class__.__name__} and '
                               'cannot be propagated!')

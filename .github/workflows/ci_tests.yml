@@ -19,8 +19,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python: ['3.11', '3.12']
-        toxenv: [test-cov, test-astropydev]
+        python: ['3.11', '3.12', '3.13']
+        toxenv: [test-cov, test-numpy126, test-numpydev, test-astropydev]
     steps:
     - name: Check out repository
       uses: actions/checkout@v3
@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        python: ['3.11', '3.12']
+        python: ['3.11', '3.12'] #, '3.13']
         toxenv: [test]
     steps:
     - name: Check out repository

@@ -14,17 +14,17 @@
     
     options:
       -h, --help            show this help message and exit
-      -n NUMCHANNELS, --numchannels NUMCHANNELS
+      -n, --numchannels NUMCHANNELS
                             Number of channels spread across the wavelength range
                             for which to compute the covariance matrix. A value of 0
                             forces construction of the full covariance cube. The
                             default is to calculate the covariance matrix for a
                             single channel at the central wavelength (default: 1)
-      -w WAVELENGTH, --wavelength WAVELENGTH
+      -w, --wavelength WAVELENGTH
                             Wavelength at which to compute a single covariance
                             matrix; default is the central wavelength (default:
                             None)
-      -d DIRECTORY_PATH, --directory_path DIRECTORY_PATH
+      -d, --directory_path DIRECTORY_PATH
                             Directory with the DRP produced RSS file; default uses
                             environmental variables to define the default MaNGA DRP
                             redux path (default: None)

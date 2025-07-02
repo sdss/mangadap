@@ -5,6 +5,48 @@
 What's New in the DAP
 *********************
 
+Version 4.4.0
+=============
+
+- Bump python version restriction to ``<3.14``
+- Update tox testing environments
+- Update package distribution: Remove use of ``setup.cfg`` and ``setup.py`` files
+- Bug fixes; see issues #127 and #128
+- Basic code maintenance
+
+.. warning::
+
+    Continuous integration tests using python 3.13 on MacOS failed because CI
+    encountered an error installing `cvxopt`_.  This is required by the version
+    of `ppxf`_ tied to the DAP.  KBW is currently looking into updating the
+    `ppxf`_ version so that `cvxopt`_ is no longer a dependency.
+
+Version 4.3.0
+=============
+
+ - Add [de los Reyes et al.](https://ui.adsabs.harvard.edu/abs/2023ApJ...951...52D/abstract)
+   equation for covariance noise calibration
+ - Improve ability to toggle *off* analysis modules
+ - Emission-line modeling updates:
+
+    - Enable the stellar velocity to be tied to the gas velocities.  The goal is
+      to allow for fitting a stellar continuum that can nominally account for
+      stellar absorption and nebular emission, even when the continuum has very
+      low S/N.
+    - Allow kinematic components to be fixed (full integration into the code is
+      still in development).
+    - Allow for *only* gas templates to be fit.  The continuum will be fit by a
+      polynomial.
+    - Old construction of emission-line continuum baseline extension ("BASE")
+      deprecated.  The continuum fit during the stellar-kinematics module and
+      the continuum fit during the emission-line model fitting are now
+      independent of each other in the reference files.
+    - Added parameters that can be used to set how ppxf errors are treated, and
+      whether or not groups of spectra should be treated as an "ensemble"; i.e.,
+      part of the same galaxy at the same redshift.
+
+ - Basic code maintenance
+
 Version 4.2.0
 =============
 

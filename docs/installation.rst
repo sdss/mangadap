@@ -51,6 +51,13 @@ To uninstall:
     
     pip uninstall sdss-mangadap
 
+.. warning::
+
+    Continuous integration tests using python 3.13 on MacOS failed because CI
+    encountered an error installing `cvxopt`_.  This is required by the version
+    of `ppxf`_ tied to the DAP.  KBW is currently looking into updating the
+    `ppxf`_ version so that `cvxopt`_ is no longer a dependency.
+
 Test your installation
 ----------------------
 
