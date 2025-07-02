@@ -16,10 +16,9 @@
     
     options:
       -h, --help            show this help message and exit
-      -c DRPCOMPLETE, --drpcomplete DRPCOMPLETE
+      -c, --drpcomplete DRPCOMPLETE
                             DRP complete fits file (default: None)
-      -a DRPALL, --drpall DRPALL
-                            DRPall fits file (default: None)
+      -a, --drpall DRPALL   DRPall fits file (default: None)
       --sres_ext SRES_EXT   Spectral resolution extension to use. Default set by
                             MaNGADataCube class. (default: None)
       --sres_fill SRES_FILL

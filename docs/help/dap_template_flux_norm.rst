@@ -11,10 +11,10 @@
     
     options:
       -h, --help            show this help message and exit
-      -v VELSCALE_RATIO, --velscale_ratio VELSCALE_RATIO
+      -v, --velscale_ratio VELSCALE_RATIO
                             velocity scale ratio between the template pixel and the
                             nominal pixel width (default: 4)
-      -s STEP, --step STEP  linear or log-linear spectral pixel width (default:
+      -s, --step STEP       linear or log-linear spectral pixel width (default:
                             0.0001)
       -l, --linear          pixel sampling should be linear (default is log)
                             (default: False)
