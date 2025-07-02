@@ -1,6 +1,15 @@
 
-4.2.1dev
---------
+4.4.0 (03 July 2025)
+--------------------
+
+- Bump python version restriction to ``<3.14``
+- Update tox testing environments
+- Update package distribution: Remove use of ``setup.cfg`` and ``setup.py`` files
+- Bug fixes; see issues #127 and #128
+- Basic code maintenance
+
+4.3.0 (19 Dec 2024)
+-------------------
 
  - Add [de los Reyes et al.](https://ui.adsabs.harvard.edu/abs/2023ApJ...951...52D/abstract)
    equation for covariance noise calibration
