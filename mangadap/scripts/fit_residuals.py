@@ -215,11 +215,17 @@ def get_emission_line_data(cube, deconstruct_bins, dapmaps, dapcube):
     else:
         # Fits are to binned spectra from DAP datacube
         npix = cube_hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.T.reshape(npix,-1),
-                                    mask=cube_hdu['MASK'].data.T.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.T.reshape(npix,-1),
-                                                mask=cube_hdu['MASK'].data.T.reshape(npix,-1) > 0),
-                               -0.5)
+        flux = numpy.ma.MaskedArray(
+            cube_hdu['FLUX'].data.reshape(npix,-1),
+            mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0
+        )
+        error = numpy.ma.power(
+            numpy.ma.MaskedArray(
+                cube_hdu['IVAR'].data.reshape(npix,-1),
+                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0
+            ),
+            -0.5
+        )
         snrg = maps_hdu['BIN_SNR'].data.ravel()
    
     # Find the unique bins and get rid of -1 bins
