@@ -225,7 +225,7 @@ class SpectralResolution:
     \lambda/\Delta\lambda`, of a spectrum.  The primary functionality is
     to determine the parameters necessary to match the resolution of one
     spectrum to another.  It can also be used as a function to
-    interpolate the spectral resolution at a given wavelenth.
+    interpolate the spectral resolution at a given wavelength.
 
     Args:
         wave (numpy.ndarray):
