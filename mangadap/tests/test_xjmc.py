@@ -1,8 +1,14 @@
-from IPython import embed
 
+from IPython import embed
 import numpy
+from ppxf import ppxf_util
 
 from mangadap.contrib import xjmc
+from mangadap.par.emissionlinedb import EmissionLineDB
+from mangadap.proc.templatelibrary import TemplateLibrary
+from mangadap.proc.emissionlinetemplates import EmissionLineTemplates
+from mangadap.tests.util import emline_model_fake_spectrum
+from mangadap.util.sampling import spectrum_velocity_scale
 
 
 def test_component_select():
@@ -351,4 +357,59 @@ def test_split_components():
     assert numpy.array_equal(stellar_component, [0, 1, 3]), 'Incorrect stellar components'
 
 
+def test_xjmc_fit_single_spectrum():
 
+    (
+        tpl, etpl, stellar_sigma, gas_sigma, velscale, wave, flux, ferr, mask, sres
+    ) = emline_model_fake_spectrum()
+
+    flux = numpy.expand_dims(flux, 0)
+    ferr = numpy.expand_dims(ferr, 0)
+    gpm = numpy.logical_not(numpy.expand_dims(mask, 0))
+
+    # Setup for fitting
+    templates = numpy.append(tpl['FLUX'].data, etpl.flux, axis=0) 
+    inp_component = numpy.append(numpy.zeros(tpl.ntpl, dtype=int), etpl.comp + 1)
+    vgrp = numpy.append(numpy.zeros(tpl.ntpl, dtype=int), etpl.vgrp + 1)
+    sgrp = numpy.append(numpy.zeros(tpl.ntpl, dtype=int), etpl.sgrp + 1)
+
+    gas_template = numpy.zeros(templates.shape[0], dtype=bool)
+    gas_template[-etpl.flux.shape[0]:] = True
+
+    ncomp = numpy.amax(inp_component)+1
+    inp_moments = numpy.full(ncomp, 2, dtype=int)
+    inp_fixed = numpy.zeros(numpy.sum(inp_moments), dtype=bool)
+    guess_kin = numpy.expand_dims([0., 40.], 0)
+
+    inp_start = EmissionLineTemplates.fill_guess_kinematics(
+        guess_kin, numpy.amax(etpl.comp)+1, etpl.tie_comp_lb, etpl.tie_comp_ub,
+        etpl.A_ineq
+    ).reshape(1,-1)
+    inp_start = numpy.hstack(([[100., 250.]], inp_start))
+
+    constr_kinem = None
+    if hasattr(etpl, 'A_ineq') and etpl.A_ineq is not None:
+        constr_kinem = {'A_ineq': etpl.A_ineq, 'b_ineq': etpl.b_ineq}
+        constr_kinem['A_ineq'] = numpy.hstack((
+            numpy.zeros((constr_kinem['A_ineq'].shape[0], 2), dtype=float),
+            constr_kinem['A_ineq']
+        ))
+
+    (
+        model_flux, model_eml_flux, model_gpm, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv,
+        kininp, kin, kin_err, _binid, fault
+    ) = xjmc.emline_fitter_with_ppxf(
+        tpl['wave'].data, templates, wave, flux, ferr, velscale, 1,
+        inp_component, gas_template, inp_moments, inp_start,
+        gpm=gpm, vgrp=vgrp, sgrp=sgrp, inp_fixed=inp_fixed,
+        constr_kinem=constr_kinem, mdegree=8, ppxf_faults='raise', sigma_rej=50., #plot=True
+    )
+
+    _kin = kin.reshape(-1,2)
+    assert numpy.all(numpy.absolute(_kin[:,0]) < 2.), 'Velocities should all be near 0.'
+    assert numpy.absolute(_kin[0,1] - stellar_sigma) < 5., (
+        'Stellar velocity dispersion is too different'
+    )
+    assert numpy.all(numpy.absolute(_kin[1:,1] - gas_sigma) < 1.), (
+        'Gas velocity dispersion is too different'
+    )

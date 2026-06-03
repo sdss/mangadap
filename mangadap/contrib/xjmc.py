@@ -176,8 +176,10 @@ def ppxf_vsyst(tpl_wave, obj_wave, velscale, velscale_ratio=None):
         :obj:`float`: Velocity offset in km/s between the initial
         wavelengths of the template and object spectra.
     """
+    # NOTE: This will fault if velscale_ratio is not None and also not an
+    # integer!
     dlogl = np.log(obj_wave[0])-np.log(tpl_wave[0]) if velscale_ratio is None \
-                else np.log(obj_wave[0])-np.mean(np.log(tpl_wave[0:velscale_ratio]))
+            else np.log(obj_wave[0])-np.mean(np.log(tpl_wave[0:velscale_ratio]))
     return dlogl*velscale / np.diff(np.log(obj_wave[0:2]))[0]
 
 
@@ -1563,6 +1565,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         raise ValueError('Length if array matching spectra to bins is incorrect.')
     if len(wave) != nwave:
         raise ValueError('Mismatch of wavelength vector with provided spectra.')
+    _inp_start = np.asarray(inp_start)
 
     # Get the number of templates and the number of kinematic parameters
     ntpl, npix_tpl = templates.shape
@@ -1617,7 +1620,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
     # If debugging, just return the initialized output
     if debug:
         warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
-        kininp = np.array([np.concatenate(tuple(inp_start[0]))]*nspec)
+        kininp = np.array([np.concatenate(tuple(_inp_start[0]))]*nspec)
         kin = kininp
         kin_err = kin/10
         return model_flux, model_eml_flux, model_gpm, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
@@ -1629,7 +1632,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         # For the binned data, the input starting kinematics arrays
         # must have the appropriate shape
         nbin = flux_binned.shape[0]
-        if len(inp_start) != nbin:
+        if len(_inp_start) != nbin:
             raise ValueError('Input starting kinematic arrays do not match the binned spectra.')
         if len(wave) != flux_binned.shape[1]:
             raise ValueError('Mismatch of wavelength vector with provided binned spectra.')
@@ -1638,7 +1641,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         # - Stellar components with fixed kinematics
         # - All gas templates in a single component (no parameter tying necessary)
         component, moments, start, fixed \
-                = _ppxf_component_setup(inp_component, inp_moments, gas_template, inp_start,
+                = _ppxf_component_setup(inp_component, inp_moments, gas_template, _inp_start,
                                         inp_fixed, single_gas_component=True)
         _, _, _gpm, binned_tpl_wgts, _, _, _, _, _, binned_kin, _, fault \
                     = _fit_iteration(tpl_wave, templates, wave, flux_binned, noise_binned,
@@ -1680,7 +1683,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         # ensure the input guess adheres to any constraints.
         gas_components, str_components = split_components(_component, _gas_template)
         n_gas_comp = len(gas_components)
-        _start = inp_start[_binid]
+        _start = _inp_start[_binid]
         _fixed = inp_fixed
         if constr_kinem is None:
             strt = 0 if len(str_components) == 0 else np.sum(np.absolute(moments[str_components]))
@@ -1702,7 +1705,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         _moments = inp_moments
         _vgrp = vgrp
         _sgrp = sgrp
-        _start = inp_start
+        _start = _inp_start
         _fixed = inp_fixed
 
     # First fit to the individual spectra
@@ -1724,7 +1727,8 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
     _, _, model_gpm[indx,:], tpl_wgts[indx,:], _, _, _, _, _, kin[indx,:], _, fault[indx] \
             = _fit_iteration(tpl_wave, _templates, wave, flux[indx,:], noise[indx,:], velscale,
                              start[indx], moments, component, _gas_template,
-                             tpl_to_use=_tpl_to_use[indx,:], reject_boxcar=reject_boxcar,
+                             tpl_to_use=None if _tpl_to_use is None else _tpl_to_use[indx,:],
+                             reject_boxcar=reject_boxcar,
                              velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
                              reddening=reddening, fixed=fixed, gpm=model_gpm[indx,:], plot=plot,
                              quiet=quiet, sigma_rej=sigma_rej, ppxf_faults=ppxf_faults)
@@ -1744,11 +1748,7 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
 
     # Second fit to the individual spectra
     # - Use first fit to reset the starting estimates for the gas kinematics
-    try:
-        gas_components, str_components = split_components(_component, _gas_template)
-    except:
-        embed(header='xjmc 1764')
-        exit()
+    gas_components, str_components = split_components(_component, _gas_template)
     strt = np.sum(np.absolute(moments[str_components]))
     gas_start = kin[:,strt:] if constr_kinem is None else None
     component, moments, start, fixed \
@@ -1763,7 +1763,8 @@ def emline_fitter_with_ppxf(tpl_wave, templates, wave, flux, noise, velscale, ve
         kin_err[indx,:], fault[indx] \
                 = _fit_iteration(tpl_wave, _templates, wave, flux[indx,:], noise[indx,:], velscale,
                                  start[indx], moments, component, _gas_template,
-                                 tpl_to_use=_tpl_to_use[indx,:], reject_boxcar=None,
+                                 tpl_to_use=None if _tpl_to_use is None else _tpl_to_use[indx,:],
+                                 reject_boxcar=None,
                                  velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
                                  reddening=reddening, vgrp=_vgrp, sgrp=_sgrp, fixed=fixed,
                                  constr_kinem=constr_kinem, gpm=model_gpm[indx,:], plot=plot,
