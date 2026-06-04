@@ -1,4 +1,9 @@
 
+4.5.0dev (not yet released)
+---------------------------
+
+- Add tests for emission-line module fit when stellar kinematics are free
+
 4.4.0 (03 July 2025)
 --------------------
 
