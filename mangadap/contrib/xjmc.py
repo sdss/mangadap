@@ -179,7 +179,7 @@ def ppxf_vsyst(tpl_wave, obj_wave, velscale, velscale_ratio=None):
     # NOTE: This will fault if velscale_ratio is not None and also not an
     # integer!
     dlogl = np.log(obj_wave[0])-np.log(tpl_wave[0]) if velscale_ratio is None \
-            else np.log(obj_wave[0])-np.mean(np.log(tpl_wave[0:velscale_ratio]))
+                else np.log(obj_wave[0])-np.mean(np.log(tpl_wave[0:velscale_ratio]))
     return dlogl*velscale / np.diff(np.log(obj_wave[0:2]))[0]
 
 
