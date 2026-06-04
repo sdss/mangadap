@@ -46,6 +46,7 @@ from .ppxffit import PPXFModel, PPXFFit
 from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
 from ..util.filter import interpolate_masked_vector
 
+
 def reorder_groups(grp):
     """
     Reorder sequential group identifiers to run from 0..N-1.
@@ -2370,11 +2371,7 @@ class Sasuke(EmissionLineFit):
         for i,(s,e) in enumerate(zip(start,end)):
             if not spec_to_fit[i]:
                 continue
-            try:
-                model_mask[i,:s] = self.bitmask.turn_on(model_mask[i,:s], 'DIDNOTUSE')
-            except:
-                embed()
-                exit()
+            model_mask[i,:s] = self.bitmask.turn_on(model_mask[i,:s], 'DIDNOTUSE')
             model_mask[i,e:] = self.bitmask.turn_on(model_mask[i,e:], 'DIDNOTUSE')
 
         #---------------------------------------------------------------

@@ -366,6 +366,8 @@ class EmissionLineModel:
                                 / astropy.constants.c.to('km/s').value
 
                 # TODO: Make this optional!
+                # TODO: This faults if the number of spectra to fit does *not*
+                # match the number of spectra with emission-line moments!!
                 # Also exclude very strong outliers
                 outlier = sigma_clip(obj_redshift, sigma=10., maxiters=None)
                 mom1_masked |= numpy.ma.getmaskarray(outlier)

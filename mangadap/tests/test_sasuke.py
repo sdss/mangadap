@@ -17,7 +17,7 @@ from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
 
-from mangadap.tests.util import data_test_file
+from mangadap.tests.util import data_test_file, emline_model_fake_spectrum
 
 from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
@@ -514,3 +514,71 @@ def test_sasuke_tied_vel():
             'All velocities should be identical'
 
 
+def test_sasuke_free_stellar_kin():
+
+    # Get the fake spectrum
+    (
+        tpl, etpl, stellar_sigma, gas_sigma, velscale, wave, flux, ferr, mask, sres
+    ) = emline_model_fake_spectrum(emline_match_template_resolution=True)
+    flux = numpy.expand_dims(numpy.ma.MaskedArray(flux, mask=mask), 0)
+    ferr = numpy.expand_dims(numpy.ma.MaskedArray(ferr, mask=mask), 0)
+    sres = numpy.expand_dims(sres, 0)
+    nspec = flux.shape[0]
+    z = numpy.array([0.])
+
+    # Instantiate the template libary
+    tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
+
+    # Get the pixel mask
+    pixelmask = SpectralPixelMask(
+        artdb=ArtifactDB.from_key('BADSKY'), emldb=EmissionLineDB.from_key('ELPSCMSK')
+    )
+
+    # Instantiate the fitting class
+    ppxf = PPXFFit(StellarContinuumModelBitMask())
+
+    # Perform the fit
+    sc_wave, sc_flux, sc_mask, sc_par = ppxf.fit(
+        tpl['WAVE'].data.copy(), tpl['FLUX'].data.copy(), wave, flux, ferr, z,
+        numpy.full(nspec, 100.), iteration_mode='no_global_wrej', reject_boxcar=100,
+        ensemble=False, velscale_ratio=1, mask=pixelmask, matched_resolution=False,
+        tpl_sres=tpl_sres, obj_sres=sres, degree=8, moments=2
+    )
+    
+    # Mask the 5577 sky line
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
+
+    # Read the emission line fitting database
+    emldb = EmissionLineDB.from_key('ELPSTRONG')
+
+    # Instantiate the fitting class
+    emlfit = Sasuke(EmissionLineModelBitMask())
+
+    emlfit_kwargs = dict(
+        mdegree=8, stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data, stpl_sres=tpl_sres,
+        stellar_kinematics=sc_par['KIN'], stellar_tied=['free', 'free']
+    )
+
+    # Perform the fit
+    el_wave, model, el_flux, el_mask, el_fit, el_par = emlfit.fit(
+        emldb, wave, flux, obj_ferr=ferr, obj_mask=pixelmask, obj_sres=sres, guess_redshift=z,
+        guess_dispersion=numpy.full(nspec, 100.), reject_boxcar=101, etpl_sinst_mode='offset',
+        #plot=True, 
+        etpl_sinst_min=10., velscale_ratio=1, **emlfit_kwargs
+    )
+
+    kin = el_fit['KIN'].reshape(-1,2)
+    assert numpy.all(numpy.absolute(kin[:,0]) < 2.), 'Velocities should all be near 0.'
+    assert numpy.absolute(kin[0,1] - stellar_sigma) < 5., (
+        'Stellar velocity dispersion is too different'
+    )
+    assert numpy.all(numpy.absolute(kin[1:,1] - gas_sigma) < 1.), (
+        'Gas velocity dispersion is too different'
+    )
+    kin_err = el_fit['KINERR'].reshape(-1,2)
+
+    # All the dispersion errors should be non-zero
+    assert numpy.all(kin_err[:,1] > 0.), 'Dispersion errors should all be non-zero'
+    assert numpy.all(kin_err[:2,0] > 0.), (
+        'First two velocities (for stars and gas) should be non-zero'
+    )

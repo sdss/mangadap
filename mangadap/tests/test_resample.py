@@ -54,7 +54,7 @@ def test_resample_covar():
     assert numpy.array_equal(r.outy, _r.outy), 'Bad resampling with covariance'
 
     # Test multiple vectors
-    _r = sampling.Resample(numpy.row_stack((y,y)), xRange=[x[0],x[-1]], newRange=newRange,
+    _r = sampling.Resample(numpy.vstack((y,y)), xRange=[x[0],x[-1]], newRange=newRange,
                            newpix=40, newLog=True, covar=True)
     assert numpy.allclose(r.outy, _r.outy[0], rtol=0.0, atol=1e-15), \
             'Bad resampling with covariance'
@@ -66,7 +66,7 @@ def test_resample_covar():
     assert numpy.array_equal(r.oute, _r.oute), 'Bad resampling errors with covariance'
 
     # Test multiple vectors with errors
-    _r = sampling.Resample(numpy.row_stack((y,y)), e=numpy.row_stack((e,e)), xRange=[x[0],x[-1]],
+    _r = sampling.Resample(numpy.vstack((y,y)), e=numpy.vstack((e,e)), xRange=[x[0],x[-1]],
                            newRange=newRange, newpix=40, newLog=True, covar=True)
     assert numpy.allclose(r.outy, _r.outy[0], rtol=0.0, atol=1e-15), \
             'Bad resampling with covariance'
@@ -83,7 +83,7 @@ def test_resample_covar():
     assert numpy.allclose(r.oute, _r.oute, rtol=0.0, atol=1e-15), \
             'Bad resampling errors with covariance'
 
-    _r = sampling.Resample(numpy.row_stack((y,y)), e=numpy.row_stack((e,e)), xRange=[x[0],x[-1]],
+    _r = sampling.Resample(numpy.vstack((y,y)), e=numpy.vstack((e,e)), xRange=[x[0],x[-1]],
                            newRange=newRange, newpix=40, newLog=True, covar=True, conserve=True)
     assert numpy.allclose(r.outy, _r.outy[0], rtol=0.0, atol=1e-15), \
             'Bad resampling with covariance'

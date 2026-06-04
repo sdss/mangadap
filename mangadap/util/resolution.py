@@ -225,7 +225,7 @@ class SpectralResolution:
     \lambda/\Delta\lambda`, of a spectrum.  The primary functionality is
     to determine the parameters necessary to match the resolution of one
     spectrum to another.  It can also be used as a function to
-    interpolate the spectral resolution at a given wavelenth.
+    interpolate the spectral resolution at a given wavelength.
 
     Args:
         wave (numpy.ndarray):
@@ -819,20 +819,20 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     """
     # Check the dimensionality of wave and sres
-    wave_matrix = len(wave.shape) == 2
-    sres_matrix = len(sres.shape) == 2
+    wave_matrix = wave.ndim == 2
+    sres_matrix = sres.ndim == 2
     if wave_matrix and not sres_matrix:
         raise ValueError('If input wavelength array is 2D, the spectral resolution array must' \
                          ' also be 2D')
 
     # Check the shapes
-    if (wave_matrix == sres_matrix and wave.shape != sres.shape) or \
+    if (wave_matrix and sres_matrix and wave.shape != sres.shape) or \
        (not wave_matrix and sres_matrix and wave.shape[0] != sres.shape[1]):
         raise ValueError('Input spectral resolution and coordinate arrays must have the same' \
                          ' number of spectral channels!')
     if (wave_matrix and wave.shape != flux.shape) or \
-       (not wave_matrix and len(flux.shape) == 2 and wave.shape[0] != flux.shape[1]) or \
-       (not wave_matrix and len(flux.shape) == 1 and wave.shape != flux.shape):
+       (not wave_matrix and flux.ndim == 2 and wave.shape[0] != flux.shape[1]) or \
+       (not wave_matrix and flux.ndim == 1 and wave.shape != flux.shape):
         raise ValueError('Input flux and coordinate arrays must have the same number of' \
                          ' spectral channels!')
     if (mask is not None and mask.shape != flux.shape):
@@ -843,7 +843,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     if len(sres.shape) > len(flux.shape):
         raise ValueError('Shape of the spectral resolution array must be <= to the flux array.')
         
-    if len(new_sres_wave.shape) != 1 or len(new_sres.shape) != 1:
+    if new_sres_wave.ndim != 1 or new_sres.ndim != 1:
         raise ValueError('New spectral resolution and coordinate arrays must be 1D!')
     if new_sres_wave.shape != new_sres.shape:
         raise ValueError('New spectral resolution and coordinate arrays must have the same shape!')
@@ -860,15 +860,11 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     if sres_matrix and nspec != nsres:
         raise ValueError('For 2D matrices, number of spectral resolution vectors must match the ' \
                          'number of spectra.')
-    spec_dim = len(flux.shape)
-    sres_dim = len(sres.shape)
+    spec_dim = flux.ndim
+    sres_dim = sres.ndim
     sigma_offset = numpy.zeros(nspec, dtype=numpy.float64)
     new_res = SpectralResolution(new_sres_wave, new_sres, log10=new_log10,
                                  interp_ext=(new_sres[0],new_sres[-1]))
-
-#    pyplot.plot(new_sres_wave, new_sres)
-#    pyplot.show()
-#    exit()
 
     res = numpy.empty(nspec, dtype=object)
 
@@ -880,8 +876,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         sigma_offset[0] = res[0].sig_vo
         for i in range(1,nspec):
             res[i] = res[0]
-#        pyplot.plot(wave, res[0].sig_pd)
-#        pyplot.show()
     else:
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
@@ -890,9 +884,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                                         interp_ext=(sres[i,0],sres[i,-1]))
             res[i].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
             sigma_offset[i] = res[i].sig_vo
-#            pyplot.plot(_wave, res[i].sig_pd)
-#            pyplot.plot(_wave, numpy.sqrt(res[i]._convert_pd2vd(numpy.square(res[i].sig_pd))))
-#            pyplot.show()
 
     # Force all the offsets to be the same, if requested
     if not no_offset and not variable_offset:
@@ -909,7 +900,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     _mask = numpy.zeros(flux.shape, dtype=numpy.uint) if mask is None else mask
     out_mask = _mask.copy()
 
-#    print('test div by zero')
     if nspec == 1 and spec_dim == 1:
         sig_kernel = res[0].sig_pd.copy()
         sig_kernel[sig_kernel < min_sig_pix] = 0.0
@@ -973,6 +963,9 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # pixels is the FWHM of the largest Gaussian applied in the
     # convolution: ceil(sig2fwhm*max(diff_sig_w)/dw).  This is currently
     # hard-wired and should be tested.
+
+    if nspec == 1:
+        sigma_offset = sigma_offset[0]
 
     if ivar is not None:
         out_ivar = numpy.square(1.0/out_ivar)
