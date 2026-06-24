@@ -1,8 +1,9 @@
 
-4.5.0dev (not yet released)
----------------------------
+4.5.0 (24 June 2026)
+--------------------
 
 - Add tests for emission-line module fit when stellar kinematics are free
+- Bumpy maximum python version to ``3.14``.
 
 4.4.0 (03 July 2025)
 --------------------
