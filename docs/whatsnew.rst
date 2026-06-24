@@ -5,6 +5,13 @@
 What's New in the DAP
 *********************
 
+Version 4.5.0
+=============
+
+- Add tests for emission-line module fit when stellar kinematics are free
+- Bumpy maximum python version to ``3.14`` (issues with `cvxopt`_ were
+  independently resolved).
+
 Version 4.4.0
 =============
 
