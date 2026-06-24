@@ -29,16 +29,17 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 dependencies = [ 
     "requests>=2.25",
     "ipython>=7.20",
     "configobj>=5.0.6",
-    "numpy>=1.24",
+    "numpy>=2.4.1",
     "scipy>=1.9",
     "matplotlib>=3.7",
-    "astropy>=6.0",
+    "astropy>=7.0",
     "shapely>=2.0",
     "pydl>=1.0",
     "ppxf==8.1.0",
@@ -55,10 +56,10 @@ test = [
     "coverage",
 ]
 docs = [
-    "sphinx>6,<8",
+    "sphinx>6",
     "docutils<0.22",
     "sphinx-automodapi",
-    "sphinx_rtd_theme>3.0",
+    "sphinx_rtd_theme==3.0",
 ]
 dev = [
     "pytest>=7.1.0",
@@ -66,10 +67,10 @@ dev = [
     "tox",
     "pytest-cov",
     "coverage",
-    "sphinx>6,<8",
+    "sphinx>6",
     "docutils<0.22",
     "sphinx-automodapi",
-    "sphinx_rtd_theme>3.0",
+    "sphinx_rtd_theme==3.0",
 ]
 
 [project.urls]
