@@ -4,6 +4,7 @@
 Dynamically build the rst documentation of the bitmasks.
 """
 
+import os
 import time
 from pathlib import Path
 
@@ -28,6 +29,8 @@ def write_help(script_cls, opath, width=80):
 
 if __name__ == '__main__':
     t = time.perf_counter()
+
+    os.environ['NO_COLOR'] = '1'
 
     path = dap_source_dir() / 'docs' / 'help'
     if not path.is_dir():
